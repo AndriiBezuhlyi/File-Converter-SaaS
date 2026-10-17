@@ -1,0 +1,99 @@
+# File Converter
+
+Monorepo foundation only. React mounts an empty shell; NestJS starts an API shell and an independent idle worker. There are no conversion endpoints, authentication flows, domain models, storage adapters, or queue consumers yet.
+
+## Requirements and documentation
+
+- [Technical task](docs/technical-task.md)
+- [Architecture](docs/architecture.md)
+- [Design system](DESIGN.md)
+- [Technology inventory and compatibility notes](docs/TECH-STACK.md)
+
+Use Node.js 24 LTS (minimum 24.11.1), npm 11, and Docker with Compose v2 for infrastructure. Install from the repository root; one root lockfile covers all workspaces.
+
+## Setup
+
+```sh
+npm ci
+```
+
+Copy `.env.example` to `.env` (`Copy-Item .env.example .env` in PowerShell, or `cp .env.example .env` on Linux/macOS). Its credentials are development-only defaults. Environment files and caches are ignored by Git.
+
+```sh
+npm run infra:up
+```
+
+Local services: PostgreSQL on 5432, Redis on 6379, MinIO API on 9000/console on 9001, Mailpit SMTP on 1025/UI on 8025. All host bindings are loopback-only. The one-shot storage initializer creates a private development bucket.
+
+MinIO Community is now [source-only and archived](https://github.com/minio/minio). Its local image builds the official server/client from fixed commits, so the first infrastructure build can take several minutes. No Go installation is needed on the host. Production uses an external S3-compatible bucket, not this development MinIO.
+
+The application shells deliberately do not connect to these services yet. Infrastructure connections, credentials validation for integrations, and application health/readiness checks will be added with the corresponding modules.
+
+## Development
+
+Run each process in its own terminal:
+
+```sh
+npm run dev:web
+npm run dev:api
+npm run dev:worker
+```
+
+- Web: http://127.0.0.1:5173, with `/api` proxied to the API.
+- API: http://127.0.0.1:3000; `/api/v1` is the future prefix. Requests currently return 404.
+- Worker: no HTTP listener and no registered processors. An idle timer keeps the foundation process alive until consumers own live connections.
+
+Backend development builds preserve TypeScript decorator metadata, then restart the selected process when its source changes. Separate output directories prevent the API and worker from overwriting each other. No global Nest CLI is needed.
+
+The backend uses native ESM for NestJS 12. Relative TypeScript imports use `.js` extensions for the emitted Node.js files. Jest runs with VM modules and ts-jest ESM compilation; the resulting Node experimental warning is limited to test execution.
+
+Do not implement product UI in the bootstrap shell. Feature folders and page folders are intentionally empty; `.gitkeep` files preserve them in version control.
+
+## Verification
+
+```sh
+npm run check
+npm run test:e2e:install
+npm run test:e2e
+```
+
+`check` runs formatting, ESLint, all workspace typechecks, frontend/backend bootstrap tests, backend integration smoke tests, Prisma schema validation, generated-contract drift checks, and production builds. These tests verify the foundation, not the unimplemented acceptance criteria in the product specification.
+
+At foundation setup, `npm audit --omit=dev` reports no known production vulnerabilities. The full audit reports 20 moderate findings in the Jest development dependency chain, originating from the `sprintf-js` precision-specifier advisory. The installed upstream line has no compatible fix; do not apply the audit's suggested Jest downgrade or an untested major override. Recheck when updating test tooling.
+
+Playwright installs Chromium in the ignored project-local `.cache/ms-playwright`. On Linux CI, use `node scripts/playwright.mjs install --with-deps chromium`. A production web build must exist before running E2E tests; Playwright starts its own preview server.
+
+```sh
+npm run build
+npm run start:api --workspace=@converter/backend
+npm run start:worker --workspace=@converter/backend
+```
+
+## Database and contracts
+
+The Prisma schema contains only PostgreSQL and generator configuration. Domain models and migrations are deliberately absent. `npm run db:validate` checks this foundation without a running database. After implementing the models, use `npm run db:generate`; migrations are explicit backend workspace commands. Do not run development migration commands in production.
+
+Prisma CLI configuration loads the root `.env`; the runtime application never imports the CLI. The future Prisma client will use the PostgreSQL driver adapter installed in the backend workspace.
+
+`packages/contracts/openapi.json` is an empty, versioned API shell with no product routes. `npm run contracts:generate` generates its TypeScript declarations; `npm run contracts:check` checks for drift without modifying the committed output. When controllers exist, generate the source OpenAPI artifact from Nest Swagger.
+
+## Docker deployment foundation
+
+`infra/compose.yaml` is local infrastructure. `infra/compose.production.yaml` is a standalone production definition, not an overlay that inherits development port bindings.
+
+API, worker, and proxy each have their own multi-stage Dockerfile. The worker image alone installs LibreOffice Writer, fonts, and sandbox tooling. Container limits are prepared; the per-conversion sandbox runner is not implemented, and untrusted files must not be processed until it is.
+
+Copy `.env.production.example` to an untracked `.env.production` and provide real credentials. In production, `DATABASE_URL` must reach `postgres:5432`, and `REDIS_URL` must reach `redis:6379` with the configured password; encode password characters correctly in URLs.
+
+```sh
+npm run infra:production:config
+docker compose --env-file .env.production -f infra/compose.production.yaml build
+```
+
+Only the proxy publishes a host port. This template expects HTTPS termination on the server's ingress/load balancer before port 8080; it does not provision certificates or enable production authentication. Restrict direct HTTP exposure to that ingress. Pin validated image digests at release time. Database backups, application readiness checks, a migration release job, and converter sandbox verification remain prerequisites for deploying the actual product.
+
+`npm run infra:down` stops local infrastructure and retains named volumes. No reset/delete-volume command is included.
+
+## Local development instructions
+
+Open this project directory itself in Codex so its [AGENTS.md](AGENTS.md) and repository skills can be discovered. The index explicitly routes to the applicable local rules; [progress.md](docs/progress.md) records meaningful changes. The documented policy is one successful free guest conversion, followed by login/registration for further conversions; the foundation does not implement this flow yet.

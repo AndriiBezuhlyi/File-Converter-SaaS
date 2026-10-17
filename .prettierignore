@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+.cache
+package-lock.json
+playwright-report
+test-results
+apps/backend/src/generated
+packages/contracts/src/generated
+docs/technical-task.md
+docs/architecture.md
+DESIGN.md

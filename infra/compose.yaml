@@ -1,0 +1,61 @@
+name: converter-local
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-converter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-converter-local-only}
+      POSTGRES_DB: ${POSTGRES_DB:-converter}
+    ports: ['127.0.0.1:5432:5432']
+    volumes: [postgres-data:/var/lib/postgresql]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:8-alpine
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    ports: ['127.0.0.1:6379:6379']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  minio:
+    image: converter-minio:local
+    build: { context: .., dockerfile: infra/docker/minio.Dockerfile }
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-converter-local}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-converter-local-only}
+    ports: ['127.0.0.1:9000:9000', '127.0.0.1:9001:9001']
+    volumes: [minio-data:/data]
+    healthcheck:
+      test: ['CMD', 'curl', '--fail', '--silent', 'http://127.0.0.1:9000/minio/health/live']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+  minio-init:
+    image: converter-minio:local
+    entrypoint: ['/bin/sh', '-ec']
+    command:
+      - |
+        mc alias set local http://minio:9000 "$$S3_ACCESS_KEY_ID" "$$S3_SECRET_ACCESS_KEY"
+        mc mb --ignore-existing "local/$$S3_BUCKET"
+        mc anonymous set none "local/$$S3_BUCKET"
+    environment:
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-converter-local}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-converter-local-only}
+      S3_BUCKET: ${S3_BUCKET:-converter-local}
+    depends_on:
+      minio: { condition: service_healthy }
+    restart: 'no'
+  mailpit:
+    image: axllent/mailpit:v1.31
+    ports: ['127.0.0.1:1025:1025', '127.0.0.1:8025:8025']
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:

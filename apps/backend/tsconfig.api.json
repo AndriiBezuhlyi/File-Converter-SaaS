@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist/api",
+    "types": ["node"],
+    "sourceMap": true
+  },
+  "include": ["src/entrypoints/api.main.ts"],
+  "exclude": ["**/*.spec.ts", "test", "dist", "node_modules"]
+}

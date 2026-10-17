@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY apps/web/package.json ./apps/web/package.json
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY packages/contracts/package.json ./packages/contracts/package.json
+RUN npm ci --no-audit --no-fund
+COPY tsconfig.base.json ./
+COPY apps/backend ./apps/backend
+RUN npm run build:worker --workspace=@converter/backend
+
+FROM node:24-bookworm-slim AS runtime
+ENV NODE_ENV=production
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libreoffice-writer fonts-crosextra-carlito fonts-dejavu-core fontconfig bubblewrap ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+ENV LIBREOFFICE_BIN=/usr/bin/libreoffice
+ENV WORKER_TEMP_DIR=/tmp/converter
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY apps/web/package.json ./apps/web/package.json
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY packages/contracts/package.json ./packages/contracts/package.json
+RUN npm ci --omit=dev --workspace=@converter/backend --include-workspace-root=false --no-audit --no-fund \
+    && npm cache clean --force
+COPY --from=build --chown=node:node /app/apps/backend/dist/worker ./apps/backend/dist/worker
+WORKDIR /app/apps/backend
+USER node
+CMD ["node", "dist/worker/entrypoints/worker.main.js"]

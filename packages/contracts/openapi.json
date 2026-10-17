@@ -1,0 +1,9 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "File Converter API",
+    "version": "0.0.0",
+    "description": "Foundation only. Product operations will be generated from NestJS when implemented."
+  },
+  "paths": {}
+}

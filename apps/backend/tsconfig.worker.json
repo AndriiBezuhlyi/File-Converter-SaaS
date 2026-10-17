@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist/worker",
+    "types": ["node"],
+    "sourceMap": true
+  },
+  "include": ["src/entrypoints/worker.main.ts"],
+  "exclude": ["**/*.spec.ts", "test", "dist", "node_modules"]
+}

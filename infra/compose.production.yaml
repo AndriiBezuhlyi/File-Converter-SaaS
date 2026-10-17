@@ -1,0 +1,104 @@
+name: converter
+x-backend-environment: &backend-environment
+  NODE_ENV: production
+  DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
+  REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env.production}
+  S3_ENDPOINT: ${S3_ENDPOINT:?Set S3_ENDPOINT}
+  S3_REGION: ${S3_REGION:?Set S3_REGION}
+  S3_BUCKET: ${S3_BUCKET:?Set S3_BUCKET}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?Set S3_ACCESS_KEY_ID}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?Set S3_SECRET_ACCESS_KEY}
+  S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
+  SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET}
+  SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+services:
+  proxy:
+    build: { context: .., dockerfile: infra/docker/proxy.Dockerfile }
+    ports: ['${PUBLIC_HTTP_PORT:-8080}:8080']
+    depends_on:
+      api: { condition: service_healthy }
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    restart: unless-stopped
+  api:
+    build: { context: .., dockerfile: infra/docker/api.Dockerfile }
+    environment:
+      <<: *backend-environment
+      API_HOST: 0.0.0.0
+      API_PORT: '3000'
+    expose: ['3000']
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "const net=require('node:net');const s=net.connect(3000,'127.0.0.1');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),2000).unref()",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    init: true
+    restart: unless-stopped
+  worker:
+    build: { context: .., dockerfile: infra/docker/worker.Dockerfile }
+    environment: *backend-environment
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    read_only: true
+    tmpfs: ['/tmp:rw,nosuid,nodev,size=256m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    cpus: '1.0'
+    mem_limit: 1g
+    pids_limit: 128
+    init: true
+    stop_grace_period: 30s
+    restart: unless-stopped
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-converter}
+      POSTGRES_DB: ${POSTGRES_DB:-converter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes: [postgres-data:/var/lib/postgresql]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  redis:
+    image: redis:8-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+    command:
+      [
+        '/bin/sh',
+        '-ec',
+        'exec redis-server --appendonly yes --maxmemory-policy noeviction --requirepass "$$REDIS_PASSWORD"',
+      ]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+volumes:
+  postgres-data:
+  redis-data:
