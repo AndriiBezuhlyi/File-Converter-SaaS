@@ -1,21 +1,17 @@
 # Verification and Handoff
 
-Inspect the root/workspace `package.json` and relevant configs before choosing commands. Run from the project root with npm; execute only checks justified by the change.
+Inspect relevant `package.json` scripts/configs before execution; use existing npm tooling and checks proportionate to the change.
 
-| Change                        | Appropriate checks                                                                                                |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Documentation/rules/skills    | Changed Markdown formatting, relative links/paths, referenced scripts, skill frontmatter, policy consistency      |
-| Frontend behavior/UI          | Relevant Vitest cases, lint, typecheck/build; affected browser flow and responsive states                         |
-| Backend/API/worker            | Relevant Jest/Supertest cases, lint, typecheck/build; real dependency integration when the behavior needs it      |
-| Schema/contracts/dependencies | Prisma validation, contract generation/drift, affected tests/build; inspect migrations and lockfile as applicable |
+| Change                        | Checks                                                                                  |
+| ----------------------------- | --------------------------------------------------------------------------------------- |
+| Docs/rules/skills             | Markdown, links, policy consistency; YAML/workflows for changed skills                  |
+| UI behavior                   | Focused Vitest, lint/typecheck/build as affected; browser flow                          |
+| API/worker                    | Focused Jest/Supertest, lint/typecheck/build as affected; real integrations when needed |
+| Schema/contracts/dependencies | Prisma/migration or contract-drift checks; affected tests/build/lockfile                |
 
-Existing root commands include `format:check`, `lint`, `typecheck`, `test`, `test:integration`, `db:validate`, `contracts:check`, `build`, `test:e2e`, and the aggregate `check`. The current E2E setup needs a web build and project-local Chromium; inspect `playwright.config.ts` and `scripts/playwright.mjs` rather than assuming browser/port behavior.
-
-- For changed instruction Markdown, use the installed Prettier CLI on explicit paths with `--ignore-path .gitignore` so files excluded from normal source formatting can still be checked. Format only changed files.
-- Skill validation normally uses the skill-creator validator when its runtime is available. Otherwise validate YAML, required fields, naming, unfinished placeholders, references, and workflow safety with available local tooling, and disclose the fallback.
-- Separate environment restrictions from application failures. Do not weaken checks, alter tools, or install extra tools/plugins merely to get a green result.
-- For docs-only work, do not run application tests/builds or call live APIs unless necessary to verify a referenced claim. Never describe earlier checks as newly executed.
-- Report what changed, actual checks/results, and material limitations. Mark unavailable features/dependencies BLOCKED or SKIPPED, not PASS.
-- Update [docs/progress.md](../../docs/progress.md) after meaningful changes, with the date, scope, files, verification, known issues, and next steps. Do not fabricate completed product work.
-- When domain database structures change, create/update `docs/db-schema.md`; generator-only configuration does not require invented schema documentation.
-- Use Context7 for library/API documentation; if it fails, disclose the limitation and use official primary documentation. Use Chrome DevTools for meaningful browser evidence and existing Playwright as a documented fallback. Do not change global Codex credentials/configuration in a project task.
+- Docs-only changes do not require application tests/builds or live APIs.
+- Format changed instruction Markdown with installed Prettier, explicit paths, and `--ignore-path .gitignore`. Preserve unrelated formatting.
+- Validate changed skills with the skill-creator validator; if unavailable, check YAML, names, fields, placeholders, references, and workflow safety locally. Disclose the fallback.
+- Inspect `playwright.config.ts` and `scripts/playwright.mjs` before E2E runs; current setup needs a web build and local Chromium.
+- Report actual commands/results and limitations; missing implementations are BLOCKED/SKIPPED. Never weaken tooling to pass checks.
+- Use Context7 for library/API docs; disclose failures and fall back to official sources. Do not modify global tools/credentials/configuration.

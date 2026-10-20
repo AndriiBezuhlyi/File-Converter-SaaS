@@ -2,7 +2,7 @@
 
 ## 1. Purpose and scope
 
-This proposal is based on `technical-task.md`, including its selected technology stack and MVP requirements. It describes the intended implementation; the repository currently contains the specification rather than an implemented application. Recommendations embedded in the specification are treated as design input, not instructions to implement the application as part of this task.
+This proposal is based on `technical-task.md`, including its selected technology stack and MVP requirements. It describes the target implementation; the repository currently has frontend layout/routing, local file/target selection, pre-launch API documentation, and backend bootstrap, with server-backed product workflows still pending. Recommendations embedded in the specification are design input; the current user task determines implementation scope.
 
 The MVP supports JPG ↔ PNG and DOCX → PDF, one free successful guest conversion without registration, email authentication for subsequent conversions, account settings, saved files, temporary downloads, API keys, and a public REST API. Guest access is a first-party web trial; third-party API integrations still require an API key. PDF → DOCX, Telegram authentication, billing, and additional formats remain future extensions.
 
@@ -118,6 +118,7 @@ Converter/
 │   ├── technical-task.md
 │   ├── architecture.md
 │   ├── TECH-STACK.md
+│   ├── implementation-plan.md
 │   └── progress.md
 ├── AGENTS.md
 ├── DESIGN.md

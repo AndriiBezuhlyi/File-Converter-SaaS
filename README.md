@@ -1,6 +1,6 @@
 # File Converter
 
-Monorepo foundation only. React mounts an empty shell; NestJS starts an API shell and an independent idle worker. There are no conversion endpoints, authentication flows, domain models, storage adapters, or queue consumers yet.
+The React frontend has a responsive layout, navigation, design tokens, accessible shared components, local file/target selection, and an API documentation page. NestJS starts an API shell and an independent idle worker. Upload/conversion, authentication, account/file workflows, domain models, storage adapters, and queue consumers are not implemented yet.
 
 ## Requirements and documentation
 
@@ -39,7 +39,7 @@ npm run dev:api
 npm run dev:worker
 ```
 
-- Web: http://127.0.0.1:5173, with `/api` proxied to the API.
+- Web: http://127.0.0.1:5173, with `/api/` proxied to the API; `/api-docs` remains a frontend route.
 - API: http://127.0.0.1:3000; `/api/v1` is the future prefix. Requests currently return 404.
 - Worker: no HTTP listener and no registered processors. An idle timer keeps the foundation process alive until consumers own live connections.
 
@@ -47,7 +47,11 @@ Backend development builds preserve TypeScript decorator metadata, then restart 
 
 The backend uses native ESM for NestJS 12. Relative TypeScript imports use `.js` extensions for the emitted Node.js files. Jest runs with VM modules and ts-jest ESM compilation; the resulting Node experimental warning is limited to test execution.
 
-Do not implement product UI in the bootstrap shell. Feature folders and page folders are intentionally empty; `.gitkeep` files preserve them in version control.
+Frontend layout, providers, and routing live in `apps/web/src/app`; pages compose shared components from `shared/ui`. All nine documented routes exist; future feature pages clearly indicate that their workflows are not available yet. Onest and IBM Plex Mono are self-hosted with Latin/Ukrainian glyphs and SIL OFL licenses in `apps/web/public/fonts`. Implement the remaining features in the order recorded in [the implementation plan](docs/implementation-plan.md).
+
+The converter feature supports one local JPG/JPEG, PNG, or DOCX file via picker or drag-and-drop. It shows filename/size, selects only JPG ↔ PNG or DOCX → PDF targets, and rejects empty, unsupported, multiple, directory, and oversized inputs without discarding a previous valid selection. The local limit is 20,000,000 bytes (decimal MB), centralized in `features/converter/lib/file-selection.ts`; future server capabilities must supply the authoritative limit. These metadata checks do not inspect file contents. Files stay in component memory; no upload, persistence, real conversion, or quota consumption occurs, and the conversion action is explicitly unavailable.
+
+`/api-docs` describes the planned seven-operation REST contract with section navigation, placeholder-only cURL/JSON examples, API-key rules, polling/retention semantics, limits, and errors. Shared `CodeBlock` supports copying, confirmation, clipboard-denial feedback, and keyboard scrolling on narrow screens. This is pre-launch documentation based on the technical task/architecture, not a live API explorer or generated OpenAPI UI; `packages/contracts/openapi.json` still has empty paths. Final file-list schemas, pagination parameters, and numerical request quotas remain for backend contract work. No API requests are made by the page.
 
 ## Verification
 
@@ -57,7 +61,7 @@ npm run test:e2e:install
 npm run test:e2e
 ```
 
-`check` runs formatting, ESLint, all workspace typechecks, frontend/backend bootstrap tests, backend integration smoke tests, Prisma schema validation, generated-contract drift checks, and production builds. These tests verify the foundation, not the unimplemented acceptance criteria in the product specification.
+`check` runs formatting, ESLint, all workspace typechecks, frontend navigation/component tests, backend bootstrap/integration smoke tests, Prisma schema validation, generated-contract drift checks, and production builds. Playwright additionally verifies keyboard navigation, direct-route reloads, 404 recovery, mobile navigation, and responsive overflow. These checks do not establish that the planned product workflows work.
 
 At foundation setup, `npm audit --omit=dev` reports no known production vulnerabilities. The full audit reports 20 moderate findings in the Jest development dependency chain, originating from the `sprintf-js` precision-specifier advisory. The installed upstream line has no compatible fix; do not apply the audit's suggested Jest downgrade or an untested major override. Recheck when updating test tooling.
 

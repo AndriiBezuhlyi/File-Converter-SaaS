@@ -1,12 +1,12 @@
 # Backend
 
-Read the backend boundaries, persistence, authentication, and lifecycle sections of [architecture](../../docs/architecture.md); [TECH-STACK](../../docs/TECH-STACK.md) owns dependency choices.
+Reference: affected persistence, authentication, or lifecycle sections in [architecture](../../docs/architecture.md).
 
-- Keep NestJS modules explicit. API and worker share services/policies but register their own producers/consumers.
-- Validate inputs server-side through DTOs and configured validation; controllers must not contain conversion-engine or storage policy.
-- Use Prisma transactions/constraints for atomic ownership, guest reservation, state transitions, and result publication. Do not treat Redis state as the durable record.
-- Preserve owner isolation across account, API-key, and guest principals. Account/password/key management cannot be authorized by a guest credential or public API key.
-- Do not implement session storage in process memory or cache key validity in a way that delays revocation. Use documented verification/recovery/CSRF requirements.
-- Keep worker attempts idempotent, conditionally publish results, bound retries to transient failures, and reconcile crashes. Invalid input must not be retried indefinitely.
-- Update OpenAPI and generated contract types when actual HTTP operations change; an empty foundation artifact is not an implemented API.
-- Domain models/migrations, consumers, and integration adapters are absent today. Introduce them only for an authorized feature, with relevant tests and database documentation.
+- Use explicit NestJS modules and separate API producers/worker consumers. Keep controllers free of engine/storage policy.
+- Validate DTOs server-side and authorize ownership at backend boundaries.
+- Use Prisma transactions/constraints for guest reservations, ownership, state transitions, and conditional result publication; Redis is not the durable record.
+- Separate account, guest, and API-key scopes. User sessions alone manage credentials; preserve verification/recovery/CSRF requirements.
+- No process-memory session store or validity cache that delays credential revocation.
+- Make worker attempts idempotent, publish only from the current lease, bound transient retries, and reconcile crashes. Invalid input must not retry indefinitely.
+- Synchronize implemented HTTP changes with OpenAPI/generated types. Empty contracts do not prove implementation.
+- Introduce models, migrations, consumers, and adapters only within authorized features, with focused tests and domain-schema documentation.

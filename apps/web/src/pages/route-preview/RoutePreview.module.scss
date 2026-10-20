@@ -1,0 +1,17 @@
+.page {
+  max-inline-size: 720px;
+  padding-block: var(--space-12) var(--space-24);
+}
+.heading {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+.description {
+  color: var(--color-text-muted);
+  margin-block: var(--space-6) var(--space-8);
+  font-size: 1.125rem;
+}

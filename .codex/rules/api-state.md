@@ -1,12 +1,11 @@
-# API Contracts and Server State
+# API Contracts and State
 
-Use the API contract in [technical-task.md](../../docs/technical-task.md) and its ownership/guest clarifications in [architecture.md](../../docs/architecture.md).
+Reference: affected API operations in the [technical task](../../docs/technical-task.md).
 
-- Preserve `/api/v1`, multipart fields, `202` acceptance, documented job states, and `{ error: { code, message } }`. Distinguish an HTTP rejection from a later accepted job failure.
-- Third-party clients require `X-API-Key`. First-party user/guest cookies have their documented scopes; an invalid explicit key must not fall back to cookies.
-- Frontend imports generated contracts rather than Prisma types or independently invented response shapes. Runtime server validation remains authoritative.
-- TanStack Query owns user/guest eligibility, settings, file lists, and job status; local state owns chosen files, dialogs, and upload progress. Keep auto-save views on one query/mutation.
-- Poll active conversions at the documented interval, stop on terminal states, and back off after connectivity failures. Do not mark a job failed because polling failed.
-- Prevent duplicate submissions. After an ambiguous upload response, do not automatically replay it; resume by known conversion ID when available.
-- Invalidate affected queries after confirmed mutations/completion. Reflect accepted-job retention rather than the user's subsequently changed setting.
-- Treat expired/deleted downloads as unavailable, with actionable copy. Keep authenticated/guest download authorization intact; never turn a storage location into a public link.
+- Preserve `/api/v1`, multipart fields, `202`, four public job states, and `{ error: { code, message } }`. HTTP rejection and accepted-job failure differ.
+- Integrations require `X-API-Key`; cookie principals retain their restricted scopes. Invalid explicit keys never fall back.
+- Import generated frontend contracts, not Prisma/backend runtime types. Server validation remains authoritative.
+- TanStack Query owns eligibility, settings, files, and job status; local state owns files selected for upload, dialogs, and upload progress. Share the auto-save query/mutation.
+- Poll active jobs at the documented interval; stop on terminal states, back off on connectivity failure, and keep request failures distinct from job failures.
+- Prevent duplicate submissions; do not replay ambiguous uploads automatically. Resume by known conversion ID.
+- Invalidate affected queries after confirmed mutations. Display acceptance-time retention and server expiry; expired/deleted results remain ownership-protected and unavailable.

@@ -5,7 +5,7 @@ description: Verify this File Converter project's JPG/PNG and DOCX/PDF conversio
 
 # Conversion Test
 
-Read [AGENTS.md](../../../AGENTS.md), the mandatory rules it names, and its file-conversion, backend, api-state, and verification topics. Repository paths below are relative to the project root.
+Follow [AGENTS.md](../../../AGENTS.md). For these tests, read [security](../../../.codex/rules/security.md), [file-conversion](../../../.codex/rules/file-conversion.md), and [verification](../../../.codex/rules/verification.md); add backend/API rules when those boundaries are tested. Repository paths below are relative to the project root.
 
 ## Preconditions and scope
 

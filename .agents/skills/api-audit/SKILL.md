@@ -5,7 +5,7 @@ description: Audit this File Converter project's REST API contracts, access cont
 
 # API Audit
 
-Read [AGENTS.md](../../../AGENTS.md), the mandatory rules it names, and its backend, api-state, file-conversion, and verification topics. Repository paths below are relative to the project root.
+Follow [AGENTS.md](../../../AGENTS.md). For this audit, read [security](../../../.codex/rules/security.md), [api-state](../../../.codex/rules/api-state.md), and [verification](../../../.codex/rules/verification.md); add backend/conversion rules when investigating those implementations. Repository paths below are relative to the project root.
 
 ## Preconditions and scope
 

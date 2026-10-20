@@ -1,0 +1,55 @@
+:root {
+  color-scheme: dark;
+  --color-canvas: #0e100f;
+  --color-surface: #191c19;
+  --color-surface-hover: #232720;
+  --color-text: #fffce1;
+  --color-text-muted: #b4b5a5;
+  --color-border-subtle: #42433d;
+  --color-border-control: #7c8072;
+  --color-text-disabled: var(--color-border-control);
+  --color-accent: #abff84;
+  --color-success: var(--color-accent);
+  --color-warning: #ffce82;
+  --color-danger: #ff9c90;
+  --color-format-jpg: #ffb56b;
+  --color-format-png: #fec5fb;
+  --color-format-docx: #77d5ed;
+  --color-format-pdf: var(--color-text);
+  --font-body: 'Onest', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --radius-action: 9999px;
+  --content-width: 1280px;
+  --page-gutter: 64px;
+  --transition: 160ms ease;
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --page-gutter: 32px;
+  }
+}
+
+@media (max-width: 639px) {
+  :root {
+    --page-gutter: 20px;
+  }
+}
+
+@media (max-width: 359px) {
+  :root {
+    --page-gutter: 16px;
+  }
+}

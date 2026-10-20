@@ -1,39 +1,30 @@
-# File Converter — Codex Instructions
+# File Converter — Working Rules
 
-These instructions apply to this project and its descendants. The application currently has a monorepo foundation; product features are not implemented.
+npm workspaces: React web, NestJS API and separate worker. Product features are scaffolded; verify implementation before claiming support. Communicate in Ukrainian; use English for code and developer documentation.
 
-## Read at the start of every task
+## Always
 
-Open [project.md](.codex/rules/project.md) and [security.md](.codex/rules/security.md). Then open every matching topic below; load additional topics when scope changes. Files in `.codex/rules/` are not implicitly loaded by their directory name: reading them means opening their contents. Report missing required files rather than inventing rules.
+- Protect secrets and personal data, including logs/reports. `VITE_*` values are public. Treat uploads as untrusted and enforce backend ownership.
+- Stay within the authorized task; preserve agreed behavior. Report only observed verification results.
+- Verify proportionately. Update [progress](docs/progress.md) after meaningful changes; document domain schema changes in `docs/db-schema.md` when introduced.
 
-Communicate with the user in Ukrainian. Use English for code and developer documentation unless preserving an existing document's language. Follow the current user request; if source documents conflict, resolve from explicit decisions or clarify the unresolved part while continuing independent work.
+## Read by scope
 
-## Sources of truth
+For formatting/typo fixes, this index is sufficient unless requirements or security are affected. For other changes, read rules for the affected concerns below; add topics only as scope expands.
 
-[Technical task](docs/technical-task.md) defines behavior; [architecture](docs/architecture.md) defines boundaries; [TECH-STACK](docs/TECH-STACK.md) owns technology choices; [DESIGN](DESIGN.md) owns visual rules. Read the relevant sections before changing their subject. Keep detailed requirements there rather than duplicating them in this index.
+Links are references, not recursive reading commands. Read relevant document sections; reuse unchanged instructions already in context. Refresh them when missing, changed, or uncertain.
 
-## Task routing
+| Affected concern                                                      | Rule                                               |
+| --------------------------------------------------------------------- | -------------------------------------------------- |
+| Product behavior, MVP, guest policy                                   | [project](.codex/rules/project.md)                 |
+| Secrets, authentication, access, uploads/storage, audits              | [security](.codex/rules/security.md)               |
+| Module boundaries, dependencies, build, infrastructure                | [architecture](.codex/rules/architecture.md)       |
+| React, styling, forms, accessibility                                  | [react-ui](.codex/rules/react-ui.md)               |
+| NestJS, Prisma, backend/worker implementation                         | [backend](.codex/rules/backend.md)                 |
+| HTTP contracts, clients, server state                                 | [api-state](.codex/rules/api-state.md)             |
+| Conversion engines, quotas, retention, cleanup                        | [file-conversion](.codex/rules/file-conversion.md) |
+| Verification strategy, test configuration, substantial implementation | [verification](.codex/rules/verification.md)       |
 
-All rows add to the two mandatory rules above. Apply every matching row.
+Sources: [requirements](docs/technical-task.md), [boundaries](docs/architecture.md), [technologies](docs/TECH-STACK.md), [visual design](DESIGN.md). Resolve conflicts from explicit user decisions; clarify material unresolved ones.
 
-| Task                                                                | Additional rules                                                                                                                                                             |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Module boundaries, shared code, dependencies, build, infrastructure | [architecture](.codex/rules/architecture.md), [verification](.codex/rules/verification.md)                                                                                   |
-| React, routes, styling, forms, accessibility, visible copy          | [react-ui](.codex/rules/react-ui.md), [verification](.codex/rules/verification.md); architecture when adding structure                                                       |
-| NestJS, Prisma, sessions, API keys, workers                         | [backend](.codex/rules/backend.md), [architecture](.codex/rules/architecture.md), [verification](.codex/rules/verification.md)                                               |
-| HTTP contracts, API clients, server state, polling, pagination      | [api-state](.codex/rules/api-state.md), [verification](.codex/rules/verification.md); backend/react-ui as affected                                                           |
-| Uploads, conversion, storage, quotas, retention, cleanup            | [file-conversion](.codex/rules/file-conversion.md), [backend](.codex/rules/backend.md), [api-state](.codex/rules/api-state.md), [verification](.codex/rules/verification.md) |
-| Documentation, rules, skills, task handoff                          | [verification](.codex/rules/verification.md) and any topic being edited                                                                                                      |
-
-## Project skills
-
-Use the relevant skill for an audit/testing request, not automatically for ordinary implementation.
-
-| Skill                                                      | Workflow                                                                                                                |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [api-audit](.agents/skills/api-audit/SKILL.md)             | Review REST contracts, access control, responses, and conversion lifecycle; produce a sanitized Markdown report         |
-| [conversion-test](.agents/skills/conversion-test/SKILL.md) | Verify conversion behavior and failure/retention scenarios using isolated fixtures; produce a sanitized Markdown report |
-
-Both are instruction-only. Discover them from `.agents/skills/`; do not duplicate them under `.codex/skills/`. Missing product implementations are BLOCKED/SKIPPED evidence, never successful audit results.
-
-Update [progress](docs/progress.md) after meaningful changes. Future database structure changes also require `docs/db-schema.md`, created when domain schema work begins. New application work requires a user task authorizing that scope; an audit or instruction update does not authorize implementing features.
+Use [api-audit](.agents/skills/api-audit/SKILL.md) or [conversion-test](.agents/skills/conversion-test/SKILL.md) for requested audits/tests. These instruction-only skills do not authorize feature implementation; missing functionality is BLOCKED/SKIPPED.
