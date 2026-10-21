@@ -104,6 +104,7 @@ Converter/
 ├── packages/
 │   └── contracts/                    # Versioned OpenAPI artifact, generated types
 ├── tests/
+│   ├── lint/                        # ESLint configuration regression tests
 │   └── e2e/                         # Playwright and safe conversion fixtures
 ├── infra/
 │   ├── docker/                      # Proxy, API and worker Dockerfiles

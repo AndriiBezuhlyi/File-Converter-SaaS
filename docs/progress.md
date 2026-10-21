@@ -1,5 +1,15 @@
 # Development Progress
 
+## 2026-10-21 — Lint research and safeguards
+
+- Reviewed architecture/stack documents, installed tooling, CI, and existing lint coverage. Context7 successfully returned typescript-eslint, ESLint, and JSX accessibility documentation; official sources and npm registry metadata were checked. Findings and source links are recorded in the README's Lint safeguards section.
+- Enabled scoped `recommendedTypeChecked` with `projectService`, preserving JavaScript tooling and generated-file exclusions. Added frontend type-import consistency, strict equality with nullable-check support, `no-var`, and errors for stale suppressions. Prettier remains responsible for formatting; existing Hooks/Fast Refresh rules remain active.
+- Static import/re-export restrictions now enforce web/backend/contracts separation and downward frontend layers, reject Node/server imports in portable code, and reject Node globals in browser source. Import-string checks do not resolve dynamic imports/aliases or detect cycles/provider composition; those remain review concerns. No architecture, public API, schema, production dependency, or plan-status changes.
+- Fixed findings rather than disabling rules: added browser DOM libraries to the root E2E TSConfig, explicitly typed the Nest test HTTP application/server, removed three redundant non-null assertions, and wrapped the clipboard click in a synchronous handler; the existing async function still catches failures and updates feedback. Backend decorator imports/metadata are unchanged.
+- Added six ESLint configuration regression tests covering invalid promises/unsafe JSON, rejected and allowed layer imports, frontend type imports/globals, valid Nest DI, browser callbacks/CommonJS tooling, generated-file exclusions, and stale suppressions. `npm run lint` runs them automatically, including in the existing CI pipeline.
+- No packages installed. Current stable `eslint-plugin-jsx-a11y` 6.10.2 declares ESLint peers only through v9, so it was deferred for this ESLint 10 project without overrides/downgrades. Revisit compatible accessibility linting later; query-specific linting belongs with real API hooks. Other speculative graph/style/test plugins were not added.
+- Passed `npm run check`: formatting, zero-warning lint, six lint-config tests, all workspace typechecks, 5 backend/20 frontend tests, 2 backend bootstrap integration tests, Prisma validation, contract drift check, and all production builds. All 9 Chromium E2E tests passed, including clipboard success/denial, deep-link reload, selection, and responsive navigation. Documentation links and manifest/lockfile dependency inventories match. Typed linting adds a TypeScript analysis pass; it is not a substitute for server validation or browser accessibility review.
+
 ## 2026-10-20 — API documentation (plan item 7)
 
 - Completed item 7 only: `/api-docs` now has six article sections, contents navigation, all seven agreed public operations, cURL/JSON examples, API-key rules, async states/polling, ownership/retention, limits, and 12 HTTP error statuses. Other unfinished plan items remain open.

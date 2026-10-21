@@ -32,7 +32,9 @@ export function CodeBlock({ label, code }: CodeBlockProps) {
         <Button
           variant="secondary"
           className={styles.copy}
-          onClick={copyCode}
+          onClick={() => {
+            void copyCode();
+          }}
           disabled={state === 'copying'}
           aria-busy={state === 'copying'}
           aria-label={`${state === 'copied' ? 'Скопійовано' : 'Копіювати'}: ${label}`}

@@ -33,17 +33,17 @@ it('identifies the pre-launch contract and documents all seven agreed public ope
 
 it('uses placeholder credentials, multipart fields, and the documented response/error examples', () => {
   render(<ApiDocsPage />);
-  const create = screen.getByRole('region', { name: 'Код: cURL · Створення задачі' }).textContent!;
+  const create = screen.getByRole('region', { name: 'Код: cURL · Створення задачі' }).textContent;
   expect(create).toContain('https://api.example.com/api/v1/conversions');
   expect(create).toContain("--header 'X-API-Key: YOUR_API_KEY'");
   expect(create).toContain("--form 'file=@./image.jpg'");
   expect(create).toContain("--form 'targetFormat=png'");
   expect(create).not.toContain('Content-Type:');
   expect(
-    JSON.parse(screen.getByRole('region', { name: 'Код: JSON · 202 Accepted' }).textContent!),
+    JSON.parse(screen.getByRole('region', { name: 'Код: JSON · 202 Accepted' }).textContent),
   ).toMatchObject({ status: 'queued', id: 'conversion_123' });
   expect(
-    JSON.parse(screen.getByRole('region', { name: 'Код: JSON · Помилка запиту' }).textContent!),
+    JSON.parse(screen.getByRole('region', { name: 'Код: JSON · Помилка запиту' }).textContent),
   ).toEqual({
     error: { code: 'FILE_TOO_LARGE', message: 'The uploaded file exceeds the allowed size.' },
   });
