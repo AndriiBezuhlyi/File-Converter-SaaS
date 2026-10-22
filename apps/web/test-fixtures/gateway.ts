@@ -26,6 +26,7 @@ export type Scenario =
   | 'reserved'
   | 'consumed'
   | 'download-error'
+  | 'download-expired'
   | 'unmeasured'
   | 'rejected';
 const scenarios: readonly string[] = [
@@ -38,6 +39,7 @@ const scenarios: readonly string[] = [
   'reserved',
   'consumed',
   'download-error',
+  'download-expired',
   'unmeasured',
   'rejected',
 ];
@@ -142,6 +144,8 @@ export class FixtureGateway implements ConversionGateway {
     this.downloads += 1;
     if (this.scenario === 'download-error' && this.downloads === 1)
       throw new ConversionRequestError('network');
+    // Expiry discovered during download, after available result metadata was displayed.
+    if (this.scenario === 'download-expired') throw new ConversionRequestError('expired');
     if (!this.result || this.result.availability !== 'available')
       throw new ConversionRequestError('expired');
     // Known synthetic PNG, independent from the uploaded source bytes.

@@ -149,6 +149,30 @@ test('download failure is retryable without changing the completed conversion', 
   await counters(page, /POST: 0;.*download: 2/);
 });
 
+test('expiry discovered on download preserves completion and consumed guest allowance', async ({
+  page,
+}) => {
+  const downloads: string[] = [];
+  page.on('download', (download) => downloads.push(download.suggestedFilename()));
+  await page.goto('/test-fixtures/converter/?scenario=download-expired&conversion=fixture_job');
+  const completed = page.getByRole('heading', { name: 'Файл готовий' });
+  await expect(completed).toBeVisible({ timeout: 10_000 });
+  const download = page.getByRole('button', { name: 'Завантажити', exact: true });
+  await expect(download).toBeEnabled();
+  await download.click();
+  await expect(page.getByText(/Результат більше недоступний/)).toBeVisible();
+  await expect(download).not.toBeVisible();
+  await expect(completed).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Не вдалося конвертувати' })).not.toBeVisible();
+  await counters(page, /POST: 0;.*download: 1/);
+  await page.getByRole('button', { name: 'Конвертувати інший файл' }).click();
+  await expect(page.getByRole('dialog', { name: 'Продовжіть після входу' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(download).not.toBeVisible();
+  await expect(completed).toBeVisible();
+  expect(downloads).toEqual([]);
+});
+
 test('completed results and the native auth dialog reflow on mobile and desktop', async ({
   page,
 }) => {
