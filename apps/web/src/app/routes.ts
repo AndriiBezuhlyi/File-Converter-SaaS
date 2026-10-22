@@ -6,13 +6,13 @@ export const authRoutes = [
   { path: '/reset-password', kind: 'reset-password', title: 'Новий пароль' },
 ] as const;
 export const routePreviews = [
-  { path: '/account', title: 'Профіль', description: 'Особистий кабінет ще готується.' },
   { path: '/files', title: 'Мої файли', description: 'Розділ збережених файлів ще готується.' },
 ] as const;
 
 export function getRouteTitle(pathname: string) {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
   if (normalizedPath === '/api-docs') return 'Документація API';
+  if (normalizedPath === '/account') return 'Профіль';
   return normalizedPath === '/'
     ? 'Конвертер файлів'
     : ([...authRoutes, ...routePreviews].find((route) => route.path === normalizedPath)?.title ??

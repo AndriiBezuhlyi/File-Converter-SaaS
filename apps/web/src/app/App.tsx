@@ -6,15 +6,30 @@ import type { AuthGateway } from '../features/auth/lib/auth-gateway';
 import { AuthPage } from '../pages/auth/AuthPage';
 import { ConverterPage } from '../pages/converter/ConverterPage';
 import { ApiDocsPage } from '../pages/api-docs/ApiDocsPage';
+import { AccountPage } from '../pages/account/AccountPage';
+import type { AccountGateway } from '../features/account/lib/account-gateway';
+import type { ApiKeyGateway } from '../features/api-keys/lib/api-key-gateway';
 import { RoutePreview } from '../pages/route-preview/RoutePreview';
 
-export function App({ authGateway }: { authGateway?: AuthGateway }) {
+export function App({
+  authGateway,
+  accountGateway,
+  apiKeyGateway,
+}: {
+  authGateway?: AuthGateway;
+  accountGateway?: AccountGateway;
+  apiKeyGateway?: ApiKeyGateway;
+}) {
   return (
     <AuthProvider gateway={authGateway}>
       <Routes>
         <Route element={<AppLayout />}>
           <Route index element={<ConverterPage />} />
           <Route path="/api-docs" element={<ApiDocsPage />} />
+          <Route
+            path="/account"
+            element={<AccountPage gateway={accountGateway} keyGateway={apiKeyGateway} />}
+          />
           {authRoutes.map((route) => (
             <Route
               key={route.kind}

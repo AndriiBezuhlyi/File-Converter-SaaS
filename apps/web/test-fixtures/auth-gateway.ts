@@ -7,9 +7,9 @@ import { wait } from './gateway';
 
 // Controlled responses, never a credential store or authentication implementation.
 export class FixtureAuthGateway implements AuthGateway {
-  readonly scope = 'fixture-auth';
+  readonly scope: string = 'fixture-auth';
   readonly calls: Record<string, number> = {};
-  private session: AuthSession;
+  protected session: AuthSession;
   constructor(readonly scenario: string) {
     this.session =
       scenario === 'signed-in' || scenario === 'logout-error'

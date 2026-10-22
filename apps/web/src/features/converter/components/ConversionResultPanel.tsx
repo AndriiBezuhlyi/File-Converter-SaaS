@@ -9,7 +9,7 @@ import {
   type ConversionJob,
 } from '../lib/conversion-gateway';
 import { formatFileSize } from '../lib/file-selection';
-import { saveDownload } from '../lib/save-download';
+import { saveDownload } from '../../../shared/lib/save-download';
 import styles from './ConversionWorkspace.module.scss';
 
 const dateFormat = new Intl.DateTimeFormat('uk-UA', {

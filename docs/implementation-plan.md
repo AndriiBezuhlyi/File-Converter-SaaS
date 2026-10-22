@@ -2,7 +2,7 @@
 2. [x] Frontend: build the converter with drag-and-drop, file selection, supported targets, and the 20 MB limit. Completed 2026-10-20.
 3. [x] Frontend: add upload progress, processing/result/error states, downloads, and the guest flow: one successful free conversion, then sign-in before another upload. Completed 2026-10-22 for frontend states/orchestration with a test-injected gateway; live API transport and server enforcement remain in items 8 and 12–17.
 4. [x] Frontend: build registration, email verification, sign-in/sign-out, and password recovery interfaces with form validation. Completed 2026-10-22 for frontend validation, session orchestration and controlled test flows; live API/session/email integration remains in items 8, 10 and 11.
-5. Frontend: build the profile, personal data/password changes, auto-save settings, and API-key creation/copy/masking/rotation controls.
+5. [x] Frontend: build the profile, personal data/password changes, auto-save settings, and API-key creation/copy/masking/rotation controls. Completed 2026-10-22 for session-gated frontend interfaces and controlled test flows; live identity confirmation, email changes, revocation and persistence remain in items 8, 11 and 13.
 6. Frontend: build “My files” with date sorting, type filtering, name search, details, download/delete actions, empty states, and synchronized auto-save settings.
 7. [x] Frontend: build the API documentation page with API-key authentication, operations, examples, limits, and errors. Completed 2026-10-20.
 8. Frontend: prepare typed API clients and TanStack Query hooks against the agreed contract, including polling, cache updates, connection failures, and focused UI tests; verify live integration once the backend is available.

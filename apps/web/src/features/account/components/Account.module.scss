@@ -1,0 +1,65 @@
+.form,
+.setting {
+  display: grid;
+  gap: var(--space-6);
+}
+.setting {
+  gap: var(--space-3);
+}
+.fieldset {
+  display: grid;
+  gap: var(--space-6);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.helper {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+.feedback {
+  margin: 0;
+}
+.error {
+  color: var(--color-danger);
+}
+.switchLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-block-size: 48px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.switch {
+  appearance: none;
+  flex: 0 0 48px;
+  inline-size: 48px;
+  block-size: 28px;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-action);
+  background: var(--color-surface);
+  &::before {
+    content: '';
+    display: block;
+    inline-size: 20px;
+    block-size: 20px;
+    border-radius: 50%;
+    background: var(--color-text-muted);
+  }
+  &:checked {
+    border-color: var(--color-accent);
+    &::before {
+      transform: translateX(20px);
+      background: var(--color-accent);
+    }
+  }
+  &:disabled {
+    cursor: not-allowed;
+    border-color: var(--color-border-subtle);
+  }
+}

@@ -55,12 +55,21 @@ export function AuthPage({ kind }: { kind: AuthPageKind }) {
     }
   }, [kind, location.search, navigate, returnTo]);
   const [title, description] = content[kind];
+  const navigationState: unknown = location.state;
+  const passwordChanged =
+    navigationState !== null &&
+    typeof navigationState === 'object' &&
+    'notice' in navigationState &&
+    navigationState.notice === 'password-changed';
   return (
     <section className={styles.page} aria-labelledby="auth-title">
       <header className={styles.intro}>
         <h1 id="auth-title">{title}</h1>
         <p>{description}</p>
       </header>
+      {kind === 'login' && passwordChanged ? (
+        <p role="status">Пароль змінено. Увійдіть із новим паролем.</p>
+      ) : null}
       {session?.kind === 'authenticated' && (kind === 'login' || kind === 'register') ? (
         <div className={styles.notice}>
           <p role="status">Ви вже увійшли до акаунту.</p>

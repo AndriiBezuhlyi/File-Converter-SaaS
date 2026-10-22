@@ -63,6 +63,10 @@ For controlled auth flows, open [the development-only authentication fixture](ht
 
 ## Verification
 
+`/account` now composes session-gated profile/security forms, shared auto-save settings and API-key management. Profile UI uses an optional name (80-character UI limit), email and current-password confirmation; new passwords retain the provisional 8–128-character UI limits. Email changes acknowledge pending verification; confirmed password changes clear inputs and return to sign-in. API secrets appear only after creation/rotation, support copy/manual-copy fallback, and are irreversibly hidden until another rotation. Passwords/full keys never enter Query/Mutation caches or browser storage. Ambiguous key responses block replay until metadata is read again. Settings share one query/mutation across consumers, serialize pending writes and reconcile uncertain responses. Ownership-bound gateway scopes and server validation remain transport/backend responsibilities.
+
+Open [the account fixture](http://127.0.0.1:5173/test-fixtures/account/#/account) to inspect controlled states with invented credentials. Optional document scenarios: `success`, `anonymous`, `no-key`, `profile-read-error`, `settings-read-error`, `key-read-error`, `profile-error`, `settings-error`, `settings-unknown`, `key-unknown`. The confirmation value `wrong` simulates rejection. Fixture sessions/data reset on reload; no real keys are issued or revoked. Ordinary account routes have no private transport and clearly report unavailable data. The fixture is excluded from production assets; item 6 will reuse its settings port for saved files.
+
 ```sh
 npm run check
 npm run test:e2e:install
