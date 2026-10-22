@@ -1,0 +1,40 @@
+.page {
+  inline-size: min(100%, 460px);
+  margin: var(--space-8) auto var(--space-12);
+  display: grid;
+  gap: var(--space-8);
+}
+.intro {
+  display: grid;
+  gap: var(--space-4);
+  h1 {
+    margin: 0;
+    font-size: 3rem;
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+  }
+  p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 1.125rem;
+  }
+}
+.notice {
+  display: grid;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  p {
+    margin: 0;
+  }
+}
+@media (max-width: 639px) {
+  .page {
+    margin-block: 0 var(--space-6);
+    gap: var(--space-6);
+  }
+  .intro h1 {
+    font-size: 2rem;
+  }
+}

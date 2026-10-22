@@ -1,0 +1,76 @@
+.form,
+.section {
+  display: grid;
+  gap: var(--space-6);
+}
+.fieldset {
+  display: grid;
+  gap: var(--space-6);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.submit {
+  inline-size: 100%;
+}
+.helper,
+.error,
+.success {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.helper {
+  color: var(--color-text-muted);
+}
+.error {
+  color: var(--color-danger);
+}
+.success {
+  color: var(--color-text);
+}
+.feedback {
+  display: grid;
+  gap: var(--space-3);
+}
+.password {
+  position: relative;
+}
+.passwordInput {
+  padding-inline-end: 56px;
+}
+.reveal {
+  position: absolute;
+  inset-block-start: 32px;
+  inset-inline-end: 2px;
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+  &:disabled {
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+  }
+}
+.icon {
+  color: var(--color-success);
+}
+.sessionLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-6);
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 44px;
+  }
+}

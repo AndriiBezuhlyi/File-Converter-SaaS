@@ -36,7 +36,13 @@ describe('application navigation', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Увійти' })).toBeInTheDocument();
     expect(document.title).toBe('Увійти — converter');
     expect(screen.getByRole('main')).toHaveFocus();
-    expect(screen.queryByLabelText(/пароль/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Пароль', { exact: true })).toHaveAttribute(
+      'autocomplete',
+      'current-password',
+    );
+    expect(
+      screen.getByText('Авторизацію ще не підключено. Дані нікуди не надсилаються.'),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'До конвертера' }));
     expect(
       screen.getByRole('heading', { level: 1, name: 'Інший формат. Той самий файл.' }),

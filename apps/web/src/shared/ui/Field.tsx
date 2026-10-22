@@ -1,10 +1,10 @@
-import { useId, type ComponentPropsWithoutRef } from 'react';
+import { useId, type ComponentProps } from 'react';
 import styles from './Field.module.scss';
 
-interface FieldProps extends ComponentPropsWithoutRef<'input'> {
+interface FieldProps extends ComponentProps<'input'> {
   label: string;
-  hint?: string;
-  error?: string;
+  hint?: string | undefined;
+  error?: string | undefined;
 }
 
 export function Field({

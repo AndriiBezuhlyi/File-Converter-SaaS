@@ -3,10 +3,13 @@ import { Link, NavLink, useLocation } from 'react-router';
 import { Menu, X } from 'lucide-react';
 import { ActionLink } from '../../shared/ui/ActionLink';
 import { Button } from '../../shared/ui/Button';
+import { useAuth } from '../../features/auth/lib/auth-context';
+import { SessionActions } from '../../features/auth/components/SessionActions';
 import styles from './AppLayout.module.scss';
 
 export function AppHeader() {
   const { pathname } = useLocation();
+  const { status, session } = useAuth();
   const [open, setOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
 
@@ -55,13 +58,16 @@ export function AppHeader() {
         <NavLink to="/api-docs" className={styles.navLink ?? ''}>
           API
         </NavLink>
-        <ActionLink
-          to="/login"
-          variant="secondary"
-          aria-current={pathname.replace(/\/$/, '') === '/login' ? 'page' : undefined}
-        >
-          Увійти
-        </ActionLink>
+        <SessionActions />
+        {status === 'unavailable' || (status === 'ready' && session?.kind === 'anonymous') ? (
+          <ActionLink
+            to="/login"
+            variant="secondary"
+            aria-current={pathname.replace(/\/$/, '') === '/login' ? 'page' : undefined}
+          >
+            Увійти
+          </ActionLink>
+        ) : null}
       </nav>
     </header>
   );
