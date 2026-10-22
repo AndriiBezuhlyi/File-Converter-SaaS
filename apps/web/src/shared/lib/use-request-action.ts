@@ -34,5 +34,5 @@ export function useRequestAction(describeError: (cause: unknown) => string) {
       if (mounted.current) setPending(false);
     }
   }
-  return { pending, error, run };
+  return { pending, error, run, clearError: () => setError(null) };
 }

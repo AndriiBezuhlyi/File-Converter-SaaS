@@ -5,16 +5,13 @@ export const authRoutes = [
   { path: '/forgot-password', kind: 'forgot-password', title: 'Відновлення пароля' },
   { path: '/reset-password', kind: 'reset-password', title: 'Новий пароль' },
 ] as const;
-export const routePreviews = [
-  { path: '/files', title: 'Мої файли', description: 'Розділ збережених файлів ще готується.' },
-] as const;
 
 export function getRouteTitle(pathname: string) {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
   if (normalizedPath === '/api-docs') return 'Документація API';
   if (normalizedPath === '/account') return 'Профіль';
+  if (normalizedPath === '/files') return 'Мої файли';
   return normalizedPath === '/'
     ? 'Конвертер файлів'
-    : ([...authRoutes, ...routePreviews].find((route) => route.path === normalizedPath)?.title ??
-        'Сторінку не знайдено');
+    : (authRoutes.find((route) => route.path === normalizedPath)?.title ?? 'Сторінку не знайдено');
 }

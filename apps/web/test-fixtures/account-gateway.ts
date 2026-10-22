@@ -3,22 +3,64 @@ import { wait } from './gateway';
 import type { AccountGateway, AccountProfile } from '../src/features/account/lib/account-gateway';
 import type { ApiKeyGateway, ApiKeyMetadata } from '../src/features/api-keys/lib/api-key-gateway';
 import { DataAccessError } from '../src/shared/lib/data-access-error';
+import type { FilesFilter, FilesGateway, SavedFile } from '../src/features/files/lib/files-gateway';
+import pngUrl from './assets/example.png?url';
+import jpgUrl from './assets/example.jpg?url';
+import pdfUrl from './assets/example.pdf?url';
 
 export class FixtureAccountGateway
   extends FixtureAuthGateway
-  implements AccountGateway, ApiKeyGateway
+  implements AccountGateway, ApiKeyGateway, FilesGateway
 {
   override readonly scope = 'fixture-account';
   private profile: AccountProfile = { displayName: 'Олена', email: 'reader@example.test' };
   private settings = { autoSave: true };
   private key: ApiKeyMetadata | null;
   private keyVersion = 0;
+  private files: SavedFile[] = [
+    {
+      id: 'file_1',
+      name: 'example-image.png',
+      format: 'png',
+      sizeBytes: 90,
+      createdAt: '2026-10-22T12:00:00Z',
+    },
+    {
+      id: 'file_2',
+      name: 'notes.pdf',
+      format: 'pdf',
+      sizeBytes: 591,
+      createdAt: '2026-10-21T12:00:00Z',
+    },
+    {
+      id: 'file_3',
+      name: 'sample-photo.jpg',
+      format: 'jpg',
+      sizeBytes: 268,
+      createdAt: '2026-10-20T12:00:00Z',
+    },
+    {
+      id: 'file_4',
+      name: 'another-image.png',
+      format: 'png',
+      sizeBytes: 90,
+      createdAt: '2026-10-19T12:00:00Z',
+    },
+    {
+      id: 'file_5',
+      name: 'another-notes.pdf',
+      format: 'pdf',
+      sizeBytes: 591,
+      createdAt: '2026-10-18T12:00:00Z',
+    },
+  ];
   constructor(readonly accountScenario: string) {
     super(accountScenario === 'anonymous' ? 'success' : 'signed-in');
     this.key =
       accountScenario === 'no-key'
         ? null
         : { prefix: 'demo_initial', createdAt: '2026-10-22T12:00:00Z' };
+    if (accountScenario === 'empty') this.files = [];
   }
   async readProfile(signal: AbortSignal) {
     await this.read('profile', signal);
@@ -51,6 +93,47 @@ export class FixtureAccountGateway
   async changePassword(input: { currentPassword: string; newPassword: string }) {
     await this.change('save-password', input.currentPassword);
     this.session = { kind: 'anonymous' };
+  }
+  async list(input: FilesFilter & { cursor: string | null }, signal: AbortSignal) {
+    await this.read('files', signal);
+    if (this.accountScenario === 'next-page-error' && input.cursor && this.calls.files === 2)
+      throw new DataAccessError('network');
+    const filtered = this.files
+      .filter(
+        (file) =>
+          (input.format === 'all' || file.format === input.format) &&
+          file.name.toLocaleLowerCase('uk-UA').includes(input.search.toLocaleLowerCase('uk-UA')),
+      )
+      .sort((a, b) =>
+        input.order === 'newest'
+          ? b.createdAt.localeCompare(a.createdAt)
+          : a.createdAt.localeCompare(b.createdAt),
+      );
+    const start = input.cursor ? filtered.findIndex((file) => file.id === input.cursor) + 1 : 0;
+    const files = filtered.slice(start, start + 3);
+    return { files, nextCursor: start + 3 < filtered.length ? files.at(-1)!.id : null };
+  }
+  async download(id: string) {
+    await this.change('download-file');
+    if (this.accountScenario === 'download-error' && this.calls['download-file'] === 1)
+      throw new DataAccessError('network');
+    const file = this.files.find((file) => file.id === id);
+    if (!file) throw new DataAccessError('not-found');
+    if (this.accountScenario === 'download-denied') {
+      this.files = this.files.filter((entry) => entry.id !== id);
+      throw new DataAccessError('expired');
+    }
+    const response = await fetch(
+      file.format === 'png' ? pngUrl : file.format === 'jpg' ? jpgUrl : pdfUrl,
+    );
+    if (!response.ok) throw new DataAccessError('network');
+    return { blob: await response.blob(), name: file.name };
+  }
+  async remove(id: string) {
+    await this.change('delete-file');
+    if (this.accountScenario === 'delete-error' && this.calls['delete-file'] === 1)
+      throw new DataAccessError('network');
+    this.files = this.files.filter((file) => file.id !== id);
   }
   async createKey(currentPassword: string) {
     return this.issueKey('create-key', currentPassword);

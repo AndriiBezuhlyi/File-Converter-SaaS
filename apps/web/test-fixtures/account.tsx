@@ -16,7 +16,12 @@ createRoot(root).render(
       {gateway.accountScenario}.
     </p>
     <HashRouter>
-      <App authGateway={gateway} accountGateway={gateway} apiKeyGateway={gateway} />
+      <App
+        authGateway={gateway}
+        accountGateway={gateway}
+        apiKeyGateway={gateway}
+        filesGateway={gateway}
+      />
     </HashRouter>
     <output aria-label="Лічильники стенда акаунту" style={{ display: 'block', padding: 16 }}>
       <button

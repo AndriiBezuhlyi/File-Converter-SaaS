@@ -2,13 +2,16 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { AutoSaveSetting } from '../features/account/components/AutoSaveSetting';
 import { FixtureAccountGateway } from '../../test-fixtures/account-gateway';
 import { DataAccessError } from '../shared/lib/data-access-error';
 
 const clients: QueryClient[] = [];
+beforeAll(async () => {
+  await import('../pages/account/AccountPage');
+});
 function client() {
   const instance = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: Infinity } },
