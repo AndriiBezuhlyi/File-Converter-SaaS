@@ -1,6 +1,6 @@
 1. [x] Frontend: build the responsive layout, routing, design tokens, and accessible shared components according to DESIGN.md. Completed 2026-10-20.
 2. [x] Frontend: build the converter with drag-and-drop, file selection, supported targets, and the 20 MB limit. Completed 2026-10-20.
-3. Frontend: add upload progress, processing/result/error states, downloads, and the guest flow: one successful free conversion, then sign-in before another upload.
+3. [x] Frontend: add upload progress, processing/result/error states, downloads, and the guest flow: one successful free conversion, then sign-in before another upload. Completed 2026-10-22 for frontend states/orchestration with a test-injected gateway; live API transport and server enforcement remain in items 8 and 12–17.
 4. Frontend: build registration, email verification, sign-in/sign-out, and password recovery interfaces with form validation.
 5. Frontend: build the profile, personal data/password changes, auto-save settings, and API-key creation/copy/masking/rotation controls.
 6. Frontend: build “My files” with date sorting, type filtering, name search, details, download/delete actions, empty states, and synchronized auto-save settings.

@@ -8,7 +8,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import prettier from 'eslint-config-prettier';
 
 const typescriptFiles = ['**/*.{ts,tsx}'];
-const webFiles = ['apps/web/src/**/*.{ts,tsx}'];
+const webFiles = ['apps/web/src/**/*.{ts,tsx}', 'apps/web/test-fixtures/**/*.{ts,tsx}'];
 const nodeImports = {
   group: ['node:*', ...builtinModules],
   message: 'Keep Node.js APIs in the backend or tooling, outside portable browser/contracts code.',

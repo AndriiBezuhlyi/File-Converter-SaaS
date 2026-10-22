@@ -11,7 +11,19 @@ import {
 } from '../lib/file-selection';
 import styles from './FileSelector.module.scss';
 
-export function FileSelector() {
+interface FileSelectorProps {
+  onConvert?: ((selection: FileSelection) => void) | undefined;
+  locked?: boolean;
+  availability?: string | undefined;
+  submissionError?: string | undefined;
+}
+
+export function FileSelector({
+  onConvert,
+  locked = false,
+  availability,
+  submissionError,
+}: FileSelectorProps) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const picker = useRef<HTMLButtonElement>(null);
@@ -47,6 +59,7 @@ export function FileSelector() {
   }, []);
 
   function selectFiles(files: readonly File[]) {
+    if (locked) return;
     const result = validateFileSelection(files);
     if (!result.ok) {
       setError(result.error);
@@ -66,6 +79,7 @@ export function FileSelector() {
 
   function handleDrop(event: DragEvent<HTMLElement>) {
     event.preventDefault();
+    if (locked) return;
     resetDrag();
     const containsDirectory = Array.from(event.dataTransfer.items).some(
       (item) => item.kind === 'file' && item.webkitGetAsEntry?.()?.isDirectory,
@@ -94,6 +108,7 @@ export function FileSelector() {
       <input
         ref={input}
         type="file"
+        disabled={locked}
         hidden
         accept={FILE_ACCEPT}
         aria-label="Файл для конвертації"
@@ -151,6 +166,7 @@ export function FileSelector() {
               className={styles.remove}
               aria-label="Прибрати файл"
               onClick={removeFile}
+              disabled={locked}
             >
               <X size={20} strokeWidth={1.75} aria-hidden="true" />
             </Button>
@@ -168,6 +184,7 @@ export function FileSelector() {
           ref={picker}
           variant={selection ? 'secondary' : 'primary'}
           onClick={() => input.current?.click()}
+          disabled={locked}
           aria-describedby={descriptions}
         >
           {selection ? 'Змінити файл' : 'Вибрати файл'}
@@ -189,7 +206,7 @@ export function FileSelector() {
         <select
           className={styles.select}
           id={targetId}
-          disabled={!selection}
+          disabled={!selection || locked}
           value={selection?.targetFormat ?? ''}
           onChange={(event) => {
             const target = availableTargets.find((format) => format === event.currentTarget.value);
@@ -207,12 +224,24 @@ export function FileSelector() {
           )}
         </select>
       </div>
-      <Button className={styles.convert} disabled aria-describedby={availabilityId}>
+      {submissionError ? (
+        <p className={styles.error} role="alert">
+          {submissionError}
+        </p>
+      ) : null}
+      <Button
+        className={styles.convert}
+        disabled={!onConvert || !selection || locked}
+        onClick={() => {
+          if (selection && onConvert) onConvert(selection);
+        }}
+        aria-describedby={availabilityId}
+      >
         Конвертувати
         <ArrowRight size={20} strokeWidth={1.75} aria-hidden="true" />
       </Button>
       <p className={styles.availability} id={availabilityId}>
-        Наразі доступний вибір файлу. Конвертація — незабаром.
+        {availability ?? 'Наразі доступний вибір файлу. Конвертація — незабаром.'}
       </p>
       <p className="sr-only" role="status">
         {announcement}

@@ -2,7 +2,7 @@
 
 ## 1. Purpose and scope
 
-This proposal is based on `technical-task.md`, including its selected technology stack and MVP requirements. It describes the target implementation; the repository currently has frontend layout/routing, local file/target selection, pre-launch API documentation, and backend bootstrap, with server-backed product workflows still pending. Recommendations embedded in the specification are design input; the current user task determines implementation scope.
+This proposal is based on `technical-task.md`, including its selected technology stack and MVP requirements. It describes the target implementation; the repository currently has frontend layout/routing, local file/target selection, conversion UI states behind an injectable frontend gateway (controlled test responses only), pre-launch API documentation, and backend bootstrap. Server-backed product workflows and the generated-contract transport mapping remain pending. Recommendations embedded in the specification are design input; the current user task determines implementation scope.
 
 The MVP supports JPG ↔ PNG and DOCX → PDF, one free successful guest conversion without registration, email authentication for subsequent conversions, account settings, saved files, temporary downloads, API keys, and a public REST API. Guest access is a first-party web trial; third-party API integrations still require an API key. PDF → DOCX, Telegram authentication, billing, and additional formats remain future extensions.
 
@@ -63,6 +63,7 @@ Converter/
 │   │   │   │   └── lib/              # Small framework-independent helpers
 │   │   │   └── main.tsx
 │   │   ├── public/
+│   │   ├── test-fixtures/            # Development-only controlled UI entry, excluded from production
 │   │   └── package.json
 │   └── backend/
 │       ├── src/

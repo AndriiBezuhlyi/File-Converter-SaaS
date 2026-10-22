@@ -1,5 +1,7 @@
 import { ArrowDown, ArrowLeftRight, ArrowRight } from 'lucide-react';
-import { FileSelector } from '../../features/converter/components/FileSelector';
+import { useSearchParams } from 'react-router';
+import { ConverterWorkspace } from '../../features/converter/components/ConverterWorkspace';
+import type { ConversionGateway } from '../../features/converter/lib/conversion-gateway';
 import styles from './ConverterPage.module.scss';
 
 const steps = [
@@ -14,7 +16,8 @@ const steps = [
   },
 ];
 
-export function ConverterPage() {
+export function ConverterPage({ gateway }: { gateway?: ConversionGateway } = {}) {
+  const [search, setSearch] = useSearchParams();
   return (
     <>
       <div className={styles.hero}>
@@ -45,7 +48,21 @@ export function ConverterPage() {
             Як це працює <ArrowDown size={20} strokeWidth={1.75} aria-hidden="true" />
           </a>
         </div>
-        <FileSelector />
+        <ConverterWorkspace
+          gateway={gateway}
+          requestedId={search.get('conversion')}
+          onJobId={(id) => {
+            setSearch(
+              (previous) => {
+                const next = new URLSearchParams(previous);
+                if (id) next.set('conversion', id);
+                else next.delete('conversion');
+                return next;
+              },
+              { replace: true },
+            );
+          }}
+        />
       </div>
       <section className={styles.instructions} aria-labelledby="how-it-works">
         <h2 className={styles.annotation} id="how-it-works" tabIndex={-1}>
