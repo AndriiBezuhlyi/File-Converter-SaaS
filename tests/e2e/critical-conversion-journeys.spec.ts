@@ -3,7 +3,41 @@ import { expect, test, type Page } from '@playwright/test';
 
 test.use({ baseURL: 'http://127.0.0.1:4174' });
 
-const sourceBytes = Buffer.from('owned synthetic upload bytes, not a converted PNG');
+const sourceBytes = Buffer.from('owned synthetic upload bytes, not a converted result');
+
+const conversions = [
+  {
+    label: 'JPG → PNG',
+    sourceName: 'guest-source.jpg',
+    sourceMime: 'image/jpeg',
+    target: 'png',
+    resultName: 'example.png',
+    signature: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+  },
+  {
+    label: 'PNG → JPG',
+    sourceName: 'guest-source.png',
+    sourceMime: 'image/png',
+    target: 'jpg',
+    resultName: 'example.jpg',
+    signature: Buffer.from([255, 216, 255]),
+  },
+  {
+    label: 'DOCX → PDF',
+    sourceName: 'guest-source.docx',
+    sourceMime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    target: 'pdf',
+    resultName: 'example.pdf',
+    signature: Buffer.from('%PDF-', 'ascii'),
+  },
+] as const;
+
+type ConversionCase = (typeof conversions)[number];
+type ConversionInput = {
+  sourceName: string;
+  sourceMime: string;
+  target: ConversionCase['target'];
+};
 
 async function open(page: Page, scenario: 'success' | 'failed-once' = 'success') {
   await page.goto(`/test-fixtures/converter/?scenario=${scenario}`);
@@ -11,17 +45,17 @@ async function open(page: Page, scenario: 'success' | 'failed-once' = 'success')
   await expect(page.getByRole('note')).toContainText('без реальної конвертації');
 }
 
-async function selectJpg(page: Page, name: string) {
+async function selectFile(page: Page, conversion: ConversionInput) {
   await page.getByLabel('Файл для конвертації').setInputFiles({
-    name,
-    mimeType: 'image/jpeg',
+    name: conversion.sourceName,
+    mimeType: conversion.sourceMime,
     buffer: sourceBytes,
   });
-  await expect(page.getByText(name, { exact: true })).toBeVisible();
+  await expect(page.getByText(conversion.sourceName, { exact: true })).toBeVisible();
   const format = page.getByLabel('Конвертувати у');
   await expect(format).toBeEnabled();
-  await format.selectOption('png');
-  await expect(format).toHaveValue('png');
+  await format.selectOption(conversion.target);
+  await expect(format).toHaveValue(conversion.target);
 }
 
 async function convert(page: Page) {
@@ -44,37 +78,41 @@ async function expectCounters(page: Page, pattern: RegExp) {
   await expect(counters).toContainText(pattern);
 }
 
-test('free guest converts one file and downloads the completed PNG', async ({ page }) => {
-  const runtimeErrors: string[] = [];
-  page.on('pageerror', (error) => runtimeErrors.push(error.message));
+for (const conversion of conversions) {
+  test(`free guest converts and downloads ${conversion.label}`, async ({ page }) => {
+    const runtimeErrors: string[] = [];
+    page.on('pageerror', (error) => runtimeErrors.push(error.message));
 
-  await open(page);
-  await expect(page.getByText('1 файл безкоштовно без реєстрації')).toBeVisible();
-  await selectJpg(page, 'guest-source.jpg');
-  await convert(page);
-  await expectCompleted(page);
-  await expect(page).toHaveURL(/conversion=fixture_job/);
-  await expect(page.getByText('example.png', { exact: true })).toBeVisible();
+    await open(page);
+    await expect(page.getByText('1 файл безкоштовно без реєстрації')).toBeVisible();
+    await selectFile(page, conversion);
+    await convert(page);
+    await expectCompleted(page);
+    await expect(page).toHaveURL(/conversion=fixture_job/);
+    await expect(page.getByText(conversion.resultName, { exact: true })).toBeVisible();
 
-  const downloadEvent = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Завантажити', exact: true }).click();
-  const download = await downloadEvent;
-  expect(download.suggestedFilename()).toBe('example.png');
-  const path = await download.path();
-  expect(path).not.toBeNull();
-  const bytes = await readFile(path);
-  expect([...bytes.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
-  expect(bytes.equals(sourceBytes)).toBe(false);
-  await download.delete();
+    const downloadEvent = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Завантажити', exact: true }).click();
+    const download = await downloadEvent;
+    expect(download.suggestedFilename()).toBe(conversion.resultName);
+    const path = await download.path();
+    expect(path).not.toBeNull();
+    const bytes = await readFile(path);
+    expect(bytes.subarray(0, conversion.signature.length).equals(conversion.signature)).toBe(true);
+    expect(bytes.equals(sourceBytes)).toBe(false);
+    if (conversion.target === 'jpg') expect([...bytes.subarray(-2)]).toEqual([255, 217]);
+    if (conversion.target === 'pdf') expect(bytes.toString('ascii')).toContain('%%EOF');
+    await download.delete();
 
-  await expectCounters(page, /POST: 1;.*download: 1/);
-  expect(runtimeErrors).toEqual([]);
-  await expect(page.locator('vite-error-overlay')).toHaveCount(0);
-});
+    await expectCounters(page, /POST: 1;.*download: 1/);
+    expect(runtimeErrors).toEqual([]);
+    await expect(page.locator('vite-error-overlay')).toHaveCount(0);
+  });
+}
 
 test('guest signs in after the free conversion and can submit another file', async ({ page }) => {
   await open(page);
-  await selectJpg(page, 'free-source.jpg');
+  await selectFile(page, { ...conversions[0], sourceName: 'free-source.jpg' });
   await convert(page);
   await expectCompleted(page);
 
@@ -96,7 +134,7 @@ test('guest signs in after the free conversion and can submit another file', asy
   ).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  await selectJpg(page, 'account-source.jpg');
+  await selectFile(page, { ...conversions[0], sourceName: 'account-source.jpg' });
   await convert(page);
   await expectCompleted(page);
   await expect(page.getByText('Збережено в «Мої файли»')).toBeVisible();
@@ -110,7 +148,7 @@ test('failed conversion leaves processing, shows an error and succeeds on manual
   page.on('pageerror', (error) => runtimeErrors.push(error.message));
 
   await open(page, 'failed-once');
-  await selectJpg(page, 'broken-source.jpg');
+  await selectFile(page, { ...conversions[0], sourceName: 'broken-source.jpg' });
   await convert(page);
   await expect(page.getByRole('heading', { name: 'Конвертуємо файл' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Не вдалося конвертувати' })).toBeVisible({
@@ -124,7 +162,7 @@ test('failed conversion leaves processing, shows an error and succeeds on manual
 
   await page.getByRole('button', { name: 'Вибрати інший файл' }).click();
   await expect(page.getByText('1 файл безкоштовно без реєстрації')).toBeVisible();
-  await selectJpg(page, 'retry-source.jpg');
+  await selectFile(page, { ...conversions[0], sourceName: 'retry-source.jpg' });
   await convert(page);
   await expectCompleted(page);
   await expectCounters(page, /POST: 2;/);

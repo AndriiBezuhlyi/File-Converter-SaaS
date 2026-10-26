@@ -8,13 +8,15 @@ import {
   type UploadProgress,
 } from '../src/features/converter/lib/conversion-gateway';
 import type { FileSelection } from '../src/features/converter/lib/file-selection';
+import pngUrl from './assets/example.png?url';
+import jpgUrl from './assets/example.jpg?url';
+import pdfUrl from './assets/example.pdf?url';
 
-const pngBytes = Uint8Array.from(
-  atob(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a3foAAAAASUVORK5CYII=',
-  ),
-  (char) => char.charCodeAt(0),
-);
+const outputs = {
+  png: { url: pngUrl, name: 'example.png', sizeBytes: 90 },
+  jpg: { url: jpgUrl, name: 'example.jpg', sizeBytes: 268 },
+  pdf: { url: pdfUrl, name: 'example.pdf', sizeBytes: 591 },
+} as const;
 
 export type Scenario =
   | 'success'
@@ -113,8 +115,7 @@ export class FixtureGateway implements ConversionGateway {
     this.sourceName = selection.file.name;
     this.sourceFormat = selection.sourceFormat;
     this.targetFormat = selection.targetFormat;
-    // The fixture has one known PNG output, not conversion engines for other formats.
-    if (selection.targetFormat !== 'png') return { kind: 'rejected', reason: 'invalid-file' };
+    // Known synthetic outputs exercise every MVP direction without simulating conversion engines.
     if (this.scenario === 'rejected') return { kind: 'rejected', reason: 'invalid-file' };
     onProgress(this.scenario === 'unmeasured' ? { loaded: 48 } : { loaded: 48, total: 100 });
     await wait(700);
@@ -153,8 +154,10 @@ export class FixtureGateway implements ConversionGateway {
     if (this.scenario === 'download-expired') throw new ConversionRequestError('expired');
     if (!this.result || this.result.availability !== 'available')
       throw new ConversionRequestError('expired');
-    // Known synthetic PNG, independent from the uploaded source bytes.
-    return { blob: new Blob([pngBytes], { type: 'image/png' }), name: 'example.png' };
+    const output = outputs[this.targetFormat];
+    const response = await fetch(output.url);
+    if (!response.ok) throw new ConversionRequestError('network');
+    return { blob: await response.blob(), name: output.name };
   }
 
   private summary<T extends ConversionJob['status']>(status: T) {
@@ -169,9 +172,10 @@ export class FixtureGateway implements ConversionGateway {
 
   private finish() {
     this.trial = 'consumed';
+    const output = outputs[this.targetFormat];
     this.result = {
-      name: 'example.png',
-      sizeBytes: pngBytes.byteLength,
+      name: output.name,
+      sizeBytes: output.sizeBytes,
       format: this.targetFormat,
       owner: this.scenario === 'saved' || this.isAuthenticated() ? 'account' : 'guest',
       retention:
