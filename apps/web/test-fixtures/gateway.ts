@@ -19,6 +19,7 @@ const pngBytes = Uint8Array.from(
 export type Scenario =
   | 'success'
   | 'failed'
+  | 'failed-once'
   | 'connection'
   | 'unknown'
   | 'expired'
@@ -32,6 +33,7 @@ export type Scenario =
 const scenarios: readonly string[] = [
   'success',
   'failed',
+  'failed-once',
   'connection',
   'unknown',
   'expired',
@@ -83,6 +85,7 @@ export class FixtureGateway implements ConversionGateway {
   constructor(
     readonly scenario: Scenario,
     resumedId: string | null = null,
+    private readonly isAuthenticated: () => boolean = () => false,
   ) {
     this.scope = `fixture-${scenario}`;
     if (resumedId || ['reserved', 'consumed', 'expired'].includes(scenario)) {
@@ -95,7 +98,7 @@ export class FixtureGateway implements ConversionGateway {
   async readAccess(signal: AbortSignal): Promise<ConversionAccess> {
     await wait(20, signal);
     this.accessReads += 1;
-    return this.scenario === 'saved'
+    return this.scenario === 'saved' || this.isAuthenticated()
       ? { kind: 'account', jobId: this.jobId }
       : { kind: 'guest', trial: this.trial, jobId: this.jobId };
   }
@@ -105,6 +108,8 @@ export class FixtureGateway implements ConversionGateway {
     onProgress: (progress: UploadProgress) => void,
   ): Promise<SubmissionOutcome> {
     this.submissions += 1;
+    this.phase = 0;
+    this.result = null;
     this.sourceName = selection.file.name;
     this.sourceFormat = selection.sourceFormat;
     this.targetFormat = selection.targetFormat;
@@ -116,7 +121,7 @@ export class FixtureGateway implements ConversionGateway {
     onProgress(this.scenario === 'unmeasured' ? { loaded: 100 } : { loaded: 100, total: 100 });
     await wait(700);
     if (this.scenario === 'unknown') return { kind: 'unknown' };
-    this.jobId = 'fixture_job';
+    this.jobId = this.submissions === 1 ? 'fixture_job' : `fixture_job_${this.submissions}`;
     this.trial = 'reserved';
     return { kind: 'accepted', job: this.summary('queued') };
   }
@@ -131,7 +136,7 @@ export class FixtureGateway implements ConversionGateway {
       return { ...this.summary('completed'), status: 'completed', result: this.result };
     this.phase += 1;
     if (this.phase < 3) return this.summary(this.phase === 1 ? 'queued' : 'processing');
-    if (this.scenario === 'failed') {
+    if (this.scenario === 'failed' || (this.scenario === 'failed-once' && this.submissions === 1)) {
       this.trial = 'available';
       return { ...this.summary('failed'), status: 'failed', reason: 'invalid-file' };
     }
@@ -168,9 +173,9 @@ export class FixtureGateway implements ConversionGateway {
       name: 'example.png',
       sizeBytes: pngBytes.byteLength,
       format: this.targetFormat,
-      owner: this.scenario === 'saved' ? 'account' : 'guest',
+      owner: this.scenario === 'saved' || this.isAuthenticated() ? 'account' : 'guest',
       retention:
-        this.scenario === 'saved'
+        this.scenario === 'saved' || this.isAuthenticated()
           ? { kind: 'saved' }
           : {
               kind: 'temporary',

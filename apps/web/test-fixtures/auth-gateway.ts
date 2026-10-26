@@ -10,7 +10,10 @@ export class FixtureAuthGateway implements AuthGateway {
   readonly scope: string = 'fixture-auth';
   readonly calls: Record<string, number> = {};
   protected session: AuthSession;
-  constructor(readonly scenario: string) {
+  constructor(
+    readonly scenario: string,
+    private readonly onAuthenticated: () => void = () => {},
+  ) {
     this.session =
       scenario === 'signed-in' || scenario === 'logout-error'
         ? { kind: 'authenticated', email: 'reader@example.test' }
@@ -31,6 +34,7 @@ export class FixtureAuthGateway implements AuthGateway {
     if (this.scenario === 'invalid-credentials') throw new AuthRequestError('invalid-credentials');
     if (this.scenario === 'unverified') return 'verification-required' as const;
     this.session = { kind: 'authenticated', email: 'reader@example.test' };
+    this.onAuthenticated();
     return 'signed-in' as const;
   }
   async signOut() {
