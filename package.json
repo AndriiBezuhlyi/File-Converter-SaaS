@@ -24,6 +24,7 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "test": "npm run test --workspaces --if-present",
+    "test:all": "npm test && npm run test:integration",
     "test:integration": "npm run test:integration --workspace=@converter/backend",
     "test:e2e": "node scripts/playwright.mjs test",
     "test:e2e:install": "node scripts/playwright.mjs install chromium",
@@ -35,7 +36,7 @@
     "infra:down": "docker compose --env-file .env -f infra/compose.yaml down",
     "infra:config": "docker compose --env-file .env.example -f infra/compose.yaml config --quiet",
     "infra:production:config": "docker compose --env-file .env.production -f infra/compose.production.yaml config --quiet",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:integration && npm run db:validate && npm run contracts:check && npm run build"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:all && npm run db:validate && npm run contracts:check && npm run build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

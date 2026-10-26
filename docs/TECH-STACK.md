@@ -57,10 +57,16 @@ This is the primary technology inventory for the project. Product requirements r
 
 ## Testing
 
-- Vitest + React Testing Library — frontend-тести.
-- Jest + Supertest — backend-тести; ts-jest compiles decorator metadata consistently with production.
-- Playwright — E2E-тести.
-- jsdom — frontend test DOM; Testing Library DOM, jest-dom, and user-event support assertions/interactions.
+- Vitest (`vitest`) — frontend unit tests for validation, request lifecycle and download utilities, plus component and Query/session integration tests.
+- React Testing Library (`@testing-library/react`, `@testing-library/dom`) — component rendering, hook harnesses and behavior-based DOM queries. `@testing-library/user-event` models user interactions; `@testing-library/jest-dom` provides accessible DOM assertions.
+- jsdom — isolated frontend test DOM. Native dialog top-layer behavior is not implemented; component tests supply a local, restored shim, while existing Playwright tests verify browser behavior.
+- Jest + ts-jest — backend unit and integration runners; native ESM and decorator metadata match the NestJS build.
+- Nest Testing (`@nestjs/testing`) — integration tests compile real API/worker modules and resolve runtime configuration through dependency injection. Supertest (`supertest`) exercises the HTTP shell.
+- Playwright — separate Chromium E2E suite for real browser interactions, responsive layout and controlled frontend workflows.
+
+All test libraries and supporting types are existing `devDependencies`; no additional runner, mocking server or production dependency is needed for the current scope. Frontend integration tests use a real QueryClient with controlled gateway responses. Backend integrations currently cover startup/configuration and the HTTP shell; database, Redis, storage and conversion-engine verification awaits those implementations.
+
+Run `npm run test:all` at the repository root for frontend unit/component/integration tests, backend unit tests and backend integration tests. `npm test` runs workspace suites; `npm run test:integration` runs backend integrations only. `npm run test:e2e` remains separate and requires the existing browser/build preparation. CI's `npm run check` includes `test:all`.
 
 ## Development Tools
 

@@ -72,12 +72,15 @@ Open [the account fixture](http://127.0.0.1:5173/test-fixtures/account/#/account
 Open [the files fixture](http://127.0.0.1:5173/test-fixtures/account/#/files) to exercise the list with five invented rows and small synthetic PNG/JPG/PDF downloads. Use `?scenario=empty#/files`, `?scenario=files-read-error#/files`, `?scenario=next-page-error#/files`, `?scenario=download-error#/files`, `?scenario=download-denied#/files` or `?scenario=delete-error#/files` under the same fixture path for controlled outcomes. These assets and gateway implementations are development-only. Neither production route substitutes fixture data for unavailable account/file APIs.
 
 ```sh
+npm run test:all
 npm run check
 npm run test:e2e:install
 npm run test:e2e
 ```
 
-`check` runs formatting, ESLint, all workspace typechecks, frontend navigation/component tests, backend bootstrap/integration smoke tests, Prisma schema validation, generated-contract drift checks, and production builds. Playwright additionally verifies keyboard navigation, direct-route reloads, 404 recovery, mobile navigation, and responsive overflow. These checks do not establish that the planned product workflows work.
+`test:all` runs all workspace tests and backend integrations in sequence, without requiring Docker, a running app, a database or browser installation. Vitest covers frontend unit/component tests and integration of session/settings components with a real QueryClient and controlled gateways. Jest covers runtime validation; Nest Testing/Supertest cover module configuration and HTTP bootstrap. Existing tests are preserved; new focused cases protect duplicate/unmounted requests, download cleanup, dialog focus/cancellation, private-cache cancellation and ambiguous/stale settings responses. See [Testing in TECH-STACK.md](docs/TECH-STACK.md#testing) for tools and scope.
+
+`check` runs formatting, ESLint, all workspace typechecks, `test:all`, Prisma schema validation, generated-contract drift checks, and production builds. Playwright additionally verifies keyboard navigation, direct-route reloads, 404 recovery, mobile navigation, and responsive overflow. These checks do not establish that the planned server-backed product workflows work.
 
 ### Lint safeguards
 
