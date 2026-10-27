@@ -31,7 +31,8 @@ export type Scenario =
   | 'download-error'
   | 'download-expired'
   | 'unmeasured'
-  | 'rejected';
+  | 'rejected'
+  | 'rejected-once';
 const scenarios: readonly string[] = [
   'success',
   'failed',
@@ -46,6 +47,7 @@ const scenarios: readonly string[] = [
   'download-expired',
   'unmeasured',
   'rejected',
+  'rejected-once',
 ];
 export function getScenario(value: string | null): Scenario {
   return scenarios.includes(value ?? '') ? (value as Scenario) : 'success';
@@ -116,7 +118,11 @@ export class FixtureGateway implements ConversionGateway {
     this.sourceFormat = selection.sourceFormat;
     this.targetFormat = selection.targetFormat;
     // Known synthetic outputs exercise every MVP direction without simulating conversion engines.
-    if (this.scenario === 'rejected') return { kind: 'rejected', reason: 'invalid-file' };
+    if (
+      this.scenario === 'rejected' ||
+      (this.scenario === 'rejected-once' && this.submissions === 1)
+    )
+      return { kind: 'rejected', reason: 'invalid-file' };
     onProgress(this.scenario === 'unmeasured' ? { loaded: 48 } : { loaded: 48, total: 100 });
     await wait(700);
     onProgress(this.scenario === 'unmeasured' ? { loaded: 100 } : { loaded: 100, total: 100 });

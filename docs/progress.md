@@ -1,5 +1,12 @@
 # Development Progress
 
+## 2026-10-27 — Invalid-file recovery E2E
+
+- Added three focused Playwright cases for unsupported extensions, files above the 20 MB client limit and corrupted content rejected by the controlled server gateway. Each case checks the exact Ukrainian error copy and proves that the file picker remains usable; the corrupted-file case replaces the input and completes a new conversion successfully.
+- Local extension and size failures make zero submissions. The new `rejected-once` fixture outcome models authoritative server content validation without consuming the guest attempt, then permits a distinct retry. Production validation, API contracts, dependencies and package scripts are unchanged.
+- Verification passed: the focused 3-test Chromium suite, all 40 Chromium E2E tests, root/workspace typechecks, zero-warning ESLint with all 6 lint-configuration tests, and the frontend production build.
+- These are browser integration checks with synthetic owned inputs. Real byte/structure validation and converter-engine rejection remain part of the future live API/worker acceptance suite.
+
 ## 2026-10-26 — Critical conversion browser journeys
 
 - Added five Playwright cases across three critical converter journeys. The free guest happy path now runs for every MVP direction—JPG → PNG, PNG → JPG and DOCX → PDF—and verifies the selected target, result name, binary signature and browser download. The remaining cases verify that a guest is blocked after the first success, signs in and completes a second account conversion, and that a terminal failure leaves processing, shows actionable feedback, restores the guest attempt and succeeds after a manual retry. Assertions also cover request counts, runtime errors and the absence of a Vite overlay.
