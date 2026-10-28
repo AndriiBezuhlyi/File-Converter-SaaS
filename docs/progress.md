@@ -1,5 +1,12 @@
 # Development Progress
 
+## 2026-10-28 — Guest-result behavior after authentication
+
+- Added two focused Playwright cases for the currently executable part of the future security/reliability list. An available guest result remains downloadable after sign-in but is not represented as saved account data; an expired guest result remains unavailable and is not revived or transferred by authentication.
+- The tests use the combined converter/auth fixture, make no new conversion submission, verify the PNG download signature for the available result, and confirm zero downloads for the expired result. Production behavior, dependencies and package scripts are unchanged.
+- Verification passed: the focused 2-test Chromium suite, all 42 Chromium E2E tests, root/workspace typechecks, zero-warning ESLint and all 6 lint-configuration tests.
+- True multi-tab guest accounting, cross-owner authorization, BullMQ duplicate/crash recovery and API-key conversion remain intentionally deferred until their backend boundaries exist; controlled UI fixtures cannot prove those guarantees.
+
 ## 2026-10-27 — Invalid-file recovery E2E
 
 - Added three focused Playwright cases for unsupported extensions, files above the 20 MB client limit and corrupted content rejected by the controlled server gateway. Each case checks the exact Ukrainian error copy and proves that the file picker remains usable; the corrupted-file case replaces the input and completes a new conversion successfully.
