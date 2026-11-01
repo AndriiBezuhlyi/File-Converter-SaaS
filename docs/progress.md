@@ -1,5 +1,11 @@
 # Development Progress
 
+## 2026-11-01 — Generate Prisma types before CI lint
+
+- Reproduced the exact eight unsafe-type errors in DatabaseService using tracked sources without generated Prisma Client or `.env`. The custom `prisma-client` output is Git-ignored; installation does not generate it. `check` previously ran typed ESLint before the typecheck step that generated the client, leaving the correct relative import unresolved.
+- Prepended the existing `db:generate` command to root `lint`, covering both standalone lint and CI checks. Updated README. No service code, schema, imports, ESLint rules, dependencies, workflows or implementation-plan entries changed.
+- Verification: fixed lint and all workspace typechecks passed in the isolated source snapshot, reusing installed dependencies. Its full Jest run encountered Windows-junction test-discovery limitations; full `npm run check` instead passed in the normal worktree: formatting, lint and six lint-config cases, typechecks, 114 tests, Prisma validation, contract drift and all builds. No database was required. Hosted Linux CI was not rerun. Preserved the user's existing AGENTS.md changes outside the fix commit.
+
 ## 2026-11-01 — Runtime integrations (plan item 10)
 
 - Added explicit Nest infrastructure modules for Prisma/PostgreSQL, operational Redis, BullMQ producer connections, private S3-compatible object storage and pooled SMTP. Both existing entry points opt into the same infrastructure composition; the base module shells remain usable for offline tests. No authentication/session middleware, guest accounting, product controllers/transactions, notification outbox, queue consumers or frontend HTTP integration was added. Existing schema and migrations are unchanged.

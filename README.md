@@ -91,7 +91,7 @@ npm run test:e2e
 
 ### Lint safeguards
 
-`npm run lint` checks the repository with zero warnings and runs the configuration regression tests (`npm run lint:config`). It uses the existing ESLint/typescript-eslint packages; no additional plugins are required.
+`npm run lint` generates Prisma Client before typed analysis, checks the repository with zero warnings and runs the configuration regression tests (`npm run lint:config`). This also prepares the ignored client types for `npm run check` on clean checkouts. It uses the existing ESLint/typescript-eslint packages; no additional plugins are required.
 
 - TypeScript uses `recommendedTypeChecked` and the nearest workspace TSConfig through `projectService`. This catches unhandled/misused promises, unsafe `any` operations, invalid `await`, and other type-dependent mistakes. TypeScript project analysis adds lint time; JavaScript tooling remains outside typed linting and generated files stay ignored. E2E has DOM types for code executed inside browser callbacks; the backend retains its own Node-only TSConfig.
 - Static imports/re-exports enforce web/backend/contracts separation and the frontend direction `app → pages → features → shared` (direct downward imports are allowed). Browser/contracts code cannot import Node built-ins, NestJS, Prisma, or conversion engines; browser source also rejects Node globals. These rules inspect import strings, not a resolved dependency graph: dynamic imports, alternate aliases, cycles, and API/worker provider composition still require review. Extend the rules/tests when adding import aliases.
