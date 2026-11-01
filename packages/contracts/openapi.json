@@ -3,7 +3,63 @@
   "info": {
     "title": "File Converter API",
     "version": "0.0.0",
-    "description": "Foundation only. Product operations will be generated from NestJS when implemented."
+    "description": "Operational health endpoints only. Product operations remain unimplemented."
   },
-  "paths": {}
+  "paths": {
+    "/api/v1/health/live": {
+      "get": {
+        "operationId": "healthLive",
+        "summary": "Process liveness; does not inspect external services",
+        "responses": {
+          "200": {
+            "description": "Process is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": { "status": { "type": "string", "enum": ["ok"] } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health/ready": {
+      "get": {
+        "operationId": "healthReady",
+        "summary": "Bounded and cached infrastructure readiness without sensitive diagnostics",
+        "responses": {
+          "200": {
+            "description": "All infrastructure dependencies are ready",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Readiness" } }
+            }
+          },
+          "503": {
+            "description": "A required dependency is unavailable or the application is shutting down",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Readiness" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Readiness": {
+        "type": "object",
+        "required": ["status", "dependencies"],
+        "properties": {
+          "status": { "type": "string", "enum": ["ok", "unavailable"] },
+          "dependencies": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "enum": ["up", "down"] }
+          }
+        }
+      }
+    }
+  }
 }

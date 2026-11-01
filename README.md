@@ -1,6 +1,6 @@
 # File Converter
 
-The React frontend has a responsive layout, navigation, design tokens, accessible shared components, local file/target selection, conversion workflow UI, email authentication, account/API-key and saved-file interfaces, and an API documentation page. PostgreSQL/Prisma domain models, migrations and database constraints are prepared and tested. NestJS starts an API shell and an independent idle worker; server-backed conversion, authentication, account/file workflows, database providers, storage adapters and queue consumers are not implemented yet.
+The React frontend has a responsive layout, navigation, design tokens, accessible shared components, local file/target selection, conversion workflow UI, email authentication, account/API-key and saved-file interfaces, and an API documentation page. PostgreSQL/Prisma domain models, migrations and database constraints are prepared and tested. NestJS API and independent worker connect to PostgreSQL, Redis/BullMQ, private S3-compatible storage and SMTP, with readiness and bounded shutdown. Server-backed conversion, authentication, account/file workflows and queue consumers remain future work.
 
 ## Requirements and documentation
 
@@ -28,7 +28,13 @@ Local services: PostgreSQL on 5432, Redis on 6379, MinIO API on 9000/console on 
 
 MinIO Community is now [source-only and archived](https://github.com/minio/minio). Its local image builds the official server/client from fixed commits, so the first infrastructure build can take several minutes. No Go installation is needed on the host. Production uses an external S3-compatible bucket, not this development MinIO.
 
-The application shells deliberately do not connect to these services yet. Infrastructure connections, credentials validation for integrations, and application health/readiness checks will be added with the corresponding modules.
+Apply migrations explicitly to the intended local database before starting the applications:
+
+```sh
+npm run db:migrate:deploy --workspace=@converter/backend
+```
+
+Both application entry points validate integration settings and connect to all five dependencies at startup; an unavailable dependency fails startup with a sanitized error. They never migrate schemas, create buckets or send email automatically. The module shells remain available without integration providers for isolated tests.
 
 ## Development
 
@@ -41,8 +47,8 @@ npm run dev:worker
 ```
 
 - Web: http://127.0.0.1:5173, with `/api/` proxied to the API; `/api-docs` remains a frontend route.
-- API: http://127.0.0.1:3000; `/api/v1` is the future prefix. Requests currently return 404.
-- Worker: no HTTP listener and no registered processors. An idle timer keeps the foundation process alive until consumers own live connections.
+- API: http://127.0.0.1:3000; `/api/v1/health/live` checks the HTTP process and `/api/v1/health/ready` checks required dependencies. Product routes return 404.
+- Worker: no HTTP listener and no registered processors. Live connections and a private readiness heartbeat keep the infrastructure process active.
 
 Backend development builds preserve TypeScript decorator metadata, then restart the selected process when its source changes. Separate output directories prevent the API and worker from overwriting each other. No global Nest CLI is needed.
 
@@ -60,7 +66,7 @@ Authentication interfaces live at `/login`, `/register`, `/verify-email`, `/forg
 
 For controlled auth flows, open [the development-only authentication fixture](http://127.0.0.1:5173/test-fixtures/auth/#/login). It uses hash routes so reloads keep the separate fixture entry. The optional document query `scenario` accepts `success`, `signed-in`, `unverified`, `invalid-credentials`, `network`, `rate-limited`, `session-error`, and `logout-error`, for example `?scenario=logout-error#/`. Synthetic verification/reset links use `#/verify-email?token=fixture-token` or `#/reset-password?token=fixture-token`; other token values simulate invalid/expired links. Use invented credentials only. No emails or product requests are sent, and reloading resets the fixture's in-memory session. This entry and its gateway are excluded from production assets. It demonstrates UI transitions, not genuine account security or server-side expiry/revocation.
 
-`/api-docs` describes the planned seven-operation REST contract with section navigation, placeholder-only cURL/JSON examples, API-key rules, polling/retention semantics, limits, and errors. Shared `CodeBlock` supports copying, confirmation, clipboard-denial feedback, and keyboard scrolling on narrow screens. This is pre-launch documentation based on the technical task/architecture, not a live API explorer or generated OpenAPI UI; `packages/contracts/openapi.json` still has empty paths. Final file-list schemas, pagination parameters, and numerical request quotas remain for backend contract work. No API requests are made by the page.
+`/api-docs` describes the planned seven-operation REST contract with section navigation, placeholder-only cURL/JSON examples, API-key rules, polling/retention semantics, limits, and errors. Shared `CodeBlock` supports copying, confirmation, clipboard-denial feedback, and keyboard scrolling on narrow screens. This is pre-launch documentation based on the technical task/architecture, not a live API explorer or generated OpenAPI UI; `packages/contracts/openapi.json` currently describes only operational health routes. Final file-list schemas, pagination parameters, and numerical request quotas remain for backend contract work. No API requests are made by the page.
 
 ## Verification
 
@@ -79,7 +85,7 @@ npm run test:e2e:install
 npm run test:e2e
 ```
 
-`test:all` runs all workspace tests and backend integrations in sequence, without requiring Docker, a running app, a database or browser installation. Vitest covers frontend unit/component tests and integration of session/settings components with a real QueryClient and controlled gateways. Jest covers runtime validation; Nest Testing/Supertest cover module configuration and HTTP bootstrap. Existing tests are preserved; new focused cases protect duplicate/unmounted requests, download cleanup, dialog focus/cancellation, private-cache cancellation and ambiguous/stale settings responses. See [Testing in TECH-STACK.md](docs/TECH-STACK.md#testing) for tools and scope.
+`test:all` runs all workspace tests and backend integrations in sequence, without requiring Docker, a running app, a database or browser installation. Vitest covers frontend unit/component tests and integration of session/settings components with a real QueryClient and controlled gateways. Jest/Nest Testing/Supertest cover configuration, HTTP bootstrap, dependency startup/rollback/shutdown, sanitized readiness and worker heartbeat. Local protocol fixtures exercise real S3 and SMTP SDK transports with synthetic data, without contacting external providers. Existing tests are preserved. See [Testing in TECH-STACK.md](docs/TECH-STACK.md#testing) for tools and scope.
 
 `check` runs formatting, ESLint, all workspace typechecks, `test:all`, Prisma schema validation, generated-contract drift checks, and production builds. Playwright additionally verifies keyboard navigation, direct-route reloads, 404 recovery, mobile navigation, and responsive overflow. These checks do not establish that the planned server-backed product workflows work.
 
@@ -105,13 +111,26 @@ npm run start:worker --workspace=@converter/backend
 
 ## Database and contracts
 
-The Prisma schema now defines eight domain models with reviewed SQL constraints, partial indexes and ownership/publication guards. See [db-schema.md](docs/db-schema.md) for relationships, transaction responsibilities and the custom migration objects. `npm run db:validate` and `npm run db:generate` require no database connection. Applying migrations is explicit: use `npm run db:migrate:deploy --workspace=@converter/backend` only for the intended `DATABASE_URL` target; do not run development migration commands in production. The application still has no runtime Prisma provider.
+The Prisma schema defines eight domain models with reviewed SQL constraints, partial indexes and ownership/publication guards. See [db-schema.md](docs/db-schema.md) for relationships, transaction responsibilities and the custom migration objects. `npm run db:validate` and `npm run db:generate` require no database connection. Backend build, typecheck, test and development scripts generate the ignored Prisma client automatically. Applying migrations is explicit: use `npm run db:migrate:deploy --workspace=@converter/backend` only for the intended `DATABASE_URL` target; do not run development migration commands in production. The runtime DatabaseService owns one Prisma client and one bounded pg pool per process.
 
 `npm run test:database` runs the real migrations and constraint/concurrency tests against a dedicated local PostgreSQL 18 database supplied through `TEST_DATABASE_URL`. It creates and drops only a generated schema, fails without an explicit loopback test target, and never loads `.env` or falls back to `DATABASE_URL`. CI runs it in a separate PostgreSQL service job. The ordinary `test:all` command remains offline.
 
-Prisma CLI configuration loads the root `.env`; the runtime application never imports the CLI. The future Prisma client will use the PostgreSQL driver adapter installed in the backend workspace.
+Prisma CLI configuration loads the root `.env`; the runtime application never imports the CLI. Prisma uses the existing PostgreSQL driver adapter. Pool sizing must account for API replicas, workers and migration/administrative headroom: each process uses up to `DATABASE_POOL_MAX` connections (default 5), with a statement timeout.
 
-`packages/contracts/openapi.json` is an empty, versioned API shell with no product routes. `npm run contracts:generate` generates its TypeScript declarations; `npm run contracts:check` checks for drift without modifying the committed output. When controllers exist, generate the source OpenAPI artifact from Nest Swagger.
+`packages/contracts/openapi.json` documents the two operational health routes, without product routes. `npm run contracts:generate` generates its TypeScript declarations; `npm run contracts:check` checks for drift without modifying the committed output. Generate product contracts from Nest Swagger as those controllers are implemented.
+
+### Runtime integrations
+
+`apps/backend/src/infrastructure` contains separate configuration, database, Redis, queue, storage, email and health modules. `ApiModule.withInfrastructure()` and `WorkerModule.withInfrastructure()` compose them; only the API exposes HTTP. No session middleware, conversion consumer, notification outbox or product transaction is registered yet.
+
+- Redis session/rate-limit prefixes and the BullMQ queue prefix are distinct under `REDIS_NAMESPACE`. BullMQ 6 receives a dedicated node-redis connection; session/rate-limit use another connection. Offline buffering is disabled, reconnect backoff is capped, and operations/startup/shutdown have deadlines. Future consumers must have their own appropriate connections.
+- StoragePort supports generated input/output keys and authenticated streamed operations, without public URLs or ACLs. Provision a **private** bucket with anonymous access blocked and narrowly scoped credentials. Readiness uses HeadBucket to check access/availability; it does not attest bucket policy or object ownership. Authorization and upload validation remain future product responsibilities.
+- EmailService verifies SMTP connectivity without sending mail. Local development delivers to Mailpit; production requires TLS and a verified sender/provider. Pooled sending disables file/URL content loading. Verification/recovery templates, token logic and durable delivery intents remain item 11.
+- Zod validates configuration without echoing rejected secrets. Production has no integration credential defaults; S3 requires HTTPS, Redis requires a password and SMTP requires TLS. Use trusted private networks for database/Redis or verified TLS endpoints as appropriate; never disable certificate validation.
+- Readiness returns only dependency names and up/down states, cached for `HEALTH_CHECK_INTERVAL_MS`; unavailable dependencies return 503. Worker writes an atomic PID/timestamp/readiness marker under its private `WORKER_TEMP_DIR`. Run `node apps/backend/dist/worker/infrastructure/health/worker-probe.js` from the repository root to probe it; production Compose uses this instead of opening an HTTP port. The marker checks infrastructure, not conversion progress.
+- SIGTERM/SIGINT close HTTP/context, clients, pools and timers within `SHUTDOWN_TIMEOUT_MS`. Keep container stop grace longer than this deadline. The production defaults are 20s shutdown and 30s grace. Increase infrastructure/transfer timeouts and probe/container budgets together when needed; default network operations are bounded at 5s.
+
+`npm run test:infrastructure` is a separate live suite requiring explicit loopback `TEST_DATABASE_URL` (a converter_test database with migrations applied) and `TEST_REDIS_URL`. It checks real PostgreSQL, Redis and BullMQ together with controlled local S3/SMTP fixtures. It never reads integration credentials from `.env`, flushes Redis globally or uses the product queue: keys/jobs use a generated test namespace. CI supplies PostgreSQL 18 and Redis 8. This suite is deliberately excluded from offline `test:all`.
 
 ## Docker deployment foundation
 
@@ -126,7 +145,7 @@ npm run infra:production:config
 docker compose --env-file .env.production -f infra/compose.production.yaml build
 ```
 
-Only the proxy publishes a host port. This template expects HTTPS termination on the server's ingress/load balancer before port 8080; it does not provision certificates or enable production authentication. Restrict direct HTTP exposure to that ingress. Pin validated image digests at release time. Database backups, application readiness checks, a migration release job, and converter sandbox verification remain prerequisites for deploying the actual product.
+Only the proxy publishes a host port. This template expects HTTPS termination on the server's ingress/load balancer before port 8080; it does not provision certificates or enable production authentication. Restrict direct HTTP exposure to that ingress. Pin validated image digests at release time. API dependency readiness and worker heartbeat checks are configured; backups, a migration release job, real-provider smoke checks and converter sandbox verification remain prerequisites for deploying the actual product. Readiness requires configured integrations to be reachable, including SMTP and the pre-provisioned private bucket.
 
 `npm run infra:down` stops local infrastructure and retains named volumes. No reset/delete-volume command is included.
 

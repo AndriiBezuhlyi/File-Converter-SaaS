@@ -11,7 +11,7 @@ Follow [AGENTS.md](../../../AGENTS.md). For this audit, read [security](../../..
 
 Inspect `packages/contracts/openapi.json`, actual controllers/tests, the technical task's API contract, and the architecture's ownership/guest policy. Inspect npm scripts before running them. Establish the authorized target and available test identities without printing credentials.
 
-The current foundation has empty OpenAPI paths and no product endpoints. If those remain absent, report implementation coverage as BLOCKED, distinguish planned contract review from runtime verification, and do not call placeholder endpoints or implement the API to make an audit pass.
+The current foundation documents two operational health routes in OpenAPI and has no product endpoints. If product endpoints remain absent, report their implementation coverage as BLOCKED, distinguish planned contract review from runtime verification, and do not call placeholder endpoints or implement the API to make an audit pass.
 
 ## Procedure
 

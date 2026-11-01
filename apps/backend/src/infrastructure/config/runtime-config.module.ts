@@ -8,7 +8,8 @@ import { validateEnvironment } from './environment.js';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [resolve(process.cwd(), '.env'), resolve(process.cwd(), '../../.env')],
-      validate: validateEnvironment,
+      // Preserve integration variables for the separately validated runtime infrastructure.
+      validate: (input: Record<string, unknown>) => ({ ...input, ...validateEnvironment(input) }),
     }),
   ],
 })

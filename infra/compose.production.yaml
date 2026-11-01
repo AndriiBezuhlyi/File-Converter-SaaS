@@ -2,7 +2,10 @@ name: converter
 x-backend-environment: &backend-environment
   NODE_ENV: production
   DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
+  DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-5}
+  DATABASE_STATEMENT_TIMEOUT_MS: ${DATABASE_STATEMENT_TIMEOUT_MS:-10000}
   REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env.production}
+  REDIS_NAMESPACE: ${REDIS_NAMESPACE:-converter}
   S3_ENDPOINT: ${S3_ENDPOINT:?Set S3_ENDPOINT}
   S3_REGION: ${S3_REGION:?Set S3_REGION}
   S3_BUCKET: ${S3_BUCKET:?Set S3_BUCKET}
@@ -15,6 +18,12 @@ x-backend-environment: &backend-environment
   SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM}
   SMTP_USER: ${SMTP_USER:-}
   SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-true}
+  INFRA_TIMEOUT_MS: ${INFRA_TIMEOUT_MS:-5000}
+  HEALTH_CHECK_INTERVAL_MS: ${HEALTH_CHECK_INTERVAL_MS:-5000}
+  SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-20000}
+  WORKER_TEMP_DIR: ${WORKER_TEMP_DIR:-/tmp/converter}
 services:
   proxy:
     build: { context: .., dockerfile: infra/docker/proxy.Dockerfile }
@@ -42,16 +51,18 @@ services:
           'CMD',
           'node',
           '-e',
-          "const net=require('node:net');const s=net.connect(3000,'127.0.0.1');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),2000).unref()",
+          "fetch('http://127.0.0.1:3000/api/v1/health/ready',{signal:AbortSignal.timeout(7000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 10s
-      timeout: 3s
+      timeout: 8s
       retries: 10
+      start_period: 30s
     read_only: true
     tmpfs: [/tmp]
     cap_drop: [ALL]
     security_opt: ['no-new-privileges:true']
     init: true
+    stop_grace_period: 30s
     restart: unless-stopped
   worker:
     build: { context: .., dockerfile: infra/docker/worker.Dockerfile }
@@ -59,6 +70,12 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
+    healthcheck:
+      test: ['CMD', 'node', 'dist/worker/infrastructure/health/worker-probe.js']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
     read_only: true
     tmpfs: ['/tmp:rw,nosuid,nodev,size=256m,mode=1777']
     cap_drop: [ALL]

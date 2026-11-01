@@ -24,7 +24,8 @@ async function stopApplication() {
   if (!application || application.exitCode !== null || application.signalCode !== null) return;
   const exited = once(application, 'exit');
   application.kill('SIGTERM');
-  const deadline = setTimeout(() => application?.kill('SIGKILL'), 5000);
+  // Allow the application's validated shutdown deadline (up to 120s) to finish first.
+  const deadline = setTimeout(() => application?.kill('SIGKILL'), 125_000);
   try {
     await exited;
   } finally {

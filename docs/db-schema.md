@@ -1,6 +1,6 @@
 # Database Schema
 
-PostgreSQL 18 with Prisma 7. The source model is [schema.prisma](../apps/backend/prisma/schema.prisma); migration history is [prisma/migrations](../apps/backend/prisma/migrations). This implements plan item 9. The API and worker still have no runtime database provider or domain services; no existing environment is migrated automatically.
+PostgreSQL 18 with Prisma 7. The source model is [schema.prisma](../apps/backend/prisma/schema.prisma); migration history is [prisma/migrations](../apps/backend/prisma/migrations). This implements plan item 9. Item 10 adds a shared runtime Prisma/pg provider to API and worker; domain services and transactions remain future work. No existing environment is migrated automatically.
 
 ## Models and relationships
 

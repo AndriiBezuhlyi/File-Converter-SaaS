@@ -92,6 +92,9 @@ Converter/
 │       │   │   ├── database/         # Prisma lifecycle and database access
 │       │   │   ├── storage/          # StoragePort and S3 adapter
 │       │   │   ├── queue/            # BullMQ setup and durable dispatch
+│       │   │   ├── redis/            # Shared operational Redis client
+│       │   │   ├── email/            # SMTP transport; notification policy stays in modules
+│       │   │   ├── health/           # API probes and worker readiness heartbeat
 │       │   │   ├── sessions/
 │       │   │   └── config/           # Validated environment configuration
 │       │   └── common/               # Principal, guards, error filter, request ID
@@ -166,7 +169,7 @@ The frontend imports generated API types, never Prisma models or backend runtime
 
 PostgreSQL is the source of truth for user-visible job and file state. Redis queue state is operational state and must not be the only record of a conversion.
 
-The models and initial migrations are implemented and documented in [db-schema.md](db-schema.md), including SQL-only integrity guards and schema integration tests. Runtime database providers and transactional use cases remain subsequent implementation work.
+The models and initial migrations are implemented and documented in [db-schema.md](db-schema.md), including SQL-only integrity guards and schema integration tests. Runtime database, Redis/BullMQ, private storage and SMTP providers are composed explicitly by both entry points. The database provider owns one Prisma client and bounded pg pool per process; migrations remain an explicit release operation. Transactional use cases and consumers remain subsequent implementation work.
 
 | Entity | Main fields and constraints |
 | --- | --- |
@@ -291,6 +294,8 @@ Use additive migrations while old and new processes may coexist. Rollback applic
 On shutdown, stop admitting new work, drain HTTP requests, stop fetching jobs, and finish or safely release active work within a bounded grace period. Workers must recover interrupted jobs after restart.
 
 Provide API liveness and readiness checks for required dependencies. Monitor worker heartbeat, queue age, failure rate, conversion duration by direction, stale processing leases, storage usage, and cleanup backlog. Emit structured logs with request/conversion IDs and sanitized error codes, excluding document contents and credentials.
+
+Implemented infrastructure: `/api/v1/health/live` checks the API process; `/api/v1/health/ready` checks PostgreSQL, Redis, BullMQ's dedicated connection, bucket access and SMTP, returning only up/down states with a short cache. Worker readiness uses an atomic private PID/timestamp marker and a standalone probe, without an HTTP listener. Both entry points validate integration configuration, fail startup on unavailable dependencies and close owned resources on bounded shutdown. Storage checks availability, not bucket privacy; provision a private bucket separately. See [runtime integrations](../README.md#runtime-integrations) for configuration, tests and deployment prerequisites. No product consumers or notification outbox are registered yet.
 
 Schedule encrypted off-server PostgreSQL backups and test restoration. Establish object-storage backup/versioning and deletion-retention policies consistent with user privacy requirements. Backups of metadata alone cannot restore file contents. Define recovery objectives before production launch.
 
