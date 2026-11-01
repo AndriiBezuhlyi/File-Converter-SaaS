@@ -28,3 +28,7 @@ Links are references, not recursive reading commands. Read relevant document sec
 Sources: [requirements](docs/technical-task.md), [boundaries](docs/architecture.md), [technologies](docs/TECH-STACK.md), [visual design](DESIGN.md). Resolve conflicts from explicit user decisions; clarify material unresolved ones.
 
 Use [api-audit](.agents/skills/api-audit/SKILL.md) or [conversion-test](.agents/skills/conversion-test/SKILL.md) for requested audits/tests. These instruction-only skills do not authorize feature implementation; missing functionality is BLOCKED/SKIPPED.
+
+## Database Review
+
+Use [$database-review](.agents/skills/database-review/SKILL.md) for schema, migration, SQL/ORM query, index, constraint, transaction/concurrency, database security, ownership/tenant isolation, or database performance changes and reviews.

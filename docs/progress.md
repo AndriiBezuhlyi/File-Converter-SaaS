@@ -1,5 +1,12 @@
 # Development Progress
 
+## 2026-11-01 — Repository database-review skill
+
+- Added one canonical `.agents/skills/database-review/` with a concise `SKILL.md` and an on-demand `references/review-checklist.md`. The read-only workflow covers schema integrity, migrations, SQL/ORM queries, workload-based indexes, transactions/concurrency, ownership/security and evidence-based performance findings. Monetary correctness applies only when financial values are actually persisted; File Converter is not treated as a finance application.
+- Added a concise `$database-review` trigger to AGENTS.md while preserving the user's existing Testing section. No generic database rule file was added: the repository configures PostgreSQL 18 and Prisma 7.10.1 tooling, but its Prisma schema has no models, migrations are absent and neither API nor worker registers a runtime database provider. Future reviews must rediscover engine/version and distinguish configured tooling from live integration.
+- Applied the new workflow to the available Prisma schema/configuration, manifests, deployment definitions, backend entry points/modules and bootstrap tests. No material issue was established within this intentionally deferred foundation. Domain constraints, migration safety on real records, ownership enforcement, query plans and runtime behavior remain unavailable; no database connection or migration command was executed and no secret environment values were read.
+- Validation passed: YAML front matter, naming/description limits, absence of scaffold placeholders, all 22 relative references across the new skill/checklist and AGENTS.md, a single canonical skill, no duplicate or empty skill folders, Markdown formatting and staged whitespace. Python is unavailable, so the bundled Python validator could not run; equivalent structural checks used existing Node.js and js-yaml. Application tests/builds were unnecessary for instruction-only changes. No application, schema, dependency or production configuration files changed.
+
 ## 2026-10-28 — Guest-result behavior after authentication
 
 - Added two focused Playwright cases for the currently executable part of the future security/reliability list. An available guest result remains downloadable after sign-in but is not represented as saved account data; an expired guest result remains unavailable and is not revived or transferred by authentication.
