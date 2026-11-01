@@ -1,9 +1,200 @@
 generator client {
-  provider = "prisma-client"
-  output = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
   moduleFormat = "esm"
 }
+
 datasource db {
   provider = "postgresql"
 }
-// Domain models and migrations are intentionally deferred to the database implementation stage.
+
+// SQL-only checks, partial indexes and ownership guards live in the invariants migration.
+enum TokenPurpose {
+  email_verification
+  password_reset
+  email_change
+}
+
+enum GuestTrialState {
+  available
+  reserved
+  consumed
+}
+
+enum FileFormat {
+  jpg
+  png
+  docx
+  pdf
+}
+
+enum FilePurpose {
+  input
+  output
+}
+
+enum FileRetention {
+  temporary
+  saved
+}
+
+enum StorageDeletionState {
+  present
+  pending
+  deleted
+}
+
+enum ConversionStatus {
+  queued
+  processing
+  completed
+  failed
+}
+
+enum BackgroundTaskType {
+  conversion_dispatch
+  file_deletion
+  email_notification
+  cleanup_sweep
+}
+
+model User {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String              @unique @db.VarChar(254)
+  passwordHash    String
+  emailVerifiedAt DateTime?           @db.Timestamptz(3)
+  displayName     String?
+  createdAt       DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime            @default(now()) @updatedAt @db.Timestamptz(3)
+  settings        UserSettings?
+  tokens          VerificationToken[]
+  apiKeys         ApiKey[]
+  files           File[]
+  conversions     Conversion[]
+}
+
+model UserSettings {
+  userId    String   @id @db.Uuid
+  autoSave  Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model VerificationToken {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String       @db.Uuid
+  purpose      TokenPurpose
+  tokenHash    String       @unique
+  pendingEmail String?      @db.VarChar(254)
+  attempts     Int          @default(0)
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+  expiresAt    DateTime     @db.Timestamptz(3)
+  consumedAt   DateTime?    @db.Timestamptz(3)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+}
+
+model ApiKey {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @db.Uuid
+  prefix     String    @unique @db.VarChar(64)
+  secretHash String
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  revokedAt  DateTime? @db.Timestamptz(3)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([userId, createdAt])
+}
+
+model GuestSession {
+  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tokenHash            String          @unique
+  trialState           GuestTrialState @default(available)
+  reservedConversionId String?         @unique @db.Uuid
+  consumedAt           DateTime?       @db.Timestamptz(3)
+  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
+  credentialExpiresAt  DateTime        @db.Timestamptz(3)
+  reservedConversion   Conversion?     @relation("GuestReservation", fields: [reservedConversionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  conversions          Conversion[]    @relation("GuestConversions")
+  files                File[]
+}
+
+model File {
+  id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String?              @db.Uuid
+  guestSessionId       String?              @db.Uuid
+  objectKey            String               @unique
+  originalName         String
+  format               FileFormat
+  detectedMime         String               @db.VarChar(127)
+  sizeBytes            BigInt
+  purpose              FilePurpose
+  retention            FileRetention        @default(temporary)
+  expiresAt            DateTime?            @db.Timestamptz(3)
+  deletedAt            DateTime?            @db.Timestamptz(3)
+  storageDeletionState StorageDeletionState @default(present)
+  storageDeletedAt     DateTime?            @db.Timestamptz(3)
+  createdAt            DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime             @default(now()) @updatedAt @db.Timestamptz(3)
+  user                 User?                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  guestSession         GuestSession?        @relation(fields: [guestSessionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sourceFor            Conversion?          @relation("ConversionSource")
+  resultFor            Conversion?          @relation("ConversionResult")
+
+  @@index([userId, createdAt, id])
+  @@index([userId, format, createdAt, id])
+  @@index([guestSessionId])
+}
+
+model Conversion {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String?          @db.Uuid
+  guestSessionId    String?          @db.Uuid
+  sourceFileId      String           @unique @db.Uuid
+  resultFileId      String?          @unique @db.Uuid
+  sourceFormat      FileFormat
+  targetFormat      FileFormat
+  status            ConversionStatus @default(queued)
+  saveResult        Boolean          @default(false)
+  errorCode         String?          @db.VarChar(64)
+  attempts          Int              @default(0)
+  processingVersion Int              @default(0)
+  leaseToken        String?          @db.Uuid
+  leaseExpiresAt    DateTime?        @db.Timestamptz(3)
+  startedAt         DateTime?        @db.Timestamptz(3)
+  completedAt       DateTime?        @db.Timestamptz(3)
+  failedAt          DateTime?        @db.Timestamptz(3)
+  createdAt         DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime         @default(now()) @updatedAt @db.Timestamptz(3)
+  user              User?            @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  guestSession      GuestSession?    @relation("GuestConversions", fields: [guestSessionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  reservedBy        GuestSession?    @relation("GuestReservation")
+  source            File             @relation("ConversionSource", fields: [sourceFileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  result            File?            @relation("ConversionResult", fields: [resultFileId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([guestSessionId, createdAt])
+  @@index([status, updatedAt])
+}
+
+model BackgroundTask {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type             BackgroundTaskType
+  resourceId       String             @db.Uuid
+  deduplicationKey String             @unique
+  payloadVersion   Int                @default(1)
+  payload          Json               @default("{}") @db.JsonB
+  availableAt      DateTime           @default(now()) @db.Timestamptz(3)
+  attempts         Int                @default(0)
+  leaseToken       String?            @db.Uuid
+  leaseExpiresAt   DateTime?          @db.Timestamptz(3)
+  completedAt      DateTime?          @db.Timestamptz(3)
+  lastErrorCode    String?            @db.VarChar(64)
+  createdAt        DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime           @default(now()) @updatedAt @db.Timestamptz(3)
+
+  @@index([type, resourceId])
+}

@@ -62,11 +62,14 @@ This is the primary technology inventory for the project. Product requirements r
 - jsdom — isolated frontend test DOM. Native dialog top-layer behavior is not implemented; component tests supply a local, restored shim, while existing Playwright tests verify browser behavior.
 - Jest + ts-jest — backend unit and integration runners; native ESM and decorator metadata match the NestJS build.
 - Nest Testing (`@nestjs/testing`) — integration tests compile real API/worker modules and resolve runtime configuration through dependency injection. Supertest (`supertest`) exercises the HTTP shell.
+- Node.js test runner + the existing `pg` driver — PostgreSQL 18 migration/constraint integration tests in isolated schemas, including concurrent guest/job and API-key inserts. CI provides a disposable PostgreSQL service; no extra test dependency is required.
 - Playwright — separate Chromium E2E suite for real browser interactions, responsive layout and controlled frontend workflows.
 
-All test libraries and supporting types are existing `devDependencies`; no additional runner, mocking server or production dependency is needed for the current scope. Frontend integration tests use a real QueryClient with controlled gateway responses. Backend integrations currently cover startup/configuration and the HTTP shell; database, Redis, storage and conversion-engine verification awaits those implementations.
+Test libraries and supporting types are existing `devDependencies`; database tests reuse the backend's existing `pg` dependency and the built-in Node.js runner. No additional package is needed. Frontend integration tests use a real QueryClient with controlled gateway responses. Backend integrations cover startup/configuration and the HTTP shell; the separate database suite verifies actual migrations and constraints. Runtime API/database integration, Redis, storage and conversion-engine verification await those implementations.
 
 Run `npm run test:all` at the repository root for frontend unit/component/integration tests, backend unit tests and backend integration tests. `npm test` runs workspace suites; `npm run test:integration` runs backend integrations only. `npm run test:e2e` remains separate and requires the existing browser/build preparation. CI's `npm run check` includes `test:all`.
+
+Run `npm run test:database` with the explicit dedicated loopback `TEST_DATABASE_URL` described in [db-schema.md](db-schema.md). Database availability is required only by this separate suite; CI runs it against PostgreSQL 18.
 
 ## Development Tools
 
@@ -83,4 +86,4 @@ Run `npm run test:all` at the repository root for frontend unit/component/integr
 - Prisma 7 is the stable selected line; CLI, client, and PostgreSQL adapter share the same version. Do not select a release candidate via a moving registry tag.
 - jsdom 27 supports the installed Node.js baseline; the newest jsdom line requires a newer Node.js minor.
 - Runtime libraries belong to their consuming workspace's `dependencies`; compilers, Sass, test runners, CLI tools, linters, and type definitions belong to `devDependencies`.
-- Installed dependencies are preparation only: authentication, queues, storage, converters, domain models, and product endpoints are not enabled in this foundation.
+- Domain schema and migrations are implemented. Runtime database integration, authentication, queues, storage, converters and product endpoints remain unimplemented; installed packages alone do not enable them.

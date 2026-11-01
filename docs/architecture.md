@@ -120,6 +120,7 @@ Converter/
 │   ├── technical-task.md
 │   ├── architecture.md
 │   ├── TECH-STACK.md
+│   ├── db-schema.md
 │   ├── implementation-plan.md
 │   └── progress.md
 ├── AGENTS.md
@@ -164,6 +165,8 @@ The frontend imports generated API types, never Prisma models or backend runtime
 ## 6. Persistence model
 
 PostgreSQL is the source of truth for user-visible job and file state. Redis queue state is operational state and must not be the only record of a conversion.
+
+The models and initial migrations are implemented and documented in [db-schema.md](db-schema.md), including SQL-only integrity guards and schema integration tests. Runtime database providers and transactional use cases remain subsequent implementation work.
 
 | Entity | Main fields and constraints |
 | --- | --- |

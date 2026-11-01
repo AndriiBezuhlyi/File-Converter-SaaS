@@ -1,6 +1,6 @@
 # File Converter
 
-The React frontend has a responsive layout, navigation, design tokens, accessible shared components, local file/target selection, conversion workflow UI, email authentication, account/API-key and saved-file interfaces, and an API documentation page. NestJS starts an API shell and an independent idle worker. Server-backed conversion, authentication, account/file workflows, domain models, storage adapters, and queue consumers are not implemented yet.
+The React frontend has a responsive layout, navigation, design tokens, accessible shared components, local file/target selection, conversion workflow UI, email authentication, account/API-key and saved-file interfaces, and an API documentation page. PostgreSQL/Prisma domain models, migrations and database constraints are prepared and tested. NestJS starts an API shell and an independent idle worker; server-backed conversion, authentication, account/file workflows, database providers, storage adapters and queue consumers are not implemented yet.
 
 ## Requirements and documentation
 
@@ -8,6 +8,7 @@ The React frontend has a responsive layout, navigation, design tokens, accessibl
 - [Architecture](docs/architecture.md)
 - [Design system](DESIGN.md)
 - [Technology inventory and compatibility notes](docs/TECH-STACK.md)
+- [Database schema and migration workflow](docs/db-schema.md)
 
 Use Node.js 24 LTS (minimum 24.11.1), npm 11, and Docker with Compose v2 for infrastructure. Install from the repository root; one root lockfile covers all workspaces.
 
@@ -104,7 +105,9 @@ npm run start:worker --workspace=@converter/backend
 
 ## Database and contracts
 
-The Prisma schema contains only PostgreSQL and generator configuration. Domain models and migrations are deliberately absent. `npm run db:validate` checks this foundation without a running database. After implementing the models, use `npm run db:generate`; migrations are explicit backend workspace commands. Do not run development migration commands in production.
+The Prisma schema now defines eight domain models with reviewed SQL constraints, partial indexes and ownership/publication guards. See [db-schema.md](docs/db-schema.md) for relationships, transaction responsibilities and the custom migration objects. `npm run db:validate` and `npm run db:generate` require no database connection. Applying migrations is explicit: use `npm run db:migrate:deploy --workspace=@converter/backend` only for the intended `DATABASE_URL` target; do not run development migration commands in production. The application still has no runtime Prisma provider.
+
+`npm run test:database` runs the real migrations and constraint/concurrency tests against a dedicated local PostgreSQL 18 database supplied through `TEST_DATABASE_URL`. It creates and drops only a generated schema, fails without an explicit loopback test target, and never loads `.env` or falls back to `DATABASE_URL`. CI runs it in a separate PostgreSQL service job. The ordinary `test:all` command remains offline.
 
 Prisma CLI configuration loads the root `.env`; the runtime application never imports the CLI. The future Prisma client will use the PostgreSQL driver adapter installed in the backend workspace.
 
