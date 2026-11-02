@@ -1,5 +1,11 @@
 # Development Progress
 
+## 2026-11-02 — Frontend HTTP foundation (available part of item 8)
+
+- Confirmed that generated OpenAPI exposes only two operational health endpoints; product DTOs and the CSRF handshake remain unfinalized. The user authorized the available foundation and a blocker report. Added `apps/web/src/shared/api` with same-origin Axios requests, validated paths/timeouts, AbortSignal, explicit mutation CSRF, measured upload progress, sanitized errors and validated Blob downloads with safe filenames. Added generated-type health clients and opt-in Query options/hook with caching and 10s/30s polling/backoff.
+- Preserved existing conversion/auth/account/files orchestration, production bootstrap and UI. No product endpoints, DTOs, credential handling, dependencies, environment files, existing tests, plans or instruction files changed. README documents usage and boundaries. Complete product adapters require auth/session/CSRF contracts, guest eligibility and conversion-result schemas, profile/settings/key schemas, file query/pagination schemas, and the corresponding backend operations. Item 8 is not claimed fully complete.
+- Verification passed: 11 new focused tests and final `npm run check`, including formatting, zero-warning ESLint, six lint-config checks, workspace typechecks, 109 frontend/eight backend unit/eight backend integration tests (125 total), Prisma validation, contract drift and all production builds. Transport tests use controlled Axios adapters; Query integrations use a real QueryClient, including timed polling/backoff and cancellation. Two read-only reviews found no material remaining issue. No live product integration or browser/E2E run was performed: no product contract/backend routes or rendered UI changes were introduced. Existing AGENTS.md user edits remain outside the task commit.
+
 ## 2026-11-01 — Generate Prisma types before CI lint
 
 - Reproduced the exact eight unsafe-type errors in DatabaseService using tracked sources without generated Prisma Client or `.env`. The custom `prisma-client` output is Git-ignored; installation does not generate it. `check` previously ran typed ESLint before the typecheck step that generated the client, leaving the correct relative import unresolved.

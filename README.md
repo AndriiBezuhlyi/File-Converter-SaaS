@@ -119,6 +119,16 @@ Prisma CLI configuration loads the root `.env`; the runtime application never im
 
 `packages/contracts/openapi.json` documents the two operational health routes, without product routes. `npm run contracts:generate` generates its TypeScript declarations; `npm run contracts:check` checks for drift without modifying the committed output. Generate product contracts from Nest Swagger as those controllers are implemented.
 
+### Frontend HTTP clients
+
+`apps/web/src/shared/api` provides a shared Axios transport with finite timeouts, AbortSignal cancellation, measured upload progress and non-retrying requests. `VITE_API_BASE_URL` defaults to `/api/v1` and accepts only a root-relative same-origin path, matching the development proxy and production deployment. Request paths cannot contain absolute URLs, query strings or traversal; use explicit query parameters for reads. Errors expose only a safe category and HTTP status, without retaining Axios config, credentials, server messages or response bodies.
+
+Cookie mutations require an explicitly supplied CSRF header/token from the eventual agreed backend handshake. The transport neither invents a token endpoint nor reads guessed CSRF cookies; automatic Axios XSRF injection is disabled. FormData is forwarded for the browser adapter to set multipart boundaries. Downloads require a successful nonempty Blob with an expected output MIME type and sanitize Content-Disposition filenames. They use relative application routes, never arbitrary server-returned storage URLs.
+
+The health client imports generated OpenAPI types and validates runtime replies, including the documented 503 readiness payload. `readinessQuery` / `useApiReadiness` provide scoped caching, cancellation and moderate polling with slower polling after request failures. They are opt-in developer building blocks, not a new product status interface or an authorization signal. They are not mounted by production bootstrap.
+
+Product gateway adapters remain blocked on finalized OpenAPI schemas: auth/session and CSRF handshake, guest eligibility response, complete conversion status/result metadata, profile/settings/key operations, and file-list filters/pagination. Existing feature hooks already implement job polling, cache reconciliation, private-cache clearing and ambiguous-POST safeguards; preserve them when mapping finalized wire contracts to frontend view models. Production conversion/auth/account/files gateways remain unavailable. Live product integration requires the backend operations from plan items 11–16; controlled transport tests do not establish real authentication or conversion.
+
 ### Runtime integrations
 
 `apps/backend/src/infrastructure` contains separate configuration, database, Redis, queue, storage, email and health modules. `ApiModule.withInfrastructure()` and `WorkerModule.withInfrastructure()` compose them; only the API exposes HTTP. No session middleware, conversion consumer, notification outbox or product transaction is registered yet.
