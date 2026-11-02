@@ -8,7 +8,7 @@
 8. Frontend: prepare typed API clients and TanStack Query hooks against the agreed contract, including polling, cache updates, connection failures, and focused UI tests; verify live integration once the backend is available.
 9. [x] Database: add PostgreSQL/Prisma models, constraints, indexes, and migrations for users, settings, credentials, guest trials, API keys, files, and conversions; document the schema. Completed 2026-11-01.
 10. [x] Backend: connect PostgreSQL, Redis/BullMQ, private object storage, and email delivery using the existing API/worker infrastructure. Completed 2026-11-01.
-11. Backend: implement email authentication, verification/recovery, secure sessions, confirmed profile/password changes, CSRF protection, and rate limiting.
+11. [x] Backend: implement email authentication, verification/recovery, secure sessions, confirmed profile/password changes, CSRF protection, and rate limiting. Completed 2026-11-02.
 12. Backend: implement protected guest credentials and durable, atomic trial accounting: reserve one active job, consume on success, release on terminal failure, and retain result access after login.
 13. Backend: implement synchronized account settings and hashed API keys with one active key, immediate rotation/revocation, and separate account/guest/API permissions.
 14. Backend: implement validated uploads and the shared REST conversion lifecycle, ownership checks, status polling endpoints, and consistent errors; synchronize OpenAPI and generated types.
