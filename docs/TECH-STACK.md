@@ -20,9 +20,10 @@ This is the primary technology inventory for the project. Product requirements r
 - Argon2id — хешування паролів.
 - OpenAPI / Swagger — документування API.
 - Nest Config, class-validator, and class-transformer — runtime configuration and DTO validation.
-- express-session + connect-redis + redis — future Redis-backed sessions.
-- Helmet and Nest Throttler — security headers and rate-limit integration foundations.
-- Nodemailer — pooled SMTP adapter with TLS, connectivity verification and bounded network operations; no production provider is selected. Notification use cases remain future work.
+- express-session + connect-redis + redis — Redis-backed sessions with finite idle/absolute TTLs, SID rotation and revocation tombstones; PostgreSQL session versions revoke credentials across API replicas.
+- Helmet — security headers. Distributed auth limits use atomic Redis Lua counters; Nest Throttler remains installed but is not used for in-memory enforcement.
+- Node.js crypto — random CSRF/link tokens, SHA-256 token hashes, HMAC-protected rate-limit identities and authenticated AES-256-GCM email-outbox encryption; no additional cryptography package.
+- Nodemailer — pooled SMTP adapter with TLS, connectivity verification and bounded network operations; verification/recovery and pending email-change notifications use committed durable intents. No production provider is selected.
 
 ## Database
 
@@ -49,7 +50,7 @@ This is the primary technology inventory for the project. Product requirements r
 
 ## Infrastructure
 
-- Redis + BullMQ — черга задач конвертації; explicit Nest infrastructure modules. BullMQ 6 uses a dedicated node-redis connection; session/rate-limit keys use separate prefixes and a separate shared client. Queue consumers and sessions remain future work.
+- Redis + BullMQ — explicit Nest infrastructure modules and a separate worker-only notification queue/consumer with task-ID payloads and PostgreSQL outbox retries. BullMQ 6 uses dedicated node-redis connections; session/rate-limit keys use separate prefixes and a separate shared client. Conversion consumers remain future work.
 - Docker Compose — локальна інфраструктура and a separate production deployment definition.
 - Nginx — production static frontend and API reverse proxy.
 - Mailpit — local SMTP sink for email development.
@@ -74,6 +75,8 @@ Run `npm run test:database` with the explicit dedicated loopback `TEST_DATABASE_
 
 Run `npm run test:infrastructure` with explicit loopback `TEST_DATABASE_URL` and `TEST_REDIS_URL`; apply migrations to the dedicated test database first. CI supplies PostgreSQL 18 and Redis 8. See [runtime integrations](../README.md#runtime-integrations) for isolation, readiness and local setup.
 
+Run `npm run test:auth` with the same explicit dedicated loopback test services after applying migrations. Jest/Supertest verify real auth transactions, Redis sessions/revocation/limits, CSRF/origin checks and worker/BullMQ/SMTP delivery using owned synthetic accounts and a random Redis namespace. Offline DTO/crypto/configuration/HTTP tests remain in `test:all`; no new test packages are required.
+
 ## Development Tools
 
 - npm workspaces — one monorepo and one lockfile.
@@ -89,4 +92,4 @@ Run `npm run test:infrastructure` with explicit loopback `TEST_DATABASE_URL` and
 - Prisma 7 is the stable selected line; CLI, client, and PostgreSQL adapter share the same version. Do not select a release candidate via a moving registry tag.
 - jsdom 27 supports the installed Node.js baseline; the newest jsdom line requires a newer Node.js minor.
 - Runtime libraries belong to their consuming workspace's `dependencies`; compilers, Sass, test runners, CLI tools, linters, and type definitions belong to `devDependencies`.
-- Domain schema, migrations and runtime database/Redis/BullMQ/storage/SMTP adapters are implemented. Authentication, domain transactions, consumers, converters and product endpoints remain future work; operational health routes do not establish product functionality.
+- Domain schema, infrastructure adapters, first-party authentication/profile transactions and notification consumers are implemented. Frontend auth integration, guest accounting, settings/API-key/file/conversion endpoints and conversion consumers remain future work; authentication tests do not establish conversion functionality.

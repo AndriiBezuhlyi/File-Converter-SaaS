@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
@@ -10,15 +9,17 @@ import {
   type InfrastructureEnvironment,
 } from '../infrastructure/config/infrastructure-config.js';
 import { installShutdown } from '../infrastructure/shutdown.js';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { configureAuthApi } from '../modules/auth/configure-auth-api.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(ApiModule.withInfrastructure(), { abortOnError: false });
+  const app = await NestFactory.create<NestExpressApplication>(ApiModule.withAuthentication(), {
+    abortOnError: false,
+  });
   const config = app.get(ConfigService<RuntimeEnvironment, true>);
   app.setGlobalPrefix('api/v1');
   app.use(helmet());
-  app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
-  );
+  configureAuthApi(app);
   installShutdown(app, app.get<InfrastructureEnvironment>(INFRA_CONFIG).SHUTDOWN_TIMEOUT_MS);
   try {
     await app.listen(

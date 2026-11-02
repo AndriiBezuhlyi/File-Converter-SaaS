@@ -38,6 +38,230 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/csrf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bootstrap or read the synchronizer CSRF token
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        get: operations["authCsrf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the anonymous or authenticated session
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        get: operations["authSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register and queue verification; neutral acknowledgement
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        post: operations["authRegister"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in a verified account and rotate SID/CSRF
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        post: operations["authLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Destroy the current session
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        post: operations["authLogout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/verification/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace verification link; neutral acknowledgement
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        post: operations["authVerificationResend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Consume a verification or pending email-change token
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        post: operations["authVerifyEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Queue password recovery; neutral acknowledgement
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        post: operations["authPasswordResetRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset password and revoke all user sessions; no automatic login
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        post: operations["authPasswordResetConfirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the current user profile
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        get: operations["usersMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Confirm current password, update name and request email change
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        patch: operations["usersMeUpdate"];
+        trace?: never;
+    };
+    "/api/v1/users/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm current password, change password and revoke all sessions
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         */
+        post: operations["usersMePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -49,8 +273,164 @@ export interface components {
                 [key: string]: "up" | "down";
             };
         };
+        Error: {
+            error: {
+                code: string;
+                message: string;
+            };
+        };
+        Profile: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: email
+             * @description Trimmed and normalized to lowercase.
+             */
+            email: string;
+            displayName: string;
+        };
+        Session: {
+            /** @enum {string} */
+            kind: "anonymous";
+        } | {
+            /** @enum {string} */
+            kind: "authenticated";
+            user: components["schemas"]["Profile"];
+            /**
+             * Format: date-time
+             * @description Current idle expiry, bounded by the absolute session deadline.
+             */
+            expiresAt: string;
+        };
+        Csrf: {
+            /** @description Keep in memory. Refresh after login/session rotation. Never persist or cache. */
+            csrfToken: string;
+        };
+        Accepted: {
+            /** @enum {string} */
+            status: "accepted";
+        };
+        EmailRequest: {
+            /**
+             * Format: email
+             * @description Trimmed and normalized to lowercase.
+             */
+            email: string;
+        };
+        RegistrationRequest: {
+            /**
+             * Format: email
+             * @description Trimmed and normalized to lowercase.
+             */
+            email: string;
+            /**
+             * Format: password
+             * @description Never trimmed or normalized.
+             */
+            password: string;
+        };
+        LoginRequest: {
+            /**
+             * Format: email
+             * @description Trimmed and normalized to lowercase.
+             */
+            email: string;
+            /** Format: password */
+            password: string;
+        };
+        TokenRequest: {
+            /** @description Opaque single-use link token; request bodies only, never query parameters. */
+            token: string;
+        };
+        PasswordResetRequest: {
+            /** @description Opaque single-use link token; request bodies only, never query parameters. */
+            token: string;
+            /**
+             * Format: password
+             * @description Never trimmed or normalized.
+             */
+            newPassword: string;
+        };
+        ProfileUpdateRequest: {
+            /**
+             * Format: email
+             * @description Trimmed and normalized to lowercase.
+             */
+            email: string;
+            /** @description Trimmed; empty string clears the display name. */
+            displayName: string;
+            /** Format: password */
+            currentPassword: string;
+        };
+        PasswordChangeRequest: {
+            /** Format: password */
+            currentPassword: string;
+            /**
+             * Format: password
+             * @description Never trimmed or normalized.
+             */
+            newPassword: string;
+        };
+        ProfileUpdateResult: {
+            profile: components["schemas"]["Profile"];
+            /** @description The old email remains active until the new email is confirmed. */
+            verificationRequired: boolean;
+        };
     };
-    responses: never;
+    responses: {
+        /** @description Invalid DTO or invalid/expired/consumed token */
+        Auth400: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Authentication required or invalid credentials; explicit X-API-Key is rejected */
+        Auth401: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Origin/CSRF/current password rejected or email is not verified */
+        Auth403: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Distributed rate limit exceeded */
+        Auth429: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                /** @description Seconds until retry. */
+                "Retry-After"?: number;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Required service unavailable; requests fail closed */
+        Auth503: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
@@ -108,6 +488,397 @@ export interface operations {
                     "application/json": components["schemas"]["Readiness"];
                 };
             };
+        };
+    };
+    authCsrf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Csrf"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    authSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    authRegister: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match configured APP_ORIGIN. */
+                Origin: string;
+                /** @description Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token. */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            202: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Accepted"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    authLogin: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match configured APP_ORIGIN. */
+                Origin: string;
+                /** @description Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token. */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    authLogout: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match configured APP_ORIGIN. */
+                Origin: string;
+                /** @description Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token. */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            204: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    authVerificationResend: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match configured APP_ORIGIN. */
+                Origin: string;
+                /** @description Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token. */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            202: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Accepted"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    authVerifyEmail: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match configured APP_ORIGIN. */
+                Origin: string;
+                /** @description Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token. */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            204: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    authPasswordResetRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match configured APP_ORIGIN. */
+                Origin: string;
+                /** @description Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token. */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            202: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Accepted"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    authPasswordResetConfirm: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match configured APP_ORIGIN. */
+                Origin: string;
+                /** @description Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token. */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            204: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    usersMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Profile"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    usersMeUpdate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match configured APP_ORIGIN. */
+                Origin: string;
+                /** @description Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token. */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileUpdateResult"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            /** @description Email unavailable */
+            409: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    usersMePassword: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match configured APP_ORIGIN. */
+                Origin: string;
+                /** @description Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token. */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            204: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
         };
     };
 }

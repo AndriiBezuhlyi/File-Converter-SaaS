@@ -3,7 +3,7 @@
   "info": {
     "title": "File Converter API",
     "version": "0.0.0",
-    "description": "Operational health endpoints only. Product operations remain unimplemented."
+    "description": "Operational health and first-party email authentication/account endpoints. Conversion, settings, API-key and file operations are not implemented."
   },
   "paths": {
     "/api/v1/health/live": {
@@ -18,7 +18,12 @@
                 "schema": {
                   "type": "object",
                   "required": ["status"],
-                  "properties": { "status": { "type": "string", "enum": ["ok"] } }
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    }
+                  }
                 }
               }
             }
@@ -34,14 +39,822 @@
           "200": {
             "description": "All infrastructure dependencies are ready",
             "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Readiness" } }
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
+                }
+              }
             }
           },
           "503": {
             "description": "A required dependency is unavailable or the application is shutting down",
             "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Readiness" } }
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
+                }
+              }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/csrf": {
+      "get": {
+        "operationId": "authCsrf",
+        "summary": "Bootstrap or read the synchronizer CSRF token",
+        "tags": ["Authentication"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Csrf"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/session": {
+      "get": {
+        "operationId": "authSession",
+        "summary": "Read the anonymous or authenticated session",
+        "tags": ["Authentication"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "authRegister",
+        "summary": "Register and queue verification; neutral acknowledgement",
+        "tags": ["Authentication"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must exactly match configured APP_ORIGIN."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "authLogin",
+        "summary": "Sign in a verified account and rotate SID/CSRF",
+        "tags": ["Authentication"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must exactly match configured APP_ORIGIN."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "authLogout",
+        "summary": "Destroy the current session",
+        "tags": ["Authentication"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must exactly match configured APP_ORIGIN."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verification/resend": {
+      "post": {
+        "operationId": "authVerificationResend",
+        "summary": "Replace verification link; neutral acknowledgement",
+        "tags": ["Authentication"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must exactly match configured APP_ORIGIN."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify-email": {
+      "post": {
+        "operationId": "authVerifyEmail",
+        "summary": "Consume a verification or pending email-change token",
+        "tags": ["Authentication"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must exactly match configured APP_ORIGIN."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password-reset/request": {
+      "post": {
+        "operationId": "authPasswordResetRequest",
+        "summary": "Queue password recovery; neutral acknowledgement",
+        "tags": ["Authentication"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must exactly match configured APP_ORIGIN."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password-reset/confirm": {
+      "post": {
+        "operationId": "authPasswordResetConfirm",
+        "summary": "Reset password and revoke all user sessions; no automatic login",
+        "tags": ["Authentication"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must exactly match configured APP_ORIGIN."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "operationId": "usersMe",
+        "summary": "Read the current user profile",
+        "tags": ["Users"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "usersMeUpdate",
+        "summary": "Confirm current password, update name and request email change",
+        "tags": ["Users"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must exactly match configured APP_ORIGIN."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileUpdateResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "409": {
+            "description": "Email unavailable",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/password": {
+      "post": {
+        "operationId": "usersMePassword",
+        "summary": "Confirm current password, change password and revoke all sessions",
+        "tags": ["Users"],
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must exactly match configured APP_ORIGIN."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
           }
         }
       }
@@ -53,10 +866,364 @@
         "type": "object",
         "required": ["status", "dependencies"],
         "properties": {
-          "status": { "type": "string", "enum": ["ok", "unavailable"] },
+          "status": {
+            "type": "string",
+            "enum": ["ok", "unavailable"]
+          },
           "dependencies": {
             "type": "object",
-            "additionalProperties": { "type": "string", "enum": ["up", "down"] }
+            "additionalProperties": {
+              "type": "string",
+              "enum": ["up", "down"]
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "message"],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "email", "displayName"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Trimmed and normalized to lowercase."
+          },
+          "displayName": {
+            "type": "string",
+            "maxLength": 80
+          }
+        }
+      },
+      "Session": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["anonymous"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "user", "expiresAt"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["authenticated"]
+              },
+              "user": {
+                "$ref": "#/components/schemas/Profile"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Current idle expiry, bounded by the absolute session deadline."
+              }
+            }
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind"
+        }
+      },
+      "Csrf": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["csrfToken"],
+        "properties": {
+          "csrfToken": {
+            "type": "string",
+            "description": "Keep in memory. Refresh after login/session rotation. Never persist or cache."
+          }
+        }
+      },
+      "Accepted": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["accepted"]
+          }
+        }
+      },
+      "EmailRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Trimmed and normalized to lowercase."
+          }
+        }
+      },
+      "RegistrationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Trimmed and normalized to lowercase."
+          },
+          "password": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 128,
+            "format": "password",
+            "description": "Never trimmed or normalized."
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Trimmed and normalized to lowercase."
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "format": "password"
+          }
+        }
+      },
+      "TokenRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["token"],
+        "properties": {
+          "token": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\.[A-Za-z0-9_-]{43}$",
+            "description": "Opaque single-use link token; request bodies only, never query parameters."
+          }
+        }
+      },
+      "PasswordResetRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["token", "newPassword"],
+        "properties": {
+          "token": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\.[A-Za-z0-9_-]{43}$",
+            "description": "Opaque single-use link token; request bodies only, never query parameters."
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 128,
+            "format": "password",
+            "description": "Never trimmed or normalized."
+          }
+        }
+      },
+      "ProfileUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email", "displayName", "currentPassword"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Trimmed and normalized to lowercase."
+          },
+          "displayName": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Trimmed; empty string clears the display name."
+          },
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "format": "password"
+          }
+        }
+      },
+      "PasswordChangeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["currentPassword", "newPassword"],
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "format": "password"
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 128,
+            "format": "password",
+            "description": "Never trimmed or normalized."
+          }
+        }
+      },
+      "ProfileUpdateResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["profile", "verificationRequired"],
+        "properties": {
+          "profile": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "verificationRequired": {
+            "type": "boolean",
+            "description": "The old email remains active until the new email is confirmed."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-converter.sid",
+        "description": "HttpOnly; Secure; SameSite=Lax; Path=/; no Domain. Development-only loopback HTTP uses converter.dev.sid. Redis sessions: anonymous 15 minutes, authenticated idle 30 minutes and absolute 7 days."
+      }
+    },
+    "responses": {
+      "Auth400": {
+        "description": "Invalid DTO or invalid/expired/consumed token",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "enum": ["no-store"]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Auth401": {
+        "description": "Authentication required or invalid credentials; explicit X-API-Key is rejected",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "enum": ["no-store"]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Auth403": {
+        "description": "Origin/CSRF/current password rejected or email is not verified",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "enum": ["no-store"]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Auth429": {
+        "description": "Distributed rate limit exceeded",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "enum": ["no-store"]
+            }
+          },
+          "Retry-After": {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Seconds until retry."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Auth503": {
+        "description": "Required service unavailable; requests fail closed",
+        "headers": {
+          "Cache-Control": {
+            "schema": {
+              "type": "string",
+              "enum": ["no-store"]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
           }
         }
       }

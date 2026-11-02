@@ -28,6 +28,7 @@
     "test:integration": "npm run test:integration --workspace=@converter/backend",
     "test:database": "node --test tests/database/*.test.mjs",
     "test:infrastructure": "npm run test:infrastructure --workspace=@converter/backend",
+    "test:auth": "npm run test:auth --workspace=@converter/backend",
     "test:e2e": "node scripts/playwright.mjs test",
     "test:e2e:install": "node scripts/playwright.mjs install chromium",
     "db:validate": "npm run db:validate --workspace=@converter/backend",

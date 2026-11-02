@@ -9,12 +9,12 @@ import {
 import { installShutdown } from '../infrastructure/shutdown.js';
 
 async function bootstrap() {
-  const app = await NestFactory.createApplicationContext(WorkerModule.withInfrastructure(), {
+  const app = await NestFactory.createApplicationContext(WorkerModule.withNotifications(), {
     abortOnError: false,
   });
   installShutdown(app, app.get<InfrastructureEnvironment>(INFRA_CONFIG).SHUTDOWN_TIMEOUT_MS);
   Logger.log(
-    'Worker infrastructure ready. No conversion processors are registered.',
+    'Worker infrastructure and notifications ready. No conversion processors are registered.',
     'WorkerBootstrap',
   );
 }

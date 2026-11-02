@@ -58,6 +58,7 @@ jobs:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
       - run: npm run test:database
       - run: npm run test:infrastructure
+      - run: npm run test:auth
   images:
     runs-on: ubuntu-latest
     timeout-minutes: 45

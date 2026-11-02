@@ -3,11 +3,15 @@ import {
   Injectable,
   type OnApplicationBootstrap,
   type BeforeApplicationShutdown,
+  Optional,
 } from '@nestjs/common';
 import { mkdir, writeFile, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { INFRA_CONFIG, type InfrastructureEnvironment } from '../config/infrastructure-config.js';
 import { InfrastructureService } from '../infrastructure.service.js';
+import type { InfrastructureDependency } from '../dependency.js';
+
+export const WORKER_FEATURE_READINESS = Symbol('WORKER_FEATURE_READINESS');
 
 @Injectable()
 export class WorkerHealth implements OnApplicationBootstrap, BeforeApplicationShutdown {
@@ -17,6 +21,9 @@ export class WorkerHealth implements OnApplicationBootstrap, BeforeApplicationSh
   constructor(
     @Inject(INFRA_CONFIG) private readonly config: InfrastructureEnvironment,
     private readonly infrastructure: InfrastructureService,
+    @Optional()
+    @Inject(WORKER_FEATURE_READINESS)
+    private readonly feature?: Pick<InfrastructureDependency, 'check'>,
   ) {}
   async onApplicationBootstrap() {
     await mkdir(this.config.WORKER_TEMP_DIR, { recursive: true, mode: 0o700 });
@@ -36,6 +43,12 @@ export class WorkerHealth implements OnApplicationBootstrap, BeforeApplicationSh
   }
   private async publish() {
     const readiness = await this.infrastructure.readiness();
+    let featureReady = true;
+    try {
+      await this.feature?.check();
+    } catch {
+      featureReady = false;
+    }
     const path = join(this.config.WORKER_TEMP_DIR, 'health.json');
     const temporary = `${path}.${process.pid}.tmp`;
     await writeFile(
@@ -43,7 +56,7 @@ export class WorkerHealth implements OnApplicationBootstrap, BeforeApplicationSh
       JSON.stringify({
         pid: process.pid,
         checkedAt: Date.now(),
-        ready: !this.stopping && readiness.status === 'ok',
+        ready: !this.stopping && readiness.status === 'ok' && featureReady,
       }),
       { mode: 0o600 },
     );

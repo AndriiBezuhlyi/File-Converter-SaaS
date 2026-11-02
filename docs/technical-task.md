@@ -109,6 +109,8 @@
 
 Для першої версії достатньо реалізувати реєстрацію, авторизацію та відновлення пароля через електронну пошту.
 
+New passwords must contain 10–128 characters and must not be trimmed or normalized. Sign-in accepts existing passwords without applying the new-password minimum. The agreed first-party authentication/session and confirmed profile-change contract is maintained in [OpenAPI](../packages/contracts/openapi.json); session, CSRF and deployment details are documented in [README](../README.md#authentication-backend).
+
 ## 5. API
 
 Потрібен загальний API, який дозволятиме іншим сайтам і розробникам використовувати сервіс конвертації файлів.

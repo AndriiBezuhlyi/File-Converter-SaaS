@@ -1,6 +1,6 @@
 # File Converter
 
-The React frontend has a responsive layout, navigation, design tokens, accessible shared components, local file/target selection, conversion workflow UI, email authentication, account/API-key and saved-file interfaces, and an API documentation page. PostgreSQL/Prisma domain models, migrations and database constraints are prepared and tested. NestJS API and independent worker connect to PostgreSQL, Redis/BullMQ, private S3-compatible storage and SMTP, with readiness and bounded shutdown. Server-backed conversion, authentication, account/file workflows and queue consumers remain future work.
+The React frontend has a responsive layout, navigation, local file/target selection, conversion workflow UI, auth/account/file interfaces and API documentation. PostgreSQL/Prisma models and constraints, shared infrastructure, first-party email authentication, confirmed profile/password changes, Redis sessions and worker-only notification delivery are implemented. Frontend authentication remains disconnected; guest accounting, settings/API keys, file/conversion endpoints and conversion consumers remain future work.
 
 ## Requirements and documentation
 
@@ -34,7 +34,7 @@ Apply migrations explicitly to the intended local database before starting the a
 npm run db:migrate:deploy --workspace=@converter/backend
 ```
 
-Both application entry points validate integration settings and connect to all five dependencies at startup; an unavailable dependency fails startup with a sanitized error. They never migrate schemas, create buckets or send email automatically. The module shells remain available without integration providers for isolated tests.
+Both entry points validate settings and connect to all five dependencies at startup; an unavailable dependency fails startup with a sanitized error. They never migrate schemas or create buckets automatically. Infrastructure probes do not send email; the worker delivers committed notification intents. Module shells remain available for isolated tests. Before starting API/worker, set `APP_ORIGIN`, generate separate random 32-byte hex values for `SESSION_SECRET` and `NOTIFICATION_ENCRYPTION_KEY`, and keep them only in the untracked environment/secret store. Use a local cryptographic generator, for example Node.js `crypto.randomBytes(32).toString('hex')`; do not reuse example values or expose them through `VITE_*`.
 
 ## Development
 
@@ -47,8 +47,8 @@ npm run dev:worker
 ```
 
 - Web: http://127.0.0.1:5173, with `/api/` proxied to the API; `/api-docs` remains a frontend route.
-- API: http://127.0.0.1:3000; `/api/v1/health/live` checks the HTTP process and `/api/v1/health/ready` checks required dependencies. Product routes return 404.
-- Worker: no HTTP listener and no registered processors. Live connections and a private readiness heartbeat keep the infrastructure process active.
+- API: http://127.0.0.1:3000; health routes plus the auth/profile operations in [OpenAPI](packages/contracts/openapi.json). Unimplemented product routes return 404.
+- Worker: no HTTP listener; processes email notifications, with dependency/notification readiness in a private heartbeat. No conversion processor is registered.
 
 Backend development builds preserve TypeScript decorator metadata, then restart the selected process when its source changes. Separate output directories prevent the API and worker from overwriting each other. No global Nest CLI is needed.
 
@@ -62,11 +62,55 @@ The conversion UI is prepared behind a feature-local `ConversionGateway` port. I
 
 For controlled UI verification, run `npm run dev:web` and open [the development-only converter fixture](http://127.0.0.1:5173/test-fixtures/converter/?scenario=success). `scenario` accepts `success`, `failed`, `connection`, `unknown`, `expired`, `saved`, `reserved`, `consumed`, `download-error`, `download-expired`, `unmeasured`, and `rejected`. To check expiry discovered only when downloading, open `?scenario=download-expired&conversion=fixture_job`: the result starts available, then the download is denied while completion and the consumed guest allowance are preserved. The fixture is visibly labeled, accepts JPG → PNG for its one known synthetic PNG output, and never converts the source or calls product endpoints. It is a separate HTML entry under `apps/web/test-fixtures`, absent from the production bundle; no runtime mock switch is exposed by the application. Chromium E2E uses a separate Vite server on 4174 for these scenarios and the existing production preview on 4173 for ordinary routes. These responses do not establish real authentication, durable guest accounting, ownership enforcement, or live conversion. Those remain backend/integration work.
 
-Authentication interfaces live at `/login`, `/register`, `/verify-email`, `/forgot-password`, and `/reset-password`. React Hook Form/Zod validate labeled fields, confirmation and email; passwords are never trimmed. New passwords have provisional UI limits of 8–128 characters; these are not a finalized server password policy, and sign-in does not impose the new-password minimum. Forms support password managers, reveal controls, pending/error/success feedback and duplicate-submit guards. Ordinary routes explicitly say authentication is not connected and never send credentials. `AuthGateway` is a frontend port, not an HTTP contract; item 8 will connect agreed endpoints/types, cookie sessions and CSRF, while item 11 implements server enforcement and mail delivery. Session data uses TanStack Query; confirmed identity changes clear other cached data and re-read the session. Passwords and link tokens stay out of query/mutation caches and browser storage. Verification/reset capture a URL `token` in component memory and replace the URL without it, so reloading requires reopening the email link. Verification requires an explicit click; reset does not automatically sign in. Recovery/resend use neutral acknowledgements, and return destinations allow only internal converter/account/files routes, preserving a valid conversion ID. Navigating away may require selecting the file again; signing in does not save a guest result.
+Authentication interfaces live at `/login`, `/register`, `/verify-email`, `/forgot-password`, and `/reset-password`. React Hook Form/Zod validate labeled fields, confirmation and email; passwords are never trimmed. UI limits remain provisionally 8–128 characters; backend policy is now 10–128. Item 8 must align the UI minimum, map the agreed OpenAPI contract to `AuthGateway`, handle cookie/CSRF rotation and capture/remove link tokens from URL fragments. Current production pages send no credentials and do not consume backend email links. Forms already support password managers, pending/error feedback and duplicate-submit guards; session state uses TanStack Query. Passwords/link tokens must stay out of caches/storage. Verification requires an explicit action; reset never automatically signs in. Signing in does not save or transfer a guest result.
 
 For controlled auth flows, open [the development-only authentication fixture](http://127.0.0.1:5173/test-fixtures/auth/#/login). It uses hash routes so reloads keep the separate fixture entry. The optional document query `scenario` accepts `success`, `signed-in`, `unverified`, `invalid-credentials`, `network`, `rate-limited`, `session-error`, and `logout-error`, for example `?scenario=logout-error#/`. Synthetic verification/reset links use `#/verify-email?token=fixture-token` or `#/reset-password?token=fixture-token`; other token values simulate invalid/expired links. Use invented credentials only. No emails or product requests are sent, and reloading resets the fixture's in-memory session. This entry and its gateway are excluded from production assets. It demonstrates UI transitions, not genuine account security or server-side expiry/revocation.
 
-`/api-docs` describes the planned seven-operation REST contract with section navigation, placeholder-only cURL/JSON examples, API-key rules, polling/retention semantics, limits, and errors. Shared `CodeBlock` supports copying, confirmation, clipboard-denial feedback, and keyboard scrolling on narrow screens. This is pre-launch documentation based on the technical task/architecture, not a live API explorer or generated OpenAPI UI; `packages/contracts/openapi.json` currently describes only operational health routes. Final file-list schemas, pagination parameters, and numerical request quotas remain for backend contract work. No API requests are made by the page.
+`/api-docs` describes the planned seven-operation conversion REST contract with placeholder examples, API-key rules, polling/retention and errors. It remains pre-launch frontend documentation, not a live explorer. [OpenAPI](packages/contracts/openapi.json) describes health and implemented first-party auth/profile routes; conversion/file schemas remain pending. No requests are made by the documentation page.
+
+## Authentication backend
+
+`ApiModule.withAuthentication()` composes the existing infrastructure with Auth/Users modules. `WorkerModule.withNotifications()` alone imports notification consumers; API replicas do not consume jobs. The offline/infrastructure-only module compositions remain available for focused tests.
+
+All paths below have `/api/v1` prefix. DTOs reject unknown fields; email is trimmed/lowercase (maximum 254), display name is trimmed/optional text (maximum 80), and new passwords are 10–128 characters without normalization. Existing sign-in/current passwords accept 1–128 characters. See [OpenAPI](packages/contracts/openapi.json) for exact schemas and generated types.
+
+| Operation                           | Request                             | Success                                      |
+| ----------------------------------- | ----------------------------------- | -------------------------------------------- |
+| `GET /auth/csrf`                    | Same-origin cookie request          | `200 { csrfToken }`                          |
+| `GET /auth/session`                 | Cookie, if present                  | `200` anonymous or authenticated session     |
+| `POST /auth/register`               | email, password                     | Neutral `202 { status: "accepted" }`         |
+| `POST /auth/login`                  | email, password                     | `200` authenticated session; SID/CSRF rotate |
+| `POST /auth/logout`                 | No body                             | `204`, current session revoked               |
+| `POST /auth/verification/resend`    | email                               | Neutral `202`                                |
+| `POST /auth/verify-email`           | token                               | `204`, registration/email change confirmed   |
+| `POST /auth/password-reset/request` | email                               | Neutral `202`                                |
+| `POST /auth/password-reset/confirm` | token, newPassword                  | `204`, all account sessions revoked          |
+| `GET /users/me`                     | Authenticated cookie                | `200` profile                                |
+| `PATCH /users/me`                   | displayName, email, currentPassword | `200 { profile, verificationRequired }`      |
+| `POST /users/me/password`           | currentPassword, newPassword        | `204`, all account sessions revoked          |
+
+Bootstrap with `GET /auth/csrf` and keep the returned token in memory. Every mutation, including anonymous registration/login/recovery/logout, requires the same cookie, exact configured `Origin` and `X-CSRF-Token`. After login fetch a fresh CSRF token; after logout bootstrap a new context. No permissive CORS is enabled. Explicit `X-API-Key` is rejected on these first-party operations. Auth/profile responses and errors use `Cache-Control: no-store`; health keeps its existing operational response shape.
+
+Anonymous Redis contexts expire after 15 minutes. Authenticated sessions expire after 30 idle minutes or seven days absolutely. HTTPS uses `__Host-converter.sid; Secure; HttpOnly; SameSite=Lax; Path=/` without Domain. Development-only HTTP is permitted for loopback `APP_ORIGIN` and uses `converter.dev.sid` without Secure. SID rotation/logout write atomic Redis revocation tombstones, preventing late requests from resurrecting a discarded SID. Every authenticated request reads PostgreSQL `sessionVersion`; password change/reset and completed email change increment it transactionally, without a validity cache. Redis failure returns `503` and never falls back to memory.
+
+Only verified accounts sign in. Wrong credentials return `401 INVALID_CREDENTIALS`; a correct password for an unverified account returns `403 EMAIL_NOT_VERIFIED`. Registration/resend/recovery acknowledgements do not disclose account existence. Profile/password changes require the current password; new email stays pending until confirmed. One-time tokens are purpose-bound, hashed in PostgreSQL and limited to five failed secret attempts. Verification expires after 24 hours, recovery/email change after 30 minutes. Resend replaces the prior token; credential changes invalidate pending tokens. Verification/reset do not automatically sign in.
+
+Notifications persist in `BackgroundTask` in the same transaction as the account/token change. AES-256-GCM encrypts delivery material with task/version-bound authenticated data; BullMQ carries only `{ taskId }`. A worker reconciles pending intents every five seconds, claims a 60-second lease, sends through the existing SMTP adapter and conditionally completes the current lease. Delivery is at least once: a crash after SMTP acceptance may produce the same safe single-use link again. Five durable attempts use exponential delays; monitor `lastErrorCode`, attempts and pending age, and request a fresh link after exhaustion. Completed/skipped intents erase ciphertext. Keep the encryption key stable across API/worker replicas and backups until pending intents are drained; replacing it makes existing encrypted intents unreadable. Never log request bodies, cookies, tokens, keys or delivery contents.
+
+Email links use `/verify-email#token=...` or `/reset-password#token=...`: the fragment never reaches HTTP/proxy logs. Future frontend integration must capture it in memory, remove it from the URL and explicitly submit the token in a JSON body. Current frontend query-token fixtures are separate and remain disconnected.
+
+| Distributed limit                              | Quota                                               |
+| ---------------------------------------------- | --------------------------------------------------- |
+| All auth/profile requests                      | 120 per IP/minute                                   |
+| CSRF bootstrap/read                            | 30 per IP/minute                                    |
+| Login                                          | 10 per IP/minute and normalized-email/minute        |
+| Registration/resend/reset request, combined    | 5 per IP/15 minutes and 3 per normalized email/hour |
+| Token consumption, combined                    | 10 per IP/minute                                    |
+| Confirmed profile/password mutations, combined | 5 per user/15 minutes                               |
+
+Atomic Redis counters use HMAC-derived identity keys. Excess returns `429 RATE_LIMITED` with `Retry-After`; unavailable Redis fails closed. Current windows are fixed from the first attempt. Validation/token failures use `400`, missing sessions `401`, CSRF/origin/current-password failures `403`, unavailable profile email `409`, and infrastructure failures `503`, in `{ error: { code, message } }` without internal diagnostics.
+
+Run `npm run test:auth` with explicit dedicated loopback `TEST_DATABASE_URL` (`converter_test` or `converter_test_<suffix>`) and `TEST_REDIS_URL` after deploying migrations there. The suite uses real PostgreSQL/Redis/BullMQ, local controlled S3/SMTP, synthetic accounts and a random Redis namespace, and cleans only its own data. CI runs it in the database job. Offline unit/HTTP boundary tests remain in `test:all`; production SMTP, TLS ingress and browser integration require deployment verification.
 
 ## Verification
 
@@ -155,7 +199,7 @@ npm run infra:production:config
 docker compose --env-file .env.production -f infra/compose.production.yaml build
 ```
 
-Only the proxy publishes a host port. This template expects HTTPS termination on the server's ingress/load balancer before port 8080; it does not provision certificates or enable production authentication. Restrict direct HTTP exposure to that ingress. Pin validated image digests at release time. API dependency readiness and worker heartbeat checks are configured; backups, a migration release job, real-provider smoke checks and converter sandbox verification remain prerequisites for deploying the actual product. Readiness requires configured integrations to be reachable, including SMTP and the pre-provisioned private bucket.
+Only the proxy publishes a host port. This template requires HTTPS termination on the server's ingress/load balancer before port 8080; certificates are not provisioned here. Restrict direct HTTP access to that ingress. Set `APP_ORIGIN` to the public HTTPS origin, provide independent session/outbox keys and set `AUTH_TRUSTED_PROXIES` to the exact proxy and ingress IPs/CIDRs. The ingress must replace untrusted forwarded headers; Nginx appends its peer address and supplies the fixed HTTPS scheme expected by this deployment. Never trust all addresses. Secure-cookie issuance and client-IP limits depend on this chain; verify them at deployment. Access logs exclude query strings/referrers. Pin validated image digests at release time. Backups, migration release job, real-provider delivery/storage checks and converter sandbox verification remain prerequisites; dependency readiness alone does not prove them.
 
 `npm run infra:down` stops local infrastructure and retains named volumes. No reset/delete-volume command is included.
 

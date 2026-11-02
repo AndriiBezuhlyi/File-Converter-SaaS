@@ -62,6 +62,7 @@ model User {
   id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email           String              @unique @db.VarChar(254)
   passwordHash    String
+  sessionVersion  Int                 @default(0)
   emailVerifiedAt DateTime?           @db.Timestamptz(3)
   displayName     String?
   createdAt       DateTime            @default(now()) @db.Timestamptz(3)
