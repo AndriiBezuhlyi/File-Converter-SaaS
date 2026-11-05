@@ -233,3 +233,19 @@
 - Begin product implementation only with the next authorized task; current shells are not a working converter or authentication system.
 - Fix Context7 credentials and provide Docker separately when needed; neither is required for reading these rules/skills.
 - No new plugins, tools, user credentials, or model/permission configuration were installed or changed. Existing development dependency audit notes remain in README.
+
+## 2026-11-05 - Independent conversion worker
+
+- Added worker-only BullMQ conversion consumption, durable dispatch reconciliation, bounded attempts/backoff, expired-lease recovery and transactional publication fenced by version/token and database time. Guest reservation settlement and acceptance-time retention reuse existing invariants.
+- Added isolated Sharp JPG <-> PNG and LibreOffice DOCX -> PDF adapters. Linux namespaces exclude service secrets, networking and other attempts; read-only mounts, bounded tmpfs, process/address/CPU/file limits and a whole-tree deadline constrain untrusted parsing. Worker startup checks the sandbox and required per-worker cgroup budgets.
+- Added the explicitly approved worker-only Moby-derived seccomp profile, retaining dropped capabilities, no-new-privileges and existing container limits.
+- Connected the live typed frontend gateway and protected conversion downloads; generated result metadata includes persisted guest/account ownership. Polling, real upload bytes, quota gating and downloads use existing Query/UI orchestration.
+- Periodic physical deletion, crash scratch cleanup and saved-file management remain item 16. Item 8 remains open for its remaining integration gates. Existing instruction/plan edits were preserved.
+
+### Verification
+
+- Passed 26 backend unit tests, 121 frontend tests, 6 processing integration tests, 9 conversion REST tests and 13 infrastructure/bootstrap integration tests. Processing tests use real isolated PostgreSQL/Redis/BullMQ and controlled S3/SMTP fixtures.
+- Passed Linux real-engine checks for all three directions, EXIF orientation, white transparency flattening, malformed input, hidden environment/files/network, read-only namespace roots, aggregate tmpfs exhaustion and the actual 60-second whole-tree timeout.
+- Passed separate real API/worker HTTP acceptance for all directions, saved-result metadata, downloaded signatures/sizes and unauthorized download rejection. Storage/SMTP were controlled protocol fixtures, not production-provider validation.
+- Passed browser guest upload/conversion/download, subsequent-upload sign-in gate, account login/conversion/saved download at 1440x1000 and 390x844 without console errors or horizontal overflow. Chrome DevTools was blocked by an already-running profile; the existing Playwright installation provided verification. Screenshots and temporary browser scripts remain outside the repository.
+- Passed lint/config checks, TypeScript checks, contract drift, builds and focused formatting checks. Vite reports a 548 kB shared chunk. After the user freed host disk space and relocated Docker data, the final worker image built and exported successfully. All three Linux engine/isolation/deadline tests and real all-direction HTTP acceptance passed again against that final image; the six processing integration tests also passed after service recovery. Item 15 is complete; item 8 and item 16 remain open.

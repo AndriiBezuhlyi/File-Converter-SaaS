@@ -8,12 +8,15 @@ import {
   Param,
   Post,
   Req,
+  Res,
+  StreamableFile,
   UploadedFile,
   UseGuards,
   UseInterceptors,
   type CanActivate,
   type ExecutionContext,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { unlink } from 'node:fs/promises';
 import { ConversionBoundaryGuard, type ConversionRequest } from './conversion-boundary.js';
@@ -77,6 +80,24 @@ export class ConversionsController {
   @Get(':id')
   status(@Req() request: ConversionRequest, @Param('id') id: string) {
     return this.conversions.status(request.conversionPrincipal, id, request.retainedGuest);
+  }
+  @Get(':id/download')
+  async download(
+    @Req() request: ConversionRequest,
+    @Param('id') id: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const file = await this.conversions.download(
+      request.conversionPrincipal,
+      id,
+      request.retainedGuest,
+    );
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    return new StreamableFile(file.body, {
+      type: file.mime,
+      length: file.size,
+      disposition: `attachment; filename="conversion.${file.name.split('.').pop()}"; filename*=UTF-8''${encodeURIComponent(file.name).replace(/['()*]/g, (character) => `%${character.charCodeAt(0).toString(16)}`)}`,
+    });
   }
 }
 

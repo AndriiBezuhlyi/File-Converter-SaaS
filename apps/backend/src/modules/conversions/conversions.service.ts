@@ -145,13 +145,19 @@ export class ConversionsService {
         this.queue.queue.add(
           'convert',
           { conversionId: id },
-          { jobId: id, attempts: 3, backoff: { type: 'exponential', delay: 1_000 } },
+          {
+            jobId: id,
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 1_000 },
+            removeOnComplete: { age: 3_600, count: 1_000 },
+            removeOnFail: { age: 3_600, count: 1_000 },
+          },
         ),
         5_000,
       );
       // Keep the intent pending until the worker dispatcher can reconcile acknowledgement/queue loss.
     } catch {
-      /* Durable acceptance survives a queue outage. Item 15 supplies reconciliation. */
+      /* Durable acceptance survives a queue outage; the worker reconciles this intent. */
     }
     return { ...this.describe(accepted), status: 'queued' as const };
   }
@@ -163,6 +169,22 @@ export class ConversionsService {
       targetFormat: conversion.targetFormat,
       createdAt: conversion.createdAt.toISOString(),
       saveResult: conversion.saveResult,
+    };
+  }
+  async download(principal: ConversionPrincipal, id: string, retainedGuest?: GuestPrincipal) {
+    const status = await this.status(principal, id, retainedGuest);
+    if (status.status !== 'completed' || !status.result) throw missing();
+    if (status.resultAvailability !== 'available')
+      throw new AuthError(410, 'RESULT_UNAVAILABLE', 'Conversion result is no longer available.');
+    const result = await this.database.client.file.findUniqueOrThrow({
+      where: { id: status.result.id },
+    });
+    const object = await this.storage.get(result.objectKey);
+    return {
+      ...object,
+      name: result.originalName,
+      mime: result.detectedMime,
+      size: Number(result.sizeBytes),
     };
   }
   async status(principal: ConversionPrincipal, id: string, retainedGuest?: GuestPrincipal) {
@@ -210,6 +232,7 @@ export class ConversionsService {
         result: result
           ? {
               id: result.id,
+              owner: result.guestSessionId ? ('guest' as const) : ('account' as const),
               name: result.originalName,
               format: result.format,
               sizeBytes: Number(result.sizeBytes),

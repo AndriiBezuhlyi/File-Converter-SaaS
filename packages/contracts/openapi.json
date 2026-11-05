@@ -3,7 +3,7 @@
   "info": {
     "title": "File Converter API",
     "version": "0.0.0",
-    "description": "Operational health, authentication, account settings, API keys, guest context, validated conversion admission and status polling. Processing and downloads remain pending."
+    "description": "Operational health, authentication, account settings, API keys, guest context, validated conversion admission, real isolated processing, status polling and protected result downloads."
   },
   "paths": {
     "/api/v1/health/live": {
@@ -1767,6 +1767,124 @@
           }
         }
       }
+    },
+    "/api/v1/conversions/{id}/download": {
+      "get": {
+        "operationId": "downloadConversionResult",
+        "summary": "Download an owned, available completed result",
+        "description": "Uses the same account, guest capability or explicit API-key boundary as conversion status. Consumed guest trials retain access; expired/deleted results return 410. No public object-storage URLs.",
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {
+            "guestCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private result bytes with attachment Content-Disposition and no-store caching",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials or consumed guest trial",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversion unavailable to this caller",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Result expired or deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or active-job capacity limit",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2230,7 +2348,8 @@
               "sizeBytes",
               "retention",
               "expiresAt",
-              "availability"
+              "availability",
+              "owner"
             ],
             "properties": {
               "id": {
@@ -2260,6 +2379,11 @@
               "availability": {
                 "type": "string",
                 "enum": ["pending", "available", "expired", "deleted"]
+              },
+              "owner": {
+                "type": "string",
+                "enum": ["guest", "account"],
+                "description": "Persisted result owner; signing in does not transfer guest results."
               }
             },
             "nullable": true

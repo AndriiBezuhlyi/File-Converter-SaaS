@@ -10,6 +10,7 @@ import { ApiDocsPage } from '../pages/api-docs/ApiDocsPage';
 import type { AccountGateway } from '../features/account/lib/account-gateway';
 import type { ApiKeyGateway } from '../features/api-keys/lib/api-key-gateway';
 import type { FilesGateway } from '../features/files/lib/files-gateway';
+import type { ConversionGateway } from '../features/converter/lib/conversion-gateway';
 import { RoutePreview } from '../pages/route-preview/RoutePreview';
 const AccountPage = lazy(() =>
   import('../pages/account/AccountPage').then((module) => ({ default: module.AccountPage })),
@@ -23,17 +24,27 @@ export function App({
   accountGateway,
   apiKeyGateway,
   filesGateway,
+  conversionGateway,
 }: {
   authGateway?: AuthGateway;
   accountGateway?: AccountGateway;
   apiKeyGateway?: ApiKeyGateway;
   filesGateway?: FilesGateway;
+  conversionGateway?: ConversionGateway;
 }) {
   return (
     <AuthProvider gateway={authGateway}>
       <Routes>
         <Route element={<AppLayout />}>
-          <Route index element={<ConverterPage />} />
+          <Route
+            index
+            element={
+              <ConverterPage
+                key={conversionGateway?.scope}
+                {...(conversionGateway ? { gateway: conversionGateway } : {})}
+              />
+            }
+          />
           <Route path="/api-docs" element={<ApiDocsPage />} />
           <Route
             path="/account"

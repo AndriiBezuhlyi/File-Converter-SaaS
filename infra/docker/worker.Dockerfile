@@ -13,7 +13,7 @@ RUN npm run build:worker --workspace=@converter/backend
 FROM node:24-bookworm-slim AS runtime
 ENV NODE_ENV=production
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libreoffice-writer fonts-crosextra-carlito fonts-dejavu-core fontconfig bubblewrap ca-certificates \
+    && apt-get install -y --no-install-recommends libreoffice-writer fonts-crosextra-carlito fonts-dejavu-core fontconfig bubblewrap util-linux ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 ENV LIBREOFFICE_BIN=/usr/bin/libreoffice
 ENV WORKER_TEMP_DIR=/tmp/converter

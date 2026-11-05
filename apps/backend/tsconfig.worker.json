@@ -6,6 +6,10 @@
     "types": ["node"],
     "sourceMap": true
   },
-  "include": ["src/entrypoints/worker.main.ts", "src/infrastructure/health/worker-probe.ts"],
+  "include": [
+    "src/entrypoints/worker.main.ts",
+    "src/infrastructure/health/worker-probe.ts",
+    "src/modules/conversions/engine-process.ts"
+  ],
   "exclude": ["**/*.spec.ts", "test", "dist", "node_modules"]
 }

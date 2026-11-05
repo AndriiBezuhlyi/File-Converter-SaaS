@@ -411,6 +411,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/conversions/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download an owned, available completed result
+         * @description Uses the same account, guest capability or explicit API-key boundary as conversion status. Consumed guest trials retain access; expired/deleted results return 410. No public object-storage URLs.
+         */
+        get: operations["downloadConversionResult"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -609,6 +629,11 @@ export interface components {
                 expiresAt: string | null;
                 /** @enum {string} */
                 availability: "pending" | "available" | "expired" | "deleted";
+                /**
+                 * @description Persisted result owner; signing in does not transfer guest results.
+                 * @enum {string}
+                 */
+                owner: "guest" | "account";
             } | null;
         };
         ConversionCapabilities: {
@@ -1596,6 +1621,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConversionCapabilities"];
+                };
+            };
+        };
+    };
+    downloadConversionResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Private result bytes with attachment Content-Disposition and no-store caching */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                    "image/png": string;
+                    "application/pdf": string;
+                };
+            };
+            /** @description Invalid credentials or consumed guest trial */
+            401: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conversion unavailable to this caller */
+            404: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Result expired or deleted */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request or active-job capacity limit */
+            429: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

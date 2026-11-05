@@ -42,7 +42,8 @@
     "infra:down": "docker compose --env-file .env -f infra/compose.yaml down",
     "infra:config": "docker compose --env-file .env.example -f infra/compose.yaml config --quiet",
     "infra:production:config": "docker compose --env-file .env.production -f infra/compose.production.yaml config --quiet",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:all && npm run db:validate && npm run contracts:check && npm run build"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:all && npm run db:validate && npm run contracts:check && npm run build",
+    "test:processing": "npm run test:processing --workspace=@converter/backend"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

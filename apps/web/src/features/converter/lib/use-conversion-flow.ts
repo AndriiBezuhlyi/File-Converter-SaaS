@@ -62,7 +62,7 @@ export function useConversionFlow(
         query.state.error.kind !== 'network'
       )
         return false;
-      return query.state.error ? 30_000 : 2_000;
+      return query.state.error ? 30_000 : 1_500;
     },
     refetchOnWindowFocus: (query) => !isTerminal(query.state.data),
     refetchOnReconnect: (query) => !isTerminal(query.state.data),
