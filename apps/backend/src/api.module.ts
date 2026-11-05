@@ -4,13 +4,14 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module.js'
 import { HealthController } from './infrastructure/health/health.controller.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
+import { GuestModule } from './modules/auth/guest/guest.module.js';
 
 @Module({ imports: [RuntimeConfigModule] })
 export class ApiModule {
   static withAuthentication(): DynamicModule {
     return {
       ...this.withInfrastructure(),
-      imports: [InfrastructureModule, AuthModule, UsersModule],
+      imports: [InfrastructureModule, AuthModule, UsersModule, GuestModule],
     };
   }
   static withInfrastructure(): DynamicModule {

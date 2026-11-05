@@ -3,7 +3,7 @@
   "info": {
     "title": "File Converter API",
     "version": "0.0.0",
-    "description": "Operational health and first-party email authentication/account endpoints. Conversion, settings, API-key and file operations are not implemented."
+    "description": "Operational health and first-party email authentication/account and guest-context endpoints. Conversion, settings, API-key and file operations are not implemented."
   },
   "paths": {
     "/api/v1/health/live": {
@@ -858,6 +858,102 @@
           }
         }
       }
+    },
+    "/api/v1/guest-session": {
+      "post": {
+        "operationId": "guestSessionBootstrap",
+        "tags": ["Guest access"],
+        "summary": "Create or reuse a protected guest context without resetting its trial",
+        "description": "Call GET /auth/csrf first; use the same session cookie and synchronizer token. Sets/reuses a separate guest cookie; never returns its token or internal guest ID. A presented invalid/expired guest credential returns 401 GUEST_CREDENTIAL_INVALID, with no replacement context. Explicit X-API-Key is rejected. Reserved/consumed states return 200 here; their 409/401 admission errors belong to future conversion submission. Bootstrap: 30/IP/minute; issuance: 5/IP/15 minutes. All responses are no-store. Cookie survives account login/logout; ownership never transfers. Guest conversion/status/download routes are not implemented by this operation.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact configured APP_ORIGIN."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Synchronizer token from GET /auth/csrf."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New or existing guest state, including reserved/consumed",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Opaque guest cookie with its original absolute Expires; no fresh lifetime on reuse."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "description": "GUEST_CREDENTIAL_INVALID or explicit API key rejected; no automatic replacement context",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1119,6 +1215,28 @@
             "description": "The old email remains active until the new email is confirmed."
           }
         }
+      },
+      "GuestSession": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["trialState", "activeConversionId"],
+        "properties": {
+          "trialState": {
+            "type": "string",
+            "enum": ["available", "reserved", "consumed"]
+          },
+          "activeConversionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Reserved conversion only; null when available or consumed. Keep an existing result ID separately."
+          }
+        }
+      },
+      "EmptyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
       }
     },
     "securitySchemes": {
@@ -1127,6 +1245,12 @@
         "in": "cookie",
         "name": "__Host-converter.sid",
         "description": "HttpOnly; Secure; SameSite=Lax; Path=/; no Domain. Development-only loopback HTTP uses converter.dev.sid. Redis sessions: anonymous 15 minutes, authenticated idle 30 minutes and absolute 7 days."
+      },
+      "guestCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-converter.guest",
+        "description": "Opaque capability; Secure, HttpOnly, SameSite=Lax, Path=/, no Domain. Local loopback HTTP uses converter.dev.guest. Fixed configurable lifetime (default 30 days), never renewed by bootstrap/login/logout."
       }
     },
     "responses": {

@@ -1,6 +1,6 @@
 # Database Schema
 
-PostgreSQL 18 with Prisma 7. The source model is [schema.prisma](../apps/backend/prisma/schema.prisma); migration history is [prisma/migrations](../apps/backend/prisma/migrations). API/worker share the runtime Prisma/pg provider. Authentication/profile transactions and notification intents are implemented; guest/conversion/file/settings/API-key services remain pending. No existing environment is migrated automatically.
+PostgreSQL 18 with Prisma 7. The source model is [schema.prisma](../apps/backend/prisma/schema.prisma); migration history is [prisma/migrations](../apps/backend/prisma/migrations). API/worker share the runtime Prisma/pg provider. Authentication/profile transactions, notification intents, guest credentials and guest-trial transaction helpers are implemented; conversion/file/settings/API-key services remain pending. No existing environment is migrated automatically.
 
 ## Models and relationships
 
@@ -41,6 +41,16 @@ Token consumption re-reads purpose, expiry, attempts and consumption state under
 
 Notification workers claim `email_notification` tasks conditionally with a fresh lease and increment durable attempts. Completion/retry updates require that same unexpired lease. SMTP acceptance cannot be atomically committed with PostgreSQL, so delivery is at least once; duplicates use the same expiring, single-use token. Five attempts bound delivery retries; monitor failures and pending age. Other task types are not dispatched by this consumer.
 
+## Implemented guest transactions
+
+Guest bootstrap stores only a random opaque-token hash with a fixed database-clock expiry. Reuse never extends the credential or resets its state. Account sessions remain independent; owning guest credentials still resolve guest conversions after login without changing persisted ownership.
+
+`GuestTrialService.reserve` takes the guest row lock, revalidates the principal hash/expiry and available trial, and requires a two-hour admission window. Its database-only callback creates input metadata, queued Conversion and durable dispatch intent before the same transaction reserves that conversion. Any failure rolls all these writes back. Existing partial indexes and reservation guards provide independent backstops.
+
+Settlement always locks GuestSession before Conversion. Matching processing version/token and lease validity fence publication, retry and terminal failure. Completed output must be guest-owned, present and temporary with expiry exactly one hour after a fresh completion timestamp and no later than credential expiry. Result publication and irreversible consumption share the transaction; terminal failure releases only its matching reservation, while retry retains it. Duplicate terminal deliveries skip callbacks. Explicit expired-lease reconciliation can fail/requeue but cannot complete work. Future conversion workers must enforce the credential-expiry-minus-one-hour deadline; no conversion consumer is registered yet.
+
+The helpers accept a caller-owned short transaction, with no Redis/object-storage/SMTP work under locks. No schema or migration changes were needed. `npm run test:guest` verifies these transactions on real PostgreSQL/Redis; production conversion/download adapters must still enforce ownership and file expiry/deletion on every read.
+
 ## Index rationale
 
 | Access pattern                                  | Index                                                                                        |
@@ -59,7 +69,7 @@ Source/result uniqueness prevents reusing an upload across accepted jobs or publ
 
 ## Domain transaction requirements
 
-Schema constraints are backstops. Authentication transactions are implemented as described above; guest/conversion/file use cases still require the transactions below.
+Schema constraints are backstops. Authentication and guest helpers are implemented as described above. Future conversion/file adapters must wire the helpers into the transactions below; helpers alone do not process uploads or execute jobs.
 
 1. Register user/settings together; hash and validate credentials outside long-held database locks. Consume a valid unexpired single-use token with a conditional update and apply its identity mutation atomically.
 2. At acceptance, create input metadata, conversion and durable dispatch intent; reserve the available guest allowance with a conditional update in the same transaction. A unique active-job constraint alone does not authorize a consumed guest to upload. Snapshot account settings at acceptance; guest snapshots are always false.

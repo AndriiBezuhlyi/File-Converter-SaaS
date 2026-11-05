@@ -18,7 +18,9 @@ export class AuthErrorFilter implements ExceptionFilter {
     const response = http.getResponse<Response>();
     const request = http.getRequest<Request>();
     if (response.headersSent) return;
-    const account = /^\/api\/v1\/(auth(?:\/|$)|users\/me(?:\/|$))/.test(request.path);
+    const account = /^\/api\/v1\/(auth(?:\/|$)|users\/me(?:\/|$)|guest-session(?:\/|$))/.test(
+      request.path,
+    );
     if (!account && error instanceof HttpException) {
       response.status(error.getStatus()).json(error.getResponse());
       return;

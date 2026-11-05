@@ -262,6 +262,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/guest-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create or reuse a protected guest context without resetting its trial
+         * @description Call GET /auth/csrf first; use the same session cookie and synchronizer token. Sets/reuses a separate guest cookie; never returns its token or internal guest ID. A presented invalid/expired guest credential returns 401 GUEST_CREDENTIAL_INVALID, with no replacement context. Explicit X-API-Key is rejected. Reserved/consumed states return 200 here; their 409/401 admission errors belong to future conversion submission. Bootstrap: 30/IP/minute; issuance: 5/IP/15 minutes. All responses are no-store. Cookie survives account login/logout; ownership never transfers. Guest conversion/status/download routes are not implemented by this operation.
+         */
+        post: operations["guestSessionBootstrap"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -376,6 +396,16 @@ export interface components {
             /** @description The old email remains active until the new email is confirmed. */
             verificationRequired: boolean;
         };
+        GuestSession: {
+            /** @enum {string} */
+            trialState: "available" | "reserved" | "consumed";
+            /**
+             * Format: uuid
+             * @description Reserved conversion only; null when available or consumed. Keep an existing result ID separately.
+             */
+            activeConversionId: string | null;
+        };
+        EmptyRequest: Record<string, never>;
     };
     responses: {
         /** @description Invalid DTO or invalid/expired/consumed token */
@@ -876,6 +906,52 @@ export interface operations {
             };
             400: components["responses"]["Auth400"];
             401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    guestSessionBootstrap: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Exact configured APP_ORIGIN. */
+                Origin: string;
+                /** @description Synchronizer token from GET /auth/csrf. */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmptyRequest"];
+            };
+        };
+        responses: {
+            /** @description New or existing guest state, including reserved/consumed */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    /** @description Opaque guest cookie with its original absolute Expires; no fresh lifetime on reuse. */
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestSession"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            /** @description GUEST_CREDENTIAL_INVALID or explicit API key rejected; no automatic replacement context */
+            401: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             403: components["responses"]["Auth403"];
             429: components["responses"]["Auth429"];
             503: components["responses"]["Auth503"];

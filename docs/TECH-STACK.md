@@ -22,7 +22,7 @@ This is the primary technology inventory for the project. Product requirements r
 - Nest Config, class-validator, and class-transformer — runtime configuration and DTO validation.
 - express-session + connect-redis + redis — Redis-backed sessions with finite idle/absolute TTLs, SID rotation and revocation tombstones; PostgreSQL session versions revoke credentials across API replicas.
 - Helmet — security headers. Distributed auth limits use atomic Redis Lua counters; Nest Throttler remains installed but is not used for in-memory enforcement.
-- Node.js crypto — random CSRF/link tokens, SHA-256 token hashes, HMAC-protected rate-limit identities and authenticated AES-256-GCM email-outbox encryption; no additional cryptography package.
+- Node.js crypto — random CSRF/link/opaque guest tokens, SHA-256 token hashes, HMAC-protected rate-limit identities and authenticated AES-256-GCM email-outbox encryption; no additional cryptography package. Guest credentials and durable trial accounting use PostgreSQL with short Prisma row-locked transactions, independently of Redis account sessions.
 - Nodemailer — pooled SMTP adapter with TLS, connectivity verification and bounded network operations; verification/recovery and pending email-change notifications use committed durable intents. No production provider is selected.
 
 ## Database
@@ -77,6 +77,8 @@ Run `npm run test:infrastructure` with explicit loopback `TEST_DATABASE_URL` and
 
 Run `npm run test:auth` with the same explicit dedicated loopback test services after applying migrations. Jest/Supertest verify real auth transactions, Redis sessions/revocation/limits, CSRF/origin checks and worker/BullMQ/SMTP delivery using owned synthetic accounts and a random Redis namespace. Offline DTO/crypto/configuration/HTTP tests remain in `test:all`; no new test packages are required.
 
+Run `npm run test:guest` with the same explicit dedicated loopback PostgreSQL/Redis services and deployed migrations. Jest/Supertest verify guest bootstrap/cookies/CSRF/limits, fixed expiry, concurrent reservation and transaction rollback, lease/version fencing, explicit expired-lease reconciliation, success/failure accounting and retained ownership across login/logout. Local controlled S3/SMTP fixtures satisfy shared infrastructure without external providers. CI runs this separate suite; no new dependency is required. Conversion engines, public conversion/download routes and frontend integration are outside its coverage.
+
 ## Development Tools
 
 - npm workspaces — one monorepo and one lockfile.
@@ -92,4 +94,4 @@ Run `npm run test:auth` with the same explicit dedicated loopback test services 
 - Prisma 7 is the stable selected line; CLI, client, and PostgreSQL adapter share the same version. Do not select a release candidate via a moving registry tag.
 - jsdom 27 supports the installed Node.js baseline; the newest jsdom line requires a newer Node.js minor.
 - Runtime libraries belong to their consuming workspace's `dependencies`; compilers, Sass, test runners, CLI tools, linters, and type definitions belong to `devDependencies`.
-- Domain schema, infrastructure adapters, first-party authentication/profile transactions and notification consumers are implemented. Frontend auth integration, guest accounting, settings/API-key/file/conversion endpoints and conversion consumers remain future work; authentication tests do not establish conversion functionality.
+- Domain schema, infrastructure adapters, first-party authentication/profile transactions, guest credentials/trial transaction helpers and notification consumers are implemented. Frontend integration, settings/API-key/file/conversion endpoints and conversion consumers remain future work; auth/guest tests do not establish conversion-engine functionality.
