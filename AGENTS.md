@@ -32,3 +32,8 @@ Use [api-audit](.agents/skills/api-audit/SKILL.md) or [conversion-test](.agents/
 ## Database Review
 
 Use [$database-review](.agents/skills/database-review/SKILL.md) for schema, migration, SQL/ORM query, index, constraint, transaction/concurrency, database security, ownership/tenant isolation, or database performance changes and reviews.
+
+## Testing
+
+When implementing new functionality, create only the most essential unit, integration, and component tests.
+When modifying existing functionality, do not modify the existing tests.
