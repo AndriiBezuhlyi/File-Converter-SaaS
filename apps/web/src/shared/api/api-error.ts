@@ -6,6 +6,7 @@ export class ApiRequestError extends Error {
   constructor(
     readonly kind: ApiErrorKind,
     readonly status?: number,
+    readonly code?: string,
   ) {
     super('The API request could not be completed.');
     this.name = 'ApiRequestError';

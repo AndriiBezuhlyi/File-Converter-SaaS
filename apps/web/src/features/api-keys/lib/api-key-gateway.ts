@@ -8,4 +8,5 @@ export interface ApiKeyGateway {
   readKey(signal: AbortSignal): Promise<ApiKeyMetadata | null>;
   createKey(currentPassword: string): Promise<{ metadata: ApiKeyMetadata; secret: string }>;
   rotateKey(currentPassword: string): Promise<{ metadata: ApiKeyMetadata; secret: string }>;
+  revokeKey?(currentPassword: string): Promise<void>;
 }

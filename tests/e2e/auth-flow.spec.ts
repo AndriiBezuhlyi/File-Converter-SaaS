@@ -23,23 +23,56 @@ async function counters(page: Page, expected: Record<string, number>) {
   expect(counts).toMatchObject(expected);
 }
 
-test('production forms validate, support password managers, and never send credentials without a gateway', async ({
+test('production forms validate, support password managers, and use the session/CSRF login contract', async ({
   page,
 }) => {
   const productRequests: string[] = [];
   const errors: string[] = [];
+  let authenticated = false;
+  const profile = { id: 'synthetic-account', email: 'reader@example.test', displayName: '' };
+  const session = () =>
+    authenticated
+      ? { kind: 'authenticated', user: profile, expiresAt: '2026-11-05T12:00:00Z' }
+      : { kind: 'anonymous' };
+  await page.route('**/api/v1/**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path === '/api/v1/auth/session') return route.fulfill({ json: session() });
+    if (path === '/api/v1/auth/csrf')
+      return route.fulfill({ json: { csrfToken: 'synthetic-csrf' } });
+    if (path === '/api/v1/auth/login') {
+      expect(request.method()).toBe('POST');
+      expect(request.headers()['x-csrf-token']).toBe('synthetic-csrf');
+      expect(request.postDataJSON() as unknown).toEqual({
+        email: profile.email,
+        password: 'synthetic-password',
+      });
+      authenticated = true;
+      return route.fulfill({ json: session() });
+    }
+    if (path === '/api/v1/auth/logout') {
+      expect(request.method()).toBe('POST');
+      expect(request.headers()['x-csrf-token']).toBe('synthetic-csrf');
+      authenticated = false;
+      return route.fulfill({ status: 204 });
+    }
+    return route.fulfill({
+      status: 404,
+      json: { error: { code: 'NOT_FOUND', message: 'Unexpected synthetic route.' } },
+    });
+  });
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/')) productRequests.push(request.method());
+    if (new URL(request.url()).pathname.startsWith('/api/'))
+      productRequests.push(request.method() + ' ' + new URL(request.url()).pathname);
   });
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('http://127.0.0.1:4173/login?returnTo=https%3A%2F%2Fevil.invalid');
   await expect(page).toHaveTitle('Увійти — converter');
-  await expect(
-    page.getByText('Авторизацію ще не підключено. Дані нікуди не надсилаються.'),
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Увійти', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Увійти', exact: true }).click();
   await expect(page.getByLabel('Електронна пошта')).toBeFocused();
   await expect(page.getByLabel('Електронна пошта')).toHaveAttribute('aria-invalid', 'true');
+  expect(productRequests.every((value) => value === 'GET /api/v1/auth/session')).toBe(true);
   await fill(page);
   await expect(page.getByLabel('Пароль', { exact: true })).toHaveAttribute(
     'autocomplete',
@@ -49,14 +82,14 @@ test('production forms validate, support password managers, and never send crede
   await expect(page.getByLabel('Пароль', { exact: true })).toHaveAttribute('type', 'text');
   await page.getByRole('button', { name: 'Приховати: пароль', exact: true }).click();
   await page.getByLabel('Пароль', { exact: true }).press('Enter');
-  await expect(page.getByRole('alert')).toHaveText(
-    'Авторизацію ще не підключено. Дані нікуди не надіслано.',
-  );
-  await expect(page.getByRole('link', { name: 'До конвертера', exact: true })).toHaveAttribute(
-    'href',
-    '/',
-  );
-  expect(productRequests).toEqual([]);
+  await expect(page).toHaveURL('http://127.0.0.1:4173/');
+  await expect(page.getByRole('button', { name: 'Вийти', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Вийти', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Увійти', exact: true })).toBeVisible();
+  expect(productRequests.filter((value) => value.startsWith('POST'))).toEqual([
+    'POST /api/v1/auth/login',
+    'POST /api/v1/auth/logout',
+  ]);
   expect(errors).toEqual([]);
   expect(await page.locator('vite-error-overlay').count()).toBe(0);
   expect(

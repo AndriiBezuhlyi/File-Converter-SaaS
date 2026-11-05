@@ -121,7 +121,7 @@ export function CredentialsForm({
           autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
           {...register('password')}
           error={errors.password?.message}
-          hint={mode !== 'login' ? 'Від 8 до 128 символів. Пробіли враховуються.' : undefined}
+          hint={mode !== 'login' ? 'Від 10 до 128 символів. Пробіли враховуються.' : undefined}
         />
         {mode !== 'login' ? (
           <PasswordField

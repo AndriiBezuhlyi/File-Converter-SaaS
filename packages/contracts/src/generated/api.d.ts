@@ -282,6 +282,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/me/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * accountSettings
+         * @description Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses.
+         */
+        get: operations["accountSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * updateAccountSettings
+         * @description Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses.
+         */
+        patch: operations["updateAccountSettings"];
+        trace?: never;
+    };
+    "/api/v1/users/me/api-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * apiKeyMetadata
+         * @description Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses.
+         */
+        get: operations["apiKeyMetadata"];
+        put?: never;
+        /**
+         * createApiKey
+         * @description Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses. Current password confirmation; shared sensitive-operation limit of five per account per 15 minutes. Rotation/revocation commits atomically; subsequent key checks read PostgreSQL without a validity cache.
+         */
+        post: operations["createApiKey"];
+        /**
+         * revokeApiKey
+         * @description Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses. Current password confirmation; shared sensitive-operation limit of five per account per 15 minutes. Rotation/revocation commits atomically; subsequent key checks read PostgreSQL without a validity cache.
+         */
+        delete: operations["revokeApiKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/api-key/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * rotateApiKey
+         * @description Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses. Current password confirmation; shared sensitive-operation limit of five per account per 15 minutes. Rotation/revocation commits atomically; subsequent key checks read PostgreSQL without a validity cache.
+         */
+        post: operations["rotateApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -406,6 +478,31 @@ export interface components {
             activeConversionId: string | null;
         };
         EmptyRequest: Record<string, never>;
+        AccountSettings: {
+            /** @description Applies to newly accepted conversions only. Disabling never deletes saved files. */
+            autoSave: boolean;
+        };
+        KeyConfirmation: {
+            /** Format: password */
+            currentPassword: string;
+        };
+        ApiKeyMetadata: {
+            prefix: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ApiKeyState: {
+            key: {
+                prefix: string;
+                /** Format: date-time */
+                createdAt: string;
+            } | null;
+        };
+        ApiKeyIssued: {
+            metadata: components["schemas"]["ApiKeyMetadata"];
+            /** @description One-time credential. Keep outside query caches and persistent browser storage. */
+            secret: string;
+        };
     };
     responses: {
         /** @description Invalid DTO or invalid/expired/consumed token */
@@ -953,6 +1050,215 @@ export interface operations {
                 };
             };
             403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    accountSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountSettings"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    updateAccountSettings: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+                Origin: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountSettings"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountSettings"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    apiKeyMetadata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyState"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    createApiKey: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+                Origin: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeyConfirmation"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyIssued"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            /** @description API_KEY_EXISTS on duplicate creation; API_KEY_MISSING on rotation without an active key. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    revokeApiKey: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+                Origin: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeyConfirmation"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            204: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            /** @description API_KEY_EXISTS on duplicate creation; API_KEY_MISSING on rotation without an active key. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
+        };
+    };
+    rotateApiKey: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+                Origin: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeyConfirmation"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyIssued"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            /** @description API_KEY_EXISTS on duplicate creation; API_KEY_MISSING on rotation without an active key. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             429: components["responses"]["Auth429"];
             503: components["responses"]["Auth503"];
         };

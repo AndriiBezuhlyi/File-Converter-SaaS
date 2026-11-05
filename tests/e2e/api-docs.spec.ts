@@ -1,13 +1,17 @@
 import { expect, test } from '@playwright/test';
 
-test('API documentation has native deep links, seven operations, and no product API requests', async ({
+test('API documentation has native deep links, seven operations, and only session reads', async ({
   page,
 }) => {
   const requests: string[] = [];
   const errors: string[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/')) requests.push(request.method());
+    const path = new URL(request.url()).pathname;
+    if (path.startsWith('/api/')) requests.push(request.method() + ' ' + path);
   });
+  await page.route('**/api/v1/auth/session', (route) =>
+    route.fulfill({ json: { kind: 'anonymous' } }),
+  );
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/api-docs');
   await expect(page).toHaveTitle('Документація API — converter');
@@ -26,7 +30,8 @@ test('API documentation has native deep links, seven operations, and no product 
   await expect(page.getByRole('heading', { name: 'Помилки', exact: true })).toBeInViewport();
   await page.getByRole('link', { name: 'До початку' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
-  expect(requests).toEqual([]);
+  expect(requests.length).toBeGreaterThan(0);
+  expect(requests.every((value) => value === 'GET /api/v1/auth/session')).toBe(true);
   expect(errors).toEqual([]);
 });
 

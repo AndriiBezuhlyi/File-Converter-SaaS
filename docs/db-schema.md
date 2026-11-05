@@ -1,6 +1,6 @@
 # Database Schema
 
-PostgreSQL 18 with Prisma 7. The source model is [schema.prisma](../apps/backend/prisma/schema.prisma); migration history is [prisma/migrations](../apps/backend/prisma/migrations). API/worker share the runtime Prisma/pg provider. Authentication/profile transactions, notification intents, guest credentials and guest-trial transaction helpers are implemented; conversion/file/settings/API-key services remain pending. No existing environment is migrated automatically.
+PostgreSQL 18 with Prisma 7. The source model is [schema.prisma](../apps/backend/prisma/schema.prisma); migration history is [prisma/migrations](../apps/backend/prisma/migrations). API/worker share the runtime Prisma/pg provider. Authentication/profile transactions, persisted settings, hashed API keys, notification intents, guest credentials and guest-trial transaction helpers are implemented; conversion/file services remain pending. Settings updates and key lifecycle mutations lock the user row and recheck the session snapshot; the existing one-active-key partial unique index serializes the final invariant. Key validity is read directly from PostgreSQL on every authentication. No schema change is required for these services, and no existing environment is migrated automatically.
 
 ## Models and relationships
 

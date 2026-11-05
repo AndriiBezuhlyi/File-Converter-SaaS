@@ -26,8 +26,12 @@ test('keyboard picker selects, replaces, and removes a file without sending it t
 }) => {
   const apiRequests: string[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.method());
+    const path = new URL(request.url()).pathname;
+    if (path.startsWith('/api/')) apiRequests.push(request.method() + ' ' + path);
   });
+  await page.route('**/api/v1/auth/session', (route) =>
+    route.fulfill({ json: { kind: 'anonymous' } }),
+  );
   await page.goto('/');
   await expect(page.getByLabel('Конвертувати у')).toBeDisabled();
   await page.getByRole('button', { name: 'Вибрати файл' }).focus();
@@ -60,7 +64,8 @@ test('keyboard picker selects, replaces, and removes a file without sending it t
     buffer: Buffer.from('synthetic'),
   });
   await expect(page.getByText('report.docx', { exact: true })).toBeVisible();
-  expect(apiRequests).toEqual([]);
+  expect(apiRequests.length).toBeGreaterThan(0);
+  expect(apiRequests.every((value) => value === 'GET /api/v1/auth/session')).toBe(true);
 });
 
 test('real DataTransfer accepts the size boundary and rejects oversized, unsupported, empty, and multiple files', async ({

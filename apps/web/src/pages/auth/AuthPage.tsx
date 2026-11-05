@@ -29,18 +29,20 @@ export function AuthPage({ kind }: { kind: AuthPageKind }) {
   const search = new URLSearchParams(location.search);
   const returnTo = safeReturnTo(search.get('returnTo'));
   const isLinkPage = kind === 'verify-email' || kind === 'reset-password';
+  const linkLocation = location.search + location.hash;
+  const incomingToken = readLinkToken(location.hash.slice(1)) ?? readLinkToken(location.search);
   const [link, setLink] = useState(() => ({
-    search: location.search,
-    token: isLinkPage ? readLinkToken(location.search) : null,
+    search: linkLocation,
+    token: isLinkPage ? incomingToken : null,
     version: 0,
   }));
   // A new email link can arrive on the same mounted route. Capture it before scrubbing;
   // the subsequent URL replacement preserves the in-memory credential and form state.
-  if (isLinkPage && link.search !== location.search) {
-    const hasToken = search.has('token');
+  if (isLinkPage && link.search !== linkLocation) {
+    const hasToken = incomingToken !== null;
     setLink({
-      search: location.search,
-      token: hasToken ? readLinkToken(location.search) : link.token,
+      search: linkLocation,
+      token: hasToken ? incomingToken : link.token,
       version: link.version + (hasToken ? 1 : 0),
     });
   }
@@ -49,11 +51,12 @@ export function AuthPage({ kind }: { kind: AuthPageKind }) {
   useEffect(() => {
     if (
       (kind === 'verify-email' || kind === 'reset-password') &&
-      new URLSearchParams(location.search).has('token')
+      (new URLSearchParams(location.search).has('token') ||
+        new URLSearchParams(location.hash.slice(1)).has('token'))
     ) {
       void navigate(authHref(`/${kind}`, returnTo), { replace: true });
     }
-  }, [kind, location.search, navigate, returnTo]);
+  }, [kind, location.search, location.hash, navigate, returnTo]);
   const [title, description] = content[kind];
   const navigationState: unknown = location.state;
   const passwordChanged =

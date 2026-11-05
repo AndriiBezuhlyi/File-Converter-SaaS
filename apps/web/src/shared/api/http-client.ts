@@ -92,7 +92,7 @@ export function createHttpClient(
     baseURL: `${base}/`,
     allowAbsoluteUrls: false,
     withCredentials: true,
-    // CSRF issuance/names are not agreed yet; only explicit mutation tokens are used.
+    // SessionClient supplies the agreed synchronizer token explicitly.
     withXSRFToken: false,
     timeout,
     validateStatus: () => true,
@@ -100,7 +100,19 @@ export function createHttpClient(
   });
 
   function checkStatus(response: AxiosResponse<unknown>, accepted: readonly number[]) {
-    if (!accepted.includes(response.status)) throw new ApiRequestError('http', response.status);
+    if (!accepted.includes(response.status)) {
+      const data = response.data;
+      const error = data && typeof data === 'object' && 'error' in data ? data.error : null;
+      const code =
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        typeof error.code === 'string' &&
+        /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code)
+          ? error.code
+          : undefined;
+      throw new ApiRequestError('http', response.status, code);
+    }
   }
 
   return {

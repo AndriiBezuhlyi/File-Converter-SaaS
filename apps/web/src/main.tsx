@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './app/App';
+import { LiveApp } from './app/LiveApp';
 import { AppProviders } from './app/AppProviders';
 import './app/styles/global.scss';
 
@@ -10,7 +10,7 @@ if (!container) throw new Error('Missing React root element.');
 createRoot(container).render(
   <StrictMode>
     <AppProviders>
-      <App />
+      <LiveApp />
     </AppProviders>
   </StrictMode>,
 );

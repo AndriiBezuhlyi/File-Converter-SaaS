@@ -25,6 +25,7 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
   });
   const action = useRequestAction(dataErrorMessage);
   const [open, setOpen] = useState(false);
+  const [revoking, setRevoking] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const [secret, setSecret] = useState<{ prefix: string; value: string } | null>(null);
   const {
@@ -82,8 +83,9 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
       {uncertain ? (
         <div className={styles.feedback}>
           <p role="alert">
-            Відповідь не отримано. Ключ міг бути створений або замінений. Оновіть дані ключа перед
-            наступною дією.
+            Відповідь не отримано.{' '}
+            {revoking ? 'Ключ міг бути відкликаний.' : 'Ключ міг бути створений або замінений.'}{' '}
+            Оновіть дані ключа перед наступною дією.
           </p>
           <Button
             variant="secondary"
@@ -103,11 +105,25 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
           disabled={uncertain}
           onClick={() => {
             reset();
+            setRevoking(false);
             setOpen(true);
           }}
         >
           {rotating ? 'Перевипустити ключ' : 'Створити ключ'}
         </Button>
+        {rotating && gateway.revokeKey ? (
+          <Button
+            variant="secondary"
+            disabled={uncertain}
+            onClick={() => {
+              reset();
+              setRevoking(true);
+              setOpen(true);
+            }}
+          >
+            Відкликати ключ
+          </Button>
+        ) : null}
         {rotating ? (
           <p className={styles.helper}>
             Попередній ключ одразу перестане працювати після перевипуску.
@@ -116,7 +132,13 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
       </div>
       {open ? (
         <Dialog
-          title={rotating ? 'Перевипустити API-ключ?' : 'Створити API-ключ?'}
+          title={
+            revoking
+              ? 'Відкликати API-ключ?'
+              : rotating
+                ? 'Перевипустити API-ключ?'
+                : 'Створити API-ключ?'
+          }
           onClose={close}
           pending={action.pending}
         >
@@ -128,6 +150,11 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
               void handleSubmit(async ({ currentPassword }) => {
                 await action.run(
                   async () => {
+                    if (revoking && gateway.revokeKey) {
+                      await gateway.revokeKey(currentPassword);
+                      await client.cancelQueries({ queryKey });
+                      return null;
+                    }
                     const result = await (rotating
                       ? gateway.rotateKey(currentPassword)
                       : gateway.createKey(currentPassword));
@@ -135,8 +162,10 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
                     return result;
                   },
                   (result) => {
-                    client.setQueryData(queryKey, result.metadata);
-                    setSecret({ prefix: result.metadata.prefix, value: result.secret });
+                    client.setQueryData(queryKey, result?.metadata ?? null);
+                    setSecret(
+                      result ? { prefix: result.metadata.prefix, value: result.secret } : null,
+                    );
                     close();
                   },
                   (cause) => {
@@ -144,6 +173,8 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
                       setUncertain(true);
                       setSecret(null);
                       close();
+                    } else {
+                      void metadata.refetch();
                     }
                   },
                 );
@@ -151,9 +182,11 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
             }}
           >
             <p>
-              {rotating
-                ? 'Попередній ключ одразу перестане працювати.'
-                : 'Підтвердьте створення ключа поточним паролем.'}
+              {revoking
+                ? 'Ключ одразу перестане працювати. Підтвердьте відкликання поточним паролем.'
+                : rotating
+                  ? 'Попередній ключ одразу перестане працювати.'
+                  : 'Підтвердьте створення ключа поточним паролем.'}
             </p>
             <fieldset className={styles.fieldset} disabled={action.pending}>
               <PasswordField
@@ -166,9 +199,11 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
                 <Button type="submit">
                   {action.pending
                     ? 'Зачекайте…'
-                    : rotating
-                      ? 'Перевипустити ключ'
-                      : 'Створити ключ'}
+                    : revoking
+                      ? 'Відкликати ключ'
+                      : rotating
+                        ? 'Перевипустити ключ'
+                        : 'Створити ключ'}
                 </Button>
                 <Button variant="secondary" data-initial-focus onClick={close}>
                   Скасувати

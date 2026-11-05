@@ -136,10 +136,11 @@ test('empty state, retry, anonymous/production gates and responsive file actions
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
     await page.keyboard.press('Escape');
   }
+  await page.route('**/api/v1/auth/session', (route) =>
+    route.fulfill({ json: { kind: 'anonymous' } }),
+  );
   await page.goto('http://127.0.0.1:4173/files');
-  await expect(
-    page.getByText('Цей розділ ще не підключено. Дані акаунту наразі недоступні.'),
-  ).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Увійти до акаунту' })).toBeVisible();
   await expect(list(page)).not.toBeVisible();
   expect(errors).toEqual([]);
 });

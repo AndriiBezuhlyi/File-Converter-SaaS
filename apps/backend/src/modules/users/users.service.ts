@@ -17,6 +17,23 @@ export class UsersService {
     if (!(await this.passwords.matches(password, user.passwordHash)))
       throw new AuthError(403, 'CURRENT_PASSWORD_INVALID', 'The current password is incorrect.');
   }
+  async settings(user: User) {
+    const settings = await this.accounts.client.userSettings.findUnique({
+      where: { userId: user.id },
+    });
+    return { autoSave: settings?.autoSave ?? false };
+  }
+  async updateSettings(snapshot: User, autoSave: boolean) {
+    return this.accounts.transaction(async (tx) => {
+      await this.accounts.confirmed(tx, snapshot);
+      const settings = await tx.userSettings.upsert({
+        where: { userId: snapshot.id },
+        create: { userId: snapshot.id, autoSave },
+        update: { autoSave },
+      });
+      return { autoSave: settings.autoSave };
+    });
+  }
   async update(snapshot: User, input: ProfileUpdateDto) {
     await this.confirm(snapshot, input.currentPassword);
     return this.accounts

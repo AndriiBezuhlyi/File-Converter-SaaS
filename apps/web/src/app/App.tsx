@@ -39,7 +39,11 @@ export function App({
             path="/account"
             element={
               <Suspense fallback={<p role="status">Відкриваємо профіль…</p>}>
-                <AccountPage gateway={accountGateway} keyGateway={apiKeyGateway} />
+                <AccountPage
+                  key={accountGateway?.scope}
+                  gateway={accountGateway}
+                  keyGateway={apiKeyGateway}
+                />
               </Suspense>
             }
           />
@@ -47,7 +51,11 @@ export function App({
             path="/files"
             element={
               <Suspense fallback={<p role="status">Відкриваємо файли…</p>}>
-                <FilesPage gateway={filesGateway} settingsGateway={accountGateway} />
+                <FilesPage
+                  key={accountGateway?.scope}
+                  gateway={filesGateway}
+                  settingsGateway={accountGateway}
+                />
               </Suspense>
             }
           />

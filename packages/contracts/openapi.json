@@ -3,7 +3,7 @@
   "info": {
     "title": "File Converter API",
     "version": "0.0.0",
-    "description": "Operational health and first-party email authentication/account and guest-context endpoints. Conversion, settings, API-key and file operations are not implemented."
+    "description": "Operational health, email authentication, account settings, API-key management and guest context. Conversion and file operations are not implemented."
   },
   "paths": {
     "/api/v1/health/live": {
@@ -954,6 +954,425 @@
           }
         }
       }
+    },
+    "/api/v1/users/me/settings": {
+      "get": {
+        "operationId": "accountSettings",
+        "tags": ["Account"],
+        "summary": "accountSettings",
+        "description": "Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses. ",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateAccountSettings",
+        "tags": ["Account"],
+        "summary": "updateAccountSettings",
+        "description": "Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses. ",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/api-key": {
+      "get": {
+        "operationId": "apiKeyMetadata",
+        "tags": ["Account"],
+        "summary": "apiKeyMetadata",
+        "description": "Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses. ",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyState"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createApiKey",
+        "tags": ["Account"],
+        "summary": "createApiKey",
+        "description": "Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses. Current password confirmation; shared sensitive-operation limit of five per account per 15 minutes. Rotation/revocation commits atomically; subsequent key checks read PostgreSQL without a validity cache.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyConfirmation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyIssued"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "409": {
+            "description": "API_KEY_EXISTS on duplicate creation; API_KEY_MISSING on rotation without an active key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "revokeApiKey",
+        "tags": ["Account"],
+        "summary": "revokeApiKey",
+        "description": "Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses. Current password confirmation; shared sensitive-operation limit of five per account per 15 minutes. Rotation/revocation commits atomically; subsequent key checks read PostgreSQL without a validity cache.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyConfirmation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "409": {
+            "description": "API_KEY_EXISTS on duplicate creation; API_KEY_MISSING on rotation without an active key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/api-key/rotate": {
+      "post": {
+        "operationId": "rotateApiKey",
+        "tags": ["Account"],
+        "summary": "rotateApiKey",
+        "description": "Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses. Current password confirmation; shared sensitive-operation limit of five per account per 15 minutes. Rotation/revocation commits atomically; subsequent key checks read PostgreSQL without a validity cache.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyConfirmation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyIssued"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "409": {
+            "description": "API_KEY_EXISTS on duplicate creation; API_KEY_MISSING on rotation without an active key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1237,6 +1656,80 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {}
+      },
+      "AccountSettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["autoSave"],
+        "properties": {
+          "autoSave": {
+            "type": "boolean",
+            "description": "Applies to newly accepted conversions only. Disabling never deletes saved files."
+          }
+        }
+      },
+      "KeyConfirmation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["currentPassword"],
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "format": "password"
+          }
+        }
+      },
+      "ApiKeyMetadata": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["prefix", "createdAt"],
+        "properties": {
+          "prefix": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiKeyState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key"],
+        "properties": {
+          "key": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["prefix", "createdAt"],
+            "properties": {
+              "prefix": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "nullable": true
+          }
+        }
+      },
+      "ApiKeyIssued": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metadata", "secret"],
+        "properties": {
+          "metadata": {
+            "$ref": "#/components/schemas/ApiKeyMetadata"
+          },
+          "secret": {
+            "type": "string",
+            "description": "One-time credential. Keep outside query caches and persistent browser storage."
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -1251,6 +1744,12 @@
         "in": "cookie",
         "name": "__Host-converter.guest",
         "description": "Opaque capability; Secure, HttpOnly, SameSite=Lax, Path=/, no Domain. Local loopback HTTP uses converter.dev.guest. Fixed configurable lifetime (default 30 days), never renewed by bootstrap/login/logout."
+      },
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Integration operations only; never authorizes account, settings or credential management. An explicit invalid/revoked key cannot fall back to cookies."
       }
     },
     "responses": {

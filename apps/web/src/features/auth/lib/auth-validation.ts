@@ -2,8 +2,11 @@ import { z } from 'zod';
 
 export type CredentialsMode = 'login' | 'register' | 'reset';
 export const emailSchema = z.string().trim().pipe(z.email('Вкажіть коректну електронну пошту.'));
-// Provisional UI limits, not a server password policy. Do not trim or transform passwords.
-const newPassword = z.string().min(8, 'Щонайменше 8 символів.').max(128, 'Не більше 128 символів.');
+// Match the agreed server policy without trimming or transforming passwords.
+const newPassword = z
+  .string()
+  .min(10, 'Щонайменше 10 символів.')
+  .max(128, 'Не більше 128 символів.');
 export const emailFormSchema = z.object({ email: emailSchema });
 export function credentialsSchema(mode: CredentialsMode) {
   return z

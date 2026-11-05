@@ -23,13 +23,17 @@ export function FilesPage({
           До конвертера
         </ActionLink>
       </header>
-      <SessionGate available={Boolean(gateway && settingsGateway)} returnTo="/files">
-        {gateway && settingsGateway ? (
+      <SessionGate available={Boolean(settingsGateway)} returnTo="/files">
+        {settingsGateway ? (
           <>
             <section className={styles.setting} aria-label="Автозбереження">
               <AutoSaveSetting gateway={settingsGateway} />
             </section>
-            <FilesWorkspace gateway={gateway} />
+            {gateway ? (
+              <FilesWorkspace gateway={gateway} />
+            ) : (
+              <p>Список файлів ще не підключено.</p>
+            )}
           </>
         ) : null}
       </SessionGate>

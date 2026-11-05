@@ -60,6 +60,7 @@ jobs:
       - run: npm run test:infrastructure
       - run: npm run test:auth
       - run: npm run test:guest
+      - run: npm run test:account
   images:
     runs-on: ubuntu-latest
     timeout-minutes: 45

@@ -1,6 +1,6 @@
 # File Converter
 
-The React frontend has a responsive layout, navigation, local file/target selection, conversion workflow UI, auth/account/file interfaces and API documentation. PostgreSQL/Prisma models and constraints, shared infrastructure, first-party email authentication, confirmed profile/password changes, Redis sessions, protected guest credentials/trial transaction helpers and worker-only notification delivery are implemented. Frontend authentication remains disconnected; settings/API keys, file/conversion endpoints and conversion consumers remain future work.
+The React frontend includes live email authentication, profile/password changes, synchronized auto-save settings and API-key management through typed HTTP gateways. PostgreSQL/Prisma persistence, shared infrastructure, Redis sessions, protected guest credentials/trial transaction helpers and worker-only notification delivery are implemented. Guest/conversion/file frontend mapping, file/conversion endpoints and conversion consumers remain future work.
 
 ## Requirements and documentation
 
@@ -99,18 +99,39 @@ Notifications persist in `BackgroundTask` in the same transaction as the account
 
 Email links use `/verify-email#token=...` or `/reset-password#token=...`: the fragment never reaches HTTP/proxy logs. Future frontend integration must capture it in memory, remove it from the URL and explicitly submit the token in a JSON body. Current frontend query-token fixtures are separate and remain disconnected.
 
-| Distributed limit                              | Quota                                               |
-| ---------------------------------------------- | --------------------------------------------------- |
-| All auth/profile requests                      | 120 per IP/minute                                   |
-| CSRF bootstrap/read                            | 30 per IP/minute                                    |
-| Login                                          | 10 per IP/minute and normalized-email/minute        |
-| Registration/resend/reset request, combined    | 5 per IP/15 minutes and 3 per normalized email/hour |
-| Token consumption, combined                    | 10 per IP/minute                                    |
-| Confirmed profile/password mutations, combined | 5 per user/15 minutes                               |
+| Distributed limit                                  | Quota                                               |
+| -------------------------------------------------- | --------------------------------------------------- |
+| All auth/profile requests                          | 120 per IP/minute                                   |
+| CSRF bootstrap/read                                | 30 per IP/minute                                    |
+| Login                                              | 10 per IP/minute and normalized-email/minute        |
+| Registration/resend/reset request, combined        | 5 per IP/15 minutes and 3 per normalized email/hour |
+| Token consumption, combined                        | 10 per IP/minute                                    |
+| Confirmed profile/password/key mutations, combined | 5 per user/15 minutes                               |
 
 Atomic Redis counters use HMAC-derived identity keys. Excess returns `429 RATE_LIMITED` with `Retry-After`; unavailable Redis fails closed. Current windows are fixed from the first attempt. Validation/token failures use `400`, missing sessions `401`, CSRF/origin/current-password failures `403`, unavailable profile email `409`, and infrastructure failures `503`, in `{ error: { code, message } }` without internal diagnostics.
 
 Run `npm run test:auth` with explicit dedicated loopback `TEST_DATABASE_URL` (`converter_test` or `converter_test_<suffix>`) and `TEST_REDIS_URL` after deploying migrations there. The suite uses real PostgreSQL/Redis/BullMQ, local controlled S3/SMTP, synthetic accounts and a random Redis namespace, and cleans only its own data. CI runs it in the database job. Offline unit/HTTP boundary tests remain in `test:all`; production SMTP, TLS ingress and browser integration require deployment verification.
+
+## Account settings and API keys
+
+All operations below require a verified first-party account session. Mutations also require the exact `APP_ORIGIN` and synchronizer `X-CSRF-Token`; key mutations confirm `currentPassword`. Guest cookies and any explicit `X-API-Key` are rejected. Responses use `Cache-Control: no-store`.
+
+| Method | Path                              | Response                                          |
+| ------ | --------------------------------- | ------------------------------------------------- |
+| GET    | `/api/v1/users/me/settings`       | `200 { autoSave: boolean }`                       |
+| PATCH  | `/api/v1/users/me/settings`       | Body and response: `{ autoSave: boolean }`        |
+| GET    | `/api/v1/users/me/api-key`        | `200 { key: { prefix, createdAt } \| null }`      |
+| POST   | `/api/v1/users/me/api-key`        | `201 { metadata: { prefix, createdAt }, secret }` |
+| POST   | `/api/v1/users/me/api-key/rotate` | `200` with the same one-time issuance shape       |
+| DELETE | `/api/v1/users/me/api-key`        | `204`; repeated revocation is safe                |
+
+Auto-save defaults to false, persists per account and uses the same Query key/mutation on profile and files pages. Updating it never changes existing files or accepted conversions; acceptance-time policy remains the responsibility of the conversion lifecycle. Files listing remains explicitly unavailable until item 16.
+
+Keys use a random public lookup prefix and 256-bit secret (`fc_<24 hex>.<43 base64url>`). PostgreSQL stores only SHA-256 of the full high-entropy credential. Creation rejects an existing active key (`409 API_KEY_EXISTS`); rotation requires one (`409 API_KEY_MISSING`). Short user-row-locked transactions serialize create/rotate/revoke and recheck the session snapshot; the existing partial unique index provides the database invariant. Rotation/revocation takes effect at commit for subsequent authentication checks, without a validity cache. Already-authorized requests are not retroactively cancelled.
+
+`ApiKeysService.authenticate` and `ApiKeyGuard` provide an integration-only principal and distributed IP/account rate limits (120/minute each). Consumers import `ApiKeysModule` and `AuthSecurityModule`. Missing, malformed, incorrect and revoked keys return `401 API_KEY_INVALID`, with no cookie fallback. Conversion/file controllers will compose these permissions in items 14 and 16; no integration conversion endpoint exists yet.
+
+Run `npm run test:account` with explicit dedicated loopback `TEST_DATABASE_URL` and `TEST_REDIS_URL`, after deploying existing migrations there. The suite uses real PostgreSQL/Redis and controlled local S3/SMTP fixtures. It checks permission boundaries, password/CSRF/Origin validation, one-active-key concurrency, rollback, stale sessions, immediate revocation and rate limits. It creates and cleans only owned synthetic data. CI runs it in the database job.
 
 ## Guest credentials and trial accounting
 
@@ -181,13 +202,13 @@ Prisma CLI configuration loads the root `.env`; the runtime application never im
 
 ### Frontend HTTP clients
 
-`apps/web/src/shared/api` provides a shared Axios transport with finite timeouts, AbortSignal cancellation, measured upload progress and non-retrying requests. `VITE_API_BASE_URL` defaults to `/api/v1` and accepts only a root-relative same-origin path, matching the development proxy and production deployment. Request paths cannot contain absolute URLs, query strings or traversal; use explicit query parameters for reads. Errors expose only a safe category and HTTP status, without retaining Axios config, credentials, server messages or response bodies.
+`apps/web/src/shared/api` provides a shared Axios transport with finite timeouts, AbortSignal cancellation, measured upload progress and non-retrying requests. `VITE_API_BASE_URL` defaults to `/api/v1` and accepts only a root-relative same-origin path, matching the development proxy and production deployment. Request paths cannot contain absolute URLs, query strings or traversal; use explicit query parameters for reads. Errors expose only a safe category, HTTP status and bounded machine error code, without retaining Axios config, credentials, server messages or response bodies.
 
-Cookie mutations require an explicitly supplied CSRF header/token from the eventual agreed backend handshake. The transport neither invents a token endpoint nor reads guessed CSRF cookies; automatic Axios XSRF injection is disabled. FormData is forwarded for the browser adapter to set multipart boundaries. Downloads require a successful nonempty Blob with an expected output MIME type and sanitize Content-Disposition filenames. They use relative application routes, never arbitrary server-returned storage URLs.
+Cookie mutations use `SessionClient`, which reads the current token from `GET /auth/csrf` before each mutation, including after session rotation. Tokens stay outside Query caches and browser storage; automatic Axios XSRF injection is disabled. FormData is forwarded for the browser adapter to set multipart boundaries. Downloads require a successful nonempty Blob with an expected output MIME type and sanitize Content-Disposition filenames. They use relative application routes, never arbitrary server-returned storage URLs.
 
 The health client imports generated OpenAPI types and validates runtime replies, including the documented 503 readiness payload. `readinessQuery` / `useApiReadiness` provide scoped caching, cancellation and moderate polling with slower polling after request failures. They are opt-in developer building blocks, not a new product status interface or an authorization signal. They are not mounted by production bootstrap.
 
-Product gateway adapters remain blocked on finalized OpenAPI schemas: auth/session and CSRF handshake, guest eligibility response, complete conversion status/result metadata, profile/settings/key operations, and file-list filters/pagination. Existing feature hooks already implement job polling, cache reconciliation, private-cache clearing and ambiguous-POST safeguards; preserve them when mapping finalized wire contracts to frontend view models. Production conversion/auth/account/files gateways remain unavailable. Live product integration requires the backend operations from plan items 11–16; controlled transport tests do not establish real authentication or conversion.
+Production `LiveApp` connects auth/session, profile/settings and key gateways using generated OpenAPI types and runtime decoders. Account data is scoped by identity and cleared after identity changes. Settings use TanStack Query mutations; password and key operations use request closures so credentials and one-time secrets never enter mutation caches. Key metadata alone is cached; ambiguous issuance responses require explicit reconciliation. Email-link fragments are consumed in memory and scrubbed from the URL; new-password forms match the server's 10–128-character policy. Guest/conversion/file gateways remain pending items 8 and 14–16; controlled transport tests do not establish real conversion.
 
 ### Runtime integrations
 

@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react';
+import { useEffect, useRef, type PropsWithChildren } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AuthContext } from '../lib/auth-context';
 import type { AuthGateway } from '../lib/auth-gateway';
@@ -22,6 +22,21 @@ function ConnectedAuthProvider({ gateway, children }: PropsWithChildren<{ gatewa
     staleTime: 0,
   };
   const session = useQuery(options);
+  const identity = session.data?.kind === 'authenticated' ? session.data.email : session.data?.kind;
+  const previousIdentity = useRef(identity);
+  useEffect(() => {
+    if (identity !== undefined && previousIdentity.current !== identity) {
+      const previous = previousIdentity.current;
+      previousIdentity.current = identity;
+      if (previous !== undefined) {
+        const privateQueries = {
+          predicate: (query: { queryKey: readonly unknown[] }) =>
+            query.queryKey[0] !== 'auth' && query.queryKey[1] === previous,
+        };
+        void client.cancelQueries(privateQueries).then(() => client.removeQueries(privateQueries));
+      }
+    }
+  }, [client, identity]);
   async function refreshSession() {
     // Drop account-scoped data after a confirmed identity mutation; guest credentials stay server-owned.
     const otherQueries = {

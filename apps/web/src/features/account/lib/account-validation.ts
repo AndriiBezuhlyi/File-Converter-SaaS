@@ -10,7 +10,7 @@ export const profileSchema = z.object({
 export const changePasswordSchema = z
   .object({
     currentPassword: confirmationPassword,
-    newPassword: z.string().min(8, 'Щонайменше 8 символів.').max(128, 'Не більше 128 символів.'),
+    newPassword: z.string().min(10, 'Щонайменше 10 символів.').max(128, 'Не більше 128 символів.'),
     confirmation: z.string(),
   })
   .refine((value) => value.newPassword === value.confirmation, {

@@ -52,7 +52,7 @@ export function PasswordEditor({ gateway }: { gateway: AccountGateway }) {
         <PasswordField
           label="Новий пароль"
           autoComplete="new-password"
-          hint="Від 8 до 128 символів. Пробіли враховуються."
+          hint="Від 10 до 128 символів. Пробіли враховуються."
           {...register('newPassword')}
           error={errors.newPassword?.message}
         />
