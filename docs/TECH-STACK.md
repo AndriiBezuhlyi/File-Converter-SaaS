@@ -79,6 +79,8 @@ Run `npm run test:auth` with the same explicit dedicated loopback test services 
 
 Run `npm run test:guest` with the same explicit dedicated loopback PostgreSQL/Redis services and deployed migrations. Jest/Supertest verify guest bootstrap/cookies/CSRF/limits, fixed expiry, concurrent reservation and transaction rollback, lease/version fencing, explicit expired-lease reconciliation, success/failure accounting and retained ownership across login/logout. Local controlled S3/SMTP fixtures satisfy shared infrastructure without external providers. CI runs this separate suite; no new dependency is required. Conversion engines, public conversion/download routes and frontend integration are outside its coverage.
 
+Run `npm run test:conversions` with the same dedicated loopback test services and migrations. Jest/Supertest verify supported upload directions, byte/structure/resource validation, multipart limits, CSRF and explicit-key precedence, atomic concurrent guest admission, account snapshots, ownership after login/revocation, durable dispatch failure, status metadata/expiry/deletion and bounded concurrent staging/abort cleanup. Real PostgreSQL/Redis/BullMQ are used with controlled S3/SMTP protocol fixtures; engines and production providers remain separate.
+
 ## Development Tools
 
 - npm workspaces — one monorepo and one lockfile.
@@ -94,4 +96,4 @@ Run `npm run test:guest` with the same explicit dedicated loopback PostgreSQL/Re
 - Prisma 7 is the stable selected line; CLI, client, and PostgreSQL adapter share the same version. Do not select a release candidate via a moving registry tag.
 - jsdom 27 supports the installed Node.js baseline; the newest jsdom line requires a newer Node.js minor.
 - Runtime libraries belong to their consuming workspace's `dependencies`; compilers, Sass, test runners, CLI tools, linters, and type definitions belong to `devDependencies`.
-- Domain schema, infrastructure adapters, first-party authentication/profile/settings transactions, hashed API-key management, guest credentials/trial helpers and notification consumers are implemented. Typed frontend gateways connect auth/profile/settings/keys. Guest/conversion/file frontend integration, file/conversion endpoints and conversion consumers remain future work; auth/guest/account tests do not establish conversion-engine functionality.
+- Domain schema, infrastructure adapters, first-party authentication/profile/settings transactions, hashed API-key management, guest credentials/trial helpers and notification consumers are implemented. Typed frontend gateways connect auth/profile/settings/keys. Validated upload, capability and conversion-status endpoints are implemented. Guest/conversion/file frontend integration, file/download endpoints and conversion consumers remain future work; auth/guest/account tests do not establish conversion-engine functionality.

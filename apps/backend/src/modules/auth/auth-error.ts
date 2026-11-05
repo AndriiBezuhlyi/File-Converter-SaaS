@@ -18,9 +18,10 @@ export class AuthErrorFilter implements ExceptionFilter {
     const response = http.getResponse<Response>();
     const request = http.getRequest<Request>();
     if (response.headersSent) return;
-    const account = /^\/api\/v1\/(auth(?:\/|$)|users\/me(?:\/|$)|guest-session(?:\/|$))/.test(
-      request.path,
-    );
+    const account =
+      /^\/api\/v1\/(auth(?:\/|$)|users\/me(?:\/|$)|guest-session(?:\/|$)|conversions(?:\/|$)|capabilities(?:\/|$))/.test(
+        request.path,
+      );
     if (!account && error instanceof HttpException) {
       response.status(error.getStatus()).json(error.getResponse());
       return;
@@ -35,17 +36,21 @@ export class AuthErrorFilter implements ExceptionFilter {
     response.status(status).json({
       error: {
         code:
-          status === 400
-            ? 'VALIDATION_FAILED'
-            : status === 404
-              ? 'NOT_FOUND'
-              : 'SERVICE_UNAVAILABLE',
+          status === 413
+            ? 'FILE_TOO_LARGE'
+            : status === 400
+              ? 'VALIDATION_FAILED'
+              : status === 404
+                ? 'NOT_FOUND'
+                : 'SERVICE_UNAVAILABLE',
         message:
-          status === 400
-            ? 'Invalid request fields.'
-            : status === 404
-              ? 'Route not found.'
-              : 'Service temporarily unavailable.',
+          status === 413
+            ? 'The uploaded file exceeds the allowed size.'
+            : status === 400
+              ? 'Invalid request fields.'
+              : status === 404
+                ? 'Route not found.'
+                : 'Service temporarily unavailable.',
       },
     });
   }

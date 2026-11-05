@@ -273,7 +273,7 @@ export interface paths {
         put?: never;
         /**
          * Create or reuse a protected guest context without resetting its trial
-         * @description Call GET /auth/csrf first; use the same session cookie and synchronizer token. Sets/reuses a separate guest cookie; never returns its token or internal guest ID. A presented invalid/expired guest credential returns 401 GUEST_CREDENTIAL_INVALID, with no replacement context. Explicit X-API-Key is rejected. Reserved/consumed states return 200 here; their 409/401 admission errors belong to future conversion submission. Bootstrap: 30/IP/minute; issuance: 5/IP/15 minutes. All responses are no-store. Cookie survives account login/logout; ownership never transfers. Guest conversion/status/download routes are not implemented by this operation.
+         * @description Call GET /auth/csrf first; use the same session cookie and synchronizer token. Sets/reuses a separate guest cookie; never returns its token or internal guest ID. A presented invalid/expired guest credential returns 401 GUEST_CREDENTIAL_INVALID, with no replacement context. Explicit X-API-Key is rejected. Reserved/consumed states return 200 here; their 409/401 admission errors belong to conversion submission. Bootstrap: 30/IP/minute; issuance: 5/IP/15 minutes. All responses are no-store. Cookie survives account login/logout; ownership never transfers. Use the guest cookie on conversion submission and status reads. Downloads are pending.
          */
         post: operations["guestSessionBootstrap"];
         delete?: never;
@@ -348,6 +348,63 @@ export interface paths {
          * @description Verified first-party account session only. Guest credentials and any explicit X-API-Key are rejected. No-store responses. Current password confirmation; shared sensitive-operation limit of five per account per 15 minutes. Rotation/revocation commits atomically; subsequent key checks read PostgreSQL without a validity cache.
          */
         post: operations["rotateApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate an upload and durably accept a queued conversion
+         * @description Explicit X-API-Key takes precedence and never falls back to cookies. Otherwise use a verified account session or the first-party guest cookie. All responses are no-store. Status reads may use the retained owning guest cookie after login; API keys cannot access guest jobs. Unknown, malformed or unowned IDs return 404. Cookie POST requires exact Origin and X-CSRF-Token from /auth/csrf. Exactly one file and targetFormat; client MIME/extension are untrusted. JPG to PNG, PNG to JPG, DOCX to PDF only. Images are limited to 40 million pixels; DOCX to 1000 entries, 80 MB expanded and 200:1 per entry, without encryption, ZIP64, macros, embedded programs or external relationships. Admission: 20/IP/minute, 10/principal/minute, at most 5 active jobs/principal and 1000 globally. Guest eligibility is checked before receiving bytes and atomically reserved at acceptance. HTTP rejection does not consume a trial. A dispatch failure after durable acceptance still returns 202; do not automatically replay an ambiguous upload. Worker processing/reconciliation is delivered separately. Each API process permits four concurrent uploads with a 60-second deadline; rejected or aborted staging files are removed. Excess in-flight uploads return 429 UPLOAD_CAPACITY_REACHED. Capacity release waits for multipart cleanup.
+         */
+        post: operations["createConversion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read owned conversion status and result metadata
+         * @description Explicit X-API-Key takes precedence and never falls back to cookies. Otherwise use a verified account session or the first-party guest cookie. All responses are no-store. Status reads may use the retained owning guest cookie after login; API keys cannot access guest jobs. Unknown, malformed or unowned IDs return 404. Poll every 1500 ms while queued/processing; stop on completed/failed and back off on request failures. A failed job is HTTP 200 with a safe error, distinct from a failed polling request. Completion persists after result expiry/deletion; resultAvailability indicates access independently. No storage keys or public object URLs are exposed. Download routes are delivered separately.
+         */
+        get: operations["conversionStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read supported directions and exact admission limits */
+        get: operations["conversionCapabilities"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -502,6 +559,74 @@ export interface components {
             metadata: components["schemas"]["ApiKeyMetadata"];
             /** @description One-time credential. Keep outside query caches and persistent browser storage. */
             secret: string;
+        };
+        ConversionAccepted: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "queued";
+            /** @enum {string} */
+            sourceFormat: "jpg" | "png" | "docx";
+            /** @enum {string} */
+            targetFormat: "jpg" | "png" | "pdf";
+            /** Format: date-time */
+            createdAt: string;
+            /** @description Acceptance-time auto-save snapshot; always false for guests. */
+            saveResult: boolean;
+        };
+        ConversionStatus: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "queued" | "processing" | "completed" | "failed";
+            /** @enum {string} */
+            sourceFormat: "jpg" | "png" | "docx";
+            /** @enum {string} */
+            targetFormat: "jpg" | "png" | "pdf";
+            /** Format: date-time */
+            createdAt: string;
+            /** @description Acceptance-time auto-save snapshot; always false for guests. */
+            saveResult: boolean;
+            /** Format: date-time */
+            completedAt: string | null;
+            error: {
+                /** @enum {string} */
+                code: "CONVERSION_FAILED";
+                message: string;
+            } | null;
+            /** @enum {string} */
+            resultAvailability: "pending" | "available" | "expired" | "deleted" | "unavailable";
+            result: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /** @enum {string} */
+                format: "jpg" | "png" | "pdf";
+                sizeBytes: number;
+                /** @enum {string} */
+                retention: "temporary" | "saved";
+                /** Format: date-time */
+                expiresAt: string | null;
+                /** @enum {string} */
+                availability: "pending" | "available" | "expired" | "deleted";
+            } | null;
+        };
+        ConversionCapabilities: {
+            /** @enum {integer} */
+            maxUploadBytes: 20000000;
+            /** @enum {integer} */
+            maxImagePixels: 40000000;
+            /** @enum {integer} */
+            maxArchiveBytes: 80000000;
+            /** @enum {integer} */
+            maxArchiveEntries: 1000;
+            /** @enum {integer} */
+            pollIntervalMs: 1500;
+            directions: {
+                jpg: "png"[];
+                png: "jpg"[];
+                docx: "pdf"[];
+            };
         };
     };
     responses: {
@@ -1261,6 +1386,218 @@ export interface operations {
             };
             429: components["responses"]["Auth429"];
             503: components["responses"]["Auth503"];
+        };
+    };
+    createConversion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with cookie principals; not used with API keys. */
+                "X-CSRF-Token"?: string;
+                /** @description Required exact application origin with cookie principals. */
+                Origin?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description Nonempty actual bytes, at most 20000000.
+                     */
+                    file: string;
+                    /** @enum {string} */
+                    targetFormat: "jpg" | "png" | "pdf";
+                };
+            };
+        };
+        responses: {
+            /** @description Durably accepted; processing is asynchronous */
+            202: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversionAccepted"];
+                };
+            };
+            /** @description Invalid multipart fields */
+            400: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Invalid credentials or consumed guest trial */
+            401: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Origin or CSRF check failed */
+            403: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Guest conversion already reserved */
+            409: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description File exceeds 20000000 bytes */
+            413: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Unsupported input signature */
+            415: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Malformed or unsafe file, or unsupported direction */
+            422: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request or active-job capacity limit */
+            429: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Infrastructure unavailable before acceptance */
+            503: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    conversionStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversionStatus"];
+                };
+            };
+            /** @description Invalid credentials or consumed guest trial */
+            401: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conversion unavailable to this caller */
+            404: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request or active-job capacity limit */
+            429: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Infrastructure unavailable before acceptance */
+            503: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    conversionCapabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversionCapabilities"];
+                };
+            };
         };
     };
 }

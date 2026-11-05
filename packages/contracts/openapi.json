@@ -3,7 +3,7 @@
   "info": {
     "title": "File Converter API",
     "version": "0.0.0",
-    "description": "Operational health, email authentication, account settings, API-key management and guest context. Conversion and file operations are not implemented."
+    "description": "Operational health, authentication, account settings, API keys, guest context, validated conversion admission and status polling. Processing and downloads remain pending."
   },
   "paths": {
     "/api/v1/health/live": {
@@ -864,7 +864,7 @@
         "operationId": "guestSessionBootstrap",
         "tags": ["Guest access"],
         "summary": "Create or reuse a protected guest context without resetting its trial",
-        "description": "Call GET /auth/csrf first; use the same session cookie and synchronizer token. Sets/reuses a separate guest cookie; never returns its token or internal guest ID. A presented invalid/expired guest credential returns 401 GUEST_CREDENTIAL_INVALID, with no replacement context. Explicit X-API-Key is rejected. Reserved/consumed states return 200 here; their 409/401 admission errors belong to future conversion submission. Bootstrap: 30/IP/minute; issuance: 5/IP/15 minutes. All responses are no-store. Cookie survives account login/logout; ownership never transfers. Guest conversion/status/download routes are not implemented by this operation.",
+        "description": "Call GET /auth/csrf first; use the same session cookie and synchronizer token. Sets/reuses a separate guest cookie; never returns its token or internal guest ID. A presented invalid/expired guest credential returns 401 GUEST_CREDENTIAL_INVALID, with no replacement context. Explicit X-API-Key is rejected. Reserved/consumed states return 200 here; their 409/401 admission errors belong to conversion submission. Bootstrap: 30/IP/minute; issuance: 5/IP/15 minutes. All responses are no-store. Cookie survives account login/logout; ownership never transfers. Use the guest cookie on conversion submission and status reads. Downloads are pending.",
         "security": [],
         "parameters": [
           {
@@ -1373,6 +1373,400 @@
           }
         }
       }
+    },
+    "/api/v1/conversions": {
+      "post": {
+        "operationId": "createConversion",
+        "tags": ["Conversions"],
+        "summary": "Validate an upload and durably accept a queued conversion",
+        "description": "Explicit X-API-Key takes precedence and never falls back to cookies. Otherwise use a verified account session or the first-party guest cookie. All responses are no-store. Status reads may use the retained owning guest cookie after login; API keys cannot access guest jobs. Unknown, malformed or unowned IDs return 404. Cookie POST requires exact Origin and X-CSRF-Token from /auth/csrf. Exactly one file and targetFormat; client MIME/extension are untrusted. JPG to PNG, PNG to JPG, DOCX to PDF only. Images are limited to 40 million pixels; DOCX to 1000 entries, 80 MB expanded and 200:1 per entry, without encryption, ZIP64, macros, embedded programs or external relationships. Admission: 20/IP/minute, 10/principal/minute, at most 5 active jobs/principal and 1000 globally. Guest eligibility is checked before receiving bytes and atomically reserved at acceptance. HTTP rejection does not consume a trial. A dispatch failure after durable acceptance still returns 202; do not automatically replay an ambiguous upload. Worker processing/reconciliation is delivered separately. Each API process permits four concurrent uploads with a 60-second deadline; rejected or aborted staging files are removed. Excess in-flight uploads return 429 UPLOAD_CAPACITY_REACHED. Capacity release waits for multipart cleanup.",
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {
+            "guestCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required with cookie principals; not used with API keys."
+          },
+          {
+            "in": "header",
+            "name": "Origin",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required exact application origin with cookie principals."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["file", "targetFormat"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Nonempty actual bytes, at most 20000000."
+                  },
+                  "targetFormat": {
+                    "type": "string",
+                    "enum": ["jpg", "png", "pdf"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Durably accepted; processing is asynchronous",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionAccepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid multipart fields",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials or consumed guest trial",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin or CSRF check failed",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Guest conversion already reserved",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File exceeds 20000000 bytes",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported input signature",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Malformed or unsafe file, or unsupported direction",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or active-job capacity limit",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Infrastructure unavailable before acceptance",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/conversions/{id}": {
+      "get": {
+        "operationId": "conversionStatus",
+        "tags": ["Conversions"],
+        "summary": "Read owned conversion status and result metadata",
+        "description": "Explicit X-API-Key takes precedence and never falls back to cookies. Otherwise use a verified account session or the first-party guest cookie. All responses are no-store. Status reads may use the retained owning guest cookie after login; API keys cannot access guest jobs. Unknown, malformed or unowned IDs return 404. Poll every 1500 ms while queued/processing; stop on completed/failed and back off on request failures. A failed job is HTTP 200 with a safe error, distinct from a failed polling request. Completion persists after result expiry/deletion; resultAvailability indicates access independently. No storage keys or public object URLs are exposed. Download routes are delivered separately.",
+        "security": [
+          {
+            "apiKey": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {
+            "guestCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials or consumed guest trial",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversion unavailable to this caller",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request or active-job capacity limit",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Infrastructure unavailable before acceptance",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/capabilities": {
+      "get": {
+        "operationId": "conversionCapabilities",
+        "tags": ["Conversions"],
+        "summary": "Read supported directions and exact admission limits",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionCapabilities"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1730,6 +2124,209 @@
             "description": "One-time credential. Keep outside query caches and persistent browser storage."
           }
         }
+      },
+      "ConversionAccepted": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "sourceFormat", "targetFormat", "createdAt", "saveResult"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["queued"]
+          },
+          "sourceFormat": {
+            "type": "string",
+            "enum": ["jpg", "png", "docx"]
+          },
+          "targetFormat": {
+            "type": "string",
+            "enum": ["jpg", "png", "pdf"]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "saveResult": {
+            "type": "boolean",
+            "description": "Acceptance-time auto-save snapshot; always false for guests."
+          }
+        }
+      },
+      "ConversionStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status",
+          "sourceFormat",
+          "targetFormat",
+          "createdAt",
+          "saveResult",
+          "completedAt",
+          "error",
+          "resultAvailability",
+          "result"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["queued", "processing", "completed", "failed"]
+          },
+          "sourceFormat": {
+            "type": "string",
+            "enum": ["jpg", "png", "docx"]
+          },
+          "targetFormat": {
+            "type": "string",
+            "enum": ["jpg", "png", "pdf"]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "saveResult": {
+            "type": "boolean",
+            "description": "Acceptance-time auto-save snapshot; always false for guests."
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "message"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": ["CONVERSION_FAILED"]
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "nullable": true
+          },
+          "resultAvailability": {
+            "type": "string",
+            "enum": ["pending", "available", "expired", "deleted", "unavailable"]
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "format",
+              "sizeBytes",
+              "retention",
+              "expiresAt",
+              "availability"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "format": {
+                "type": "string",
+                "enum": ["jpg", "png", "pdf"]
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "retention": {
+                "type": "string",
+                "enum": ["temporary", "saved"]
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "availability": {
+                "type": "string",
+                "enum": ["pending", "available", "expired", "deleted"]
+              }
+            },
+            "nullable": true
+          }
+        }
+      },
+      "ConversionCapabilities": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "maxUploadBytes",
+          "maxImagePixels",
+          "maxArchiveBytes",
+          "maxArchiveEntries",
+          "pollIntervalMs",
+          "directions"
+        ],
+        "properties": {
+          "maxUploadBytes": {
+            "type": "integer",
+            "enum": [20000000]
+          },
+          "maxImagePixels": {
+            "type": "integer",
+            "enum": [40000000]
+          },
+          "maxArchiveBytes": {
+            "type": "integer",
+            "enum": [80000000]
+          },
+          "maxArchiveEntries": {
+            "type": "integer",
+            "enum": [1000]
+          },
+          "pollIntervalMs": {
+            "type": "integer",
+            "enum": [1500]
+          },
+          "directions": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["jpg", "png", "docx"],
+            "properties": {
+              "jpg": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["png"]
+                }
+              },
+              "png": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["jpg"]
+                }
+              },
+              "docx": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["pdf"]
+                }
+              }
+            }
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -1743,13 +2340,12 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "__Host-converter.guest",
-        "description": "Opaque capability; Secure, HttpOnly, SameSite=Lax, Path=/, no Domain. Local loopback HTTP uses converter.dev.guest. Fixed configurable lifetime (default 30 days), never renewed by bootstrap/login/logout."
+        "description": "First-party protected guest capability; converter.dev.guest on local HTTP."
       },
       "apiKey": {
         "type": "apiKey",
         "in": "header",
-        "name": "X-API-Key",
-        "description": "Integration operations only; never authorizes account, settings or credential management. An explicit invalid/revoked key cannot fall back to cookies."
+        "name": "X-API-Key"
       }
     },
     "responses": {

@@ -1,6 +1,6 @@
 # Database Schema
 
-PostgreSQL 18 with Prisma 7. The source model is [schema.prisma](../apps/backend/prisma/schema.prisma); migration history is [prisma/migrations](../apps/backend/prisma/migrations). API/worker share the runtime Prisma/pg provider. Authentication/profile transactions, persisted settings, hashed API keys, notification intents, guest credentials and guest-trial transaction helpers are implemented; conversion/file services remain pending. Settings updates and key lifecycle mutations lock the user row and recheck the session snapshot; the existing one-active-key partial unique index serializes the final invariant. Key validity is read directly from PostgreSQL on every authentication. No schema change is required for these services, and no existing environment is migrated automatically.
+PostgreSQL 18 with Prisma 7. The source model is [schema.prisma](../apps/backend/prisma/schema.prisma); migration history is [prisma/migrations](../apps/backend/prisma/migrations). API/worker share the runtime Prisma/pg provider. Authentication/profile transactions, persisted settings, hashed API keys, notification intents, guest credentials and guest-trial transaction helpers are implemented; conversion admission and owned status reads are implemented; processing and file/download services remain pending. Settings updates and key lifecycle mutations lock the user row and recheck the session snapshot; the existing one-active-key partial unique index serializes the final invariant. Key validity is read directly from PostgreSQL on every authentication. No schema change is required for these services, and no existing environment is migrated automatically.
 
 ## Models and relationships
 
@@ -69,7 +69,7 @@ Source/result uniqueness prevents reusing an upload across accepted jobs or publ
 
 ## Domain transaction requirements
 
-Schema constraints are backstops. Authentication and guest helpers are implemented as described above. Future conversion/file adapters must wire the helpers into the transactions below; helpers alone do not process uploads or execute jobs.
+Schema constraints are backstops. Authentication, guest helpers and conversion admission/status are implemented. Admission stores private bytes before a short transaction, takes a transaction-scoped advisory lock to serialize global/per-owner active-job counts, snapshots current settings, and creates source metadata, queued conversion and dispatch intent atomically. Guest admission additionally calls reserve in that transaction. No storage/queue IO occurs under database locks. An ambiguous COMMIT acknowledgement preserves potentially committed source bytes; orphan reconciliation remains item 16. Processing/file adapters must implement the remaining transitions below.
 
 1. Register user/settings together; hash and validate credentials outside long-held database locks. Consume a valid unexpired single-use token with a conditional update and apply its identity mutation atomically.
 2. At acceptance, create input metadata, conversion and durable dispatch intent; reserve the available guest allowance with a conditional update in the same transaction. A unique active-job constraint alone does not authorize a consumed guest to upload. Snapshot account settings at acceptance; guest snapshots are always false.

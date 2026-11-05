@@ -6,13 +6,21 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { GuestModule } from './modules/auth/guest/guest.module.js';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module.js';
+import { ConversionsModule } from './modules/conversions/conversions.module.js';
 
 @Module({ imports: [RuntimeConfigModule] })
 export class ApiModule {
   static withAuthentication(): DynamicModule {
     return {
       ...this.withInfrastructure(),
-      imports: [InfrastructureModule, AuthModule, UsersModule, GuestModule, ApiKeysModule],
+      imports: [
+        InfrastructureModule,
+        AuthModule,
+        UsersModule,
+        GuestModule,
+        ApiKeysModule,
+        ConversionsModule,
+      ],
     };
   }
   static withInfrastructure(): DynamicModule {
