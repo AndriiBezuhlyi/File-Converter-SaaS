@@ -214,6 +214,10 @@ export class ConversionProcessingService {
       const key = outputKey;
       publicationAmbiguous = true;
       await this.transition(attempt, false, async (tx, current, now) => {
+        await tx.$queryRaw`SELECT id FROM "BackgroundTask" WHERE id = ${deletion.id}::uuid FOR UPDATE`;
+        const intent = await tx.backgroundTask.findUniqueOrThrow({ where: { id: deletion.id } });
+        if (intent.completedAt || intent.leaseToken)
+          throw new Error('Output cleanup already claimed.');
         const result = await tx.file.create({
           data: {
             userId: current.userId,

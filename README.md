@@ -143,7 +143,7 @@ Run `npm run test:account` with explicit dedicated loopback `TEST_DATABASE_URL` 
 - `GET /api/v1/conversions/:id` checks account/API ownership or the retained owning guest capability, including after login or a stale account session. Poll queued/processing every 1.5 seconds and back off on connectivity errors. Unknown/unowned IDs return 404. Failed jobs return HTTP 200 with a safe error; completed state and result availability (available/expired/deleted) are independent. Responses expose result metadata, never object keys or storage URLs.
 - Rejections use `{ error: { code, message } }`; malformed multipart is 400, oversized bytes 413, unknown signatures 415, unsafe content/directions 422 and capacity 429. All conversion responses are no-store. An ambiguous POST must not be automatically retried.
 
-Run `npm run test:conversions` with explicit loopback `TEST_DATABASE_URL` (a dedicated `converter_test` database with migrations deployed) and `TEST_REDIS_URL`. The suite uses real PostgreSQL/Redis/BullMQ and controlled local S3/SMTP protocol fixtures. It does not execute conversion engines or prove production object-store configuration. The production frontend converter remains disconnected until item 8 mapping; processing/reconciliation is item 15 and protected downloads/cleanup is item 16.
+Run `npm run test:conversions` with explicit loopback `TEST_DATABASE_URL` (a dedicated `converter_test` database with migrations deployed) and `TEST_REDIS_URL`. The suite uses real PostgreSQL/Redis/BullMQ and controlled local S3/SMTP protocol fixtures. It does not execute conversion engines or prove production object-store configuration. Processing/reconciliation, protected downloads and periodic cleanup are implemented in items 15 and 16.
 
 ## Guest credentials and trial accounting
 
@@ -263,3 +263,11 @@ Only the proxy publishes a host port. This template requires HTTPS termination o
 ## Local development instructions
 
 Open this project directory itself in Codex so its [AGENTS.md](AGENTS.md) and repository skills can be discovered. The index explicitly routes to the applicable local rules; [progress.md](docs/progress.md) records meaningful changes. The live guest flow permits one successful free conversion, followed by login/registration for further conversions.
+
+## Saved files and cleanup
+
+`GET /api/v1/files` supports literal case-insensitive `search`, output `format` (`jpg`, `png`, `pdf`), `sort` (`newest`/`oldest`), `limit` (1-100, default 20), and an opaque date/id `cursor` bound to the filters. Detail, proxied download and idempotent DELETE routes accept an owning account session or API key; guests cannot use `/files`. Cookie deletion requires Origin and CSRF. Logical deletion commits before the response and blocks both download routes before asynchronous object removal.
+
+Auto-save is snapshotted at acceptance. Saved account outputs have no automatic expiry; other results expire exactly one hour after completion. Guest ownership and consumed trial markers survive result cleanup and login. The worker runs bounded cleanup batches every 30 seconds, using renewable database leases, retryable deletion intents and a persisted S3 enumeration cursor. It removes expired outputs, terminal inputs and unpublished/orphan objects; generated keys are fenced against late acceptance/publication. Unknown objects receive a one-hour grace period. The storage identity additionally needs ListBucket permission restricted to the inputs/ and outputs/ prefixes. Each worker cleans stale attempt directories locally; API instances clean hour-old staging directories only when their recorded owner PID is absent.
+
+Run `npm run test:files` against explicit isolated loopback `TEST_DATABASE_URL` (`converter_test` or `converter_test_<suffix>`) and `TEST_REDIS_URL`, with existing migrations deployed. The suite uses real PostgreSQL/Redis/BullMQ and controlled private-storage/SMTP protocol fixtures; production-provider validation remains a deployment check. Live frontend mapping for My files remains item 8.

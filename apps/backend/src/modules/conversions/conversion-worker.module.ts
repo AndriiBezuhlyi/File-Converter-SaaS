@@ -7,10 +7,18 @@ import { ConversionEngine } from './conversion-engine.js';
 import { ConversionProcessingService } from './conversion-processing.service.js';
 import { ConversionWorker } from './conversion-worker.js';
 import { InfrastructureModule } from '../../infrastructure/infrastructure.module.js';
+import { CleanupService } from '../files/cleanup.service.js';
+import { CleanupWorker } from '../files/cleanup-worker.js';
 
 @Module({
   imports: [InfrastructureModule, DatabaseModule, StorageModule, QueueModule, GuestTrialModule],
-  providers: [ConversionEngine, ConversionProcessingService, ConversionWorker],
-  exports: [ConversionWorker],
+  providers: [
+    ConversionEngine,
+    ConversionProcessingService,
+    ConversionWorker,
+    CleanupService,
+    CleanupWorker,
+  ],
+  exports: [ConversionWorker, CleanupWorker],
 })
 export class ConversionWorkerModule {}

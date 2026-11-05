@@ -7,6 +7,7 @@ import {
   HeadBucketCommand,
   HeadObjectCommand,
   PutObjectCommand,
+  ListObjectsV2Command,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { INFRA_CONFIG, type InfrastructureEnvironment } from '../config/infrastructure-config.js';
@@ -90,6 +91,25 @@ export class StorageService implements InfrastructureDependency, StoragePort {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key }), {
       abortSignal: AbortSignal.timeout(this.config.INFRA_TIMEOUT_MS),
     });
+  }
+  async list(prefix: 'inputs/' | 'outputs/', cursor?: string) {
+    const result = await this.client.send(
+      new ListObjectsV2Command({
+        Bucket: this.config.S3_BUCKET,
+        Prefix: prefix,
+        ContinuationToken: cursor,
+        MaxKeys: 100,
+      }),
+      { abortSignal: AbortSignal.timeout(this.config.INFRA_TIMEOUT_MS) },
+    );
+    return {
+      items: (result.Contents ?? []).flatMap((object) =>
+        object.Key && object.LastModified && /^(inputs|outputs)\/[a-f0-9-]{36}$/.test(object.Key)
+          ? [{ key: object.Key, modifiedAt: object.LastModified }]
+          : [],
+      ),
+      cursor: result.NextContinuationToken,
+    };
   }
   stop() {
     this.client.destroy();

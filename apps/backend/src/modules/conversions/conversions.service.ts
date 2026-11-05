@@ -62,6 +62,15 @@ export class ConversionsService {
     const input = await validateUpload(file, body);
     const objectKey = this.storage.createKey('inputs');
     const id = randomUUID();
+    const cleanup = await this.database.client.backgroundTask.create({
+      data: {
+        type: 'file_deletion',
+        resourceId: id,
+        deduplicationKey: `unpublished:${objectKey}`,
+        payload: { objectKey },
+        availableAt: new Date(Date.now() + 3_600_000),
+      },
+    });
     const stream = createReadStream(file!.path);
     try {
       await this.storage.put(objectKey, stream, INPUT_MIME[input.format], input.sizeBytes);
@@ -77,6 +86,9 @@ export class ConversionsService {
         async (tx) => {
           // Serialize admission counts across API replicas; no storage/queue IO under this lock.
           await tx.$executeRaw`SELECT pg_advisory_xact_lock(140014)`;
+          await tx.$queryRaw`SELECT id FROM "BackgroundTask" WHERE id = ${cleanup.id}::uuid FOR UPDATE`;
+          const intent = await tx.backgroundTask.findUniqueOrThrow({ where: { id: cleanup.id } });
+          if (intent.completedAt || intent.leaseToken) throw busy();
           const active = {
             status: { in: ['queued', 'processing'] as ('queued' | 'processing')[] },
           };
@@ -120,6 +132,10 @@ export class ConversionsService {
                 resourceId: id,
                 deduplicationKey: `conversion:${id}`,
               },
+            });
+            await transaction.backgroundTask.update({
+              where: { id: cleanup.id },
+              data: { completedAt: new Date() },
             });
             return conversion;
           };

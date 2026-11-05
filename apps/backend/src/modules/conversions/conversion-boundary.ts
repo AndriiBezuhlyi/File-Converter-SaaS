@@ -46,7 +46,7 @@ export class ConversionBoundaryGuard implements CanActivate {
   async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest<ConversionRequest>();
     const response = context.switchToHttp().getResponse<Response>();
-    const submitting = request.method === 'POST';
+    const submitting = !['GET', 'HEAD', 'OPTIONS'].includes(request.method);
     await this.rates.check(
       submitting ? 'conversion:upload:ip' : 'conversion:poll:ip',
       request.ip ?? request.socket.remoteAddress ?? 'unknown',

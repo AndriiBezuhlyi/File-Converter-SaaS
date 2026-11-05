@@ -7,6 +7,7 @@ import { UsersModule } from './modules/users/users.module.js';
 import { GuestModule } from './modules/auth/guest/guest.module.js';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module.js';
 import { ConversionsModule } from './modules/conversions/conversions.module.js';
+import { FilesModule } from './modules/files/files.module.js';
 
 @Module({ imports: [RuntimeConfigModule] })
 export class ApiModule {
@@ -20,6 +21,7 @@ export class ApiModule {
         GuestModule,
         ApiKeysModule,
         ConversionsModule,
+        FilesModule,
       ],
     };
   }

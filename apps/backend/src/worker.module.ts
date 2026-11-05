@@ -6,6 +6,7 @@ import { NotificationWorkerModule } from './modules/notifications/notification-w
 import { NotificationWorker } from './modules/notifications/notification-worker.js';
 import { ConversionWorkerModule } from './modules/conversions/conversion-worker.module.js';
 import { ConversionWorker } from './modules/conversions/conversion-worker.js';
+import { CleanupWorker } from './modules/files/cleanup-worker.js';
 
 @Module({ imports: [RuntimeConfigModule] })
 export class WorkerModule {
@@ -17,9 +18,16 @@ export class WorkerModule {
         WorkerHealth,
         {
           provide: WORKER_FEATURE_READINESS,
-          inject: [NotificationWorker, ConversionWorker],
-          useFactory: (notifications: NotificationWorker, conversions: ConversionWorker) => ({
-            check: () => Promise.all([notifications.check(), conversions.check()]),
+          inject: [NotificationWorker, ConversionWorker, CleanupWorker],
+          useFactory: (
+            notifications: NotificationWorker,
+            conversions: ConversionWorker,
+            cleanup: CleanupWorker,
+          ) => ({
+            check: async () => {
+              cleanup.check();
+              await Promise.all([notifications.check(), conversions.check()]);
+            },
           }),
         },
       ],
