@@ -1,6 +1,7 @@
 import { AlertCircle, Clock3 } from 'lucide-react';
 import { Surface } from '../../../shared/ui/Surface';
 import { Button } from '../../../shared/ui/Button';
+import { ActionLink } from '../../../shared/ui/ActionLink';
 import { FileSelector } from './FileSelector';
 import { GuestAuthDialog } from './GuestAuthDialog';
 import { ConversionResultPanel } from './ConversionResultPanel';
@@ -73,6 +74,30 @@ function ConnectedWorkspace({
         : undefined;
   const canStart = flow.access.isSuccess && !flow.access.isFetching;
   const nextDisabled = !canStart;
+  const invalidGuest =
+    flow.access.error instanceof ConversionRequestError &&
+    flow.access.error.kind === 'guest-session-invalid';
+  const accessMessage = invalidGuest
+    ? 'Гостьова сесія недійсна або строк її дії завершився. Увійдіть або створіть акаунт, щоб продовжити. Нову безкоштовну спробу автоматично не надаємо.'
+    : 'Не вдалося перевірити доступ. Оновіть перевірку перед конвертацією.';
+  const accessRecovery = invalidGuest ? (
+    <div className={styles.actions}>
+      <ActionLink to="/login?returnTo=%2F">Увійти</ActionLink>
+      <ActionLink variant="secondary" to="/register?returnTo=%2F">
+        Створити акаунт
+      </ActionLink>
+    </div>
+  ) : (
+    <Button
+      variant="secondary"
+      disabled={flow.access.isFetching}
+      onClick={() => {
+        void flow.access.refetch();
+      }}
+    >
+      Перевірити доступ ще раз
+    </Button>
+  );
 
   return (
     <>
@@ -84,7 +109,7 @@ function ConnectedWorkspace({
           submissionError={rejected}
           availability={
             flow.access.isError
-              ? 'Не вдалося перевірити доступ. Оновіть перевірку перед конвертацією.'
+              ? accessMessage
               : !flow.access.data
                 ? 'Перевіряємо доступ…'
                 : flow.access.data.kind === 'guest'
@@ -94,16 +119,7 @@ function ConnectedWorkspace({
                   : 'Файл буде оброблено відповідно до налаштувань на момент прийняття.'
           }
         />
-        {flow.access.isError ? (
-          <Button
-            variant="secondary"
-            onClick={() => {
-              void flow.access.refetch();
-            }}
-          >
-            Перевірити доступ ще раз
-          </Button>
-        ) : null}
+        {flow.access.isError ? accessRecovery : null}
       </div>
       {showState ? (
         <Surface aria-label="Стан конвертації">
@@ -237,20 +253,9 @@ function ConnectedWorkspace({
           {flow.access.isError ? (
             <>
               <p className={styles.helper} role="alert">
-                Не вдалося оновити доступ. Наявна задача зберігається; нову конвертацію тимчасово
-                заблоковано.
+                {accessMessage} Наявну задачу повторно не надсилаємо.
               </p>
-              <div className={styles.actions}>
-                <Button
-                  variant="secondary"
-                  disabled={flow.access.isFetching}
-                  onClick={() => {
-                    void flow.access.refetch();
-                  }}
-                >
-                  Перевірити доступ ще раз
-                </Button>
-              </div>
+              <div className={styles.actions}>{accessRecovery}</div>
             </>
           ) : null}
         </Surface>

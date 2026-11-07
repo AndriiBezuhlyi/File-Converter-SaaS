@@ -77,6 +77,8 @@ function mapJob(job: components['schemas']['ConversionStatus']): ConversionJob {
 function requestError(error: unknown): never {
   if (error instanceof ConversionRequestError) throw error;
   if (error instanceof ApiRequestError) {
+    if (error.status === 401 && error.code === 'GUEST_CREDENTIAL_INVALID')
+      throw new ConversionRequestError('guest-session-invalid');
     if (error.status === 404) throw new ConversionRequestError('not-found');
     if (error.status === 410) throw new ConversionRequestError('expired');
     if (error.status === 401 || error.status === 403) throw new ConversionRequestError('forbidden');

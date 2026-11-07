@@ -42,7 +42,10 @@ export type SubmissionOutcome =
   | { kind: 'unknown' };
 
 export class ConversionRequestError extends Error {
-  constructor(public readonly kind: 'network' | 'not-found' | 'expired' | 'forbidden') {
+  constructor(
+    public readonly kind:
+      'network' | 'not-found' | 'expired' | 'forbidden' | 'guest-session-invalid',
+  ) {
     super('Conversion request could not be completed.');
     this.name = 'ConversionRequestError';
   }

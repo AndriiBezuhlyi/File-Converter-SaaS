@@ -4,6 +4,23 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-07 — IMP-01.01 invalid guest session feedback (partial acceptance)
+
+### Changes
+
+- Preserve `GUEST_CREDENTIAL_INVALID` as a distinct frontend error and explain invalid/expired guest access with sign-in and registration links instead of an ineffective retry prompt. Transient access failures retain retry behavior.
+- Preserve backend credential validation, fixed cookie expiry, quota accounting and refusal to replace invalid credentials. No configuration, contracts, schema or existing tests changed; the improvement plan remains untouched.
+- Add six separate gateway/component regressions covering error classification, recovery actions and prevention of uploads when access is denied.
+
+### Verification and limitations
+
+- Passed 27 converter frontend tests, two existing backend guest configuration/cookie tests, scoped ESLint and frontend TypeScript/production build. Build reports a bundle-size warning.
+- Playwright against `http://127.0.0.1:5173`: malformed and syntactically valid unknown synthetic credentials return real `401 GUEST_CREDENTIAL_INVALID`; the revised UI offers authentication, sends no conversion POST, preserves the credential across reload and receives no replacement cookie. No page runtime errors were observed. Chrome DevTools was unavailable because its profile was already in use.
+- A clean-context real JPG-to-PNG conversion completed; download returned 200 with 95 bytes and a valid PNG signature. Reload preserved the result, and the next attempt required sign-in before another upload.
+- The owner's reported failure matches the rejected-credential boundary. The exact reason their retained credential became invalid (malformed/duplicate, missing database record or expiry) remains unverified; their browser credential was not accessed. Default lifetime is 30 days, stored against the database clock and not extended by bootstrap. A fresh context has no retained credential and follows initial issuance instead.
+- Live database/worker guest, admission and processing regression suites were not run against the shared active worker database; no isolated live-test target was configured for this task. Expired-record behavior was inspected in existing live tests, not newly executed. Full IMP-01.01 acceptance remains pending these limitations and owner verification. No IMP-01.02 work was performed.
+- Disposable diagnostic scripts remain under `.cache/tasks/imp-01-01/`; no additional worktrees were created.
+
 ## 2026-11-07 — Item 8 completion marker
 
 ### Changes
