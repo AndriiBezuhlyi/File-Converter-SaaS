@@ -5,7 +5,7 @@ test.use({ baseURL: 'http://127.0.0.1:4174' });
 
 async function openResult(page: Page, scenario: 'consumed' | 'expired') {
   await page.goto(`/test-fixtures/converter/?scenario=${scenario}`);
-  await expect(page).toHaveTitle('Конвертер файлів — converter');
+  await expect(page).toHaveTitle('Конвертер файлів — Clarity Converter');
   await expect(page.getByRole('note')).toContainText('без реальної конвертації');
   await expect(page.getByRole('heading', { name: 'Файл готовий' })).toBeVisible();
   await expect(page.getByText('Гостьовий результат не зберігається в акаунті.')).toBeVisible();

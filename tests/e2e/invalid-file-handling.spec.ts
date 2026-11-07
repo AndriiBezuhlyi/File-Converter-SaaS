@@ -16,7 +16,7 @@ const validJpg: SyntheticFile = {
 
 async function open(page: Page, scenario: 'success' | 'rejected-once' = 'success') {
   await page.goto(`/test-fixtures/converter/?scenario=${scenario}`);
-  await expect(page).toHaveTitle('Конвертер файлів — converter');
+  await expect(page).toHaveTitle('Конвертер файлів — Clarity Converter');
   await expect(page.getByRole('note')).toContainText('без реальної конвертації');
 }
 

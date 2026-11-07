@@ -14,7 +14,7 @@ test('API documentation has native deep links, seven operations, and only sessio
   );
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/api-docs');
-  await expect(page).toHaveTitle('Документація API — converter');
+  await expect(page).toHaveTitle('Документація API — Clarity Converter');
   await expect(page.getByRole('heading', { level: 1, name: 'Документація API' })).toBeVisible();
   await expect(page.getByRole('note', { name: 'Доступність API' })).toContainText(
     'API ще готується.',

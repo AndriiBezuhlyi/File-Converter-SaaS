@@ -4,6 +4,23 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-07 — Phase 2 public branding and logo concept review
+
+### Changes
+
+- Confirmed IMP-01.01 and IMP-01.02 commits are present (`d7c806b`, `56c9a76`). Their verification evidence and remaining owner/credential-origin limitations are retained; no Phase 1 acceptance marker was changed.
+- Applied Clarity Converter to header/footer text and accessible names, route/browser titles, HTML description, OpenAPI display title and transactional email subjects. Replaced the homepage Hero with the exact approved Ukrainian headline, “Конвертуй файли без зайвих труднощів”. Internal package, route, cookie, queue and database identifiers are unchanged.
+- Kept the existing layout and fonts. Prevented wordmark wrapping, reduced tablet navigation gaps and used the existing disclosure menu below 768px so the longer public name fits signed-in navigation. Navigation behavior and assertions remain intact.
+- With explicit user approval, updated only old brand/Hero expectations in existing tests; added three controlled notification-branding cases for verification, password reset and email change. Existing email language and fragment-token behavior are preserved; no real mail was sent.
+- Prepared three original SVG/HTML logo concepts using existing Onest/IBM Plex Mono fonts and design-system colors: a typographic wordmark, a folded-document mark and an interlocking-CC monogram. Each has dark-background, small favicon, mobile-header and monochrome previews. All primary Clarity wordmarks use `--color-accent`. Production logo/favicons remain unselected and unchanged pending the mandatory IMP-02.02 owner checkpoint.
+
+### Verification and limitations
+
+- Passed all 140 frontend tests, three new notification tests, backend typecheck, frontend/API/worker builds, scoped ESLint, formatting and contract-drift checks. The frontend build retains its bundle-size warning.
+- The ordinary Chromium E2E run passed 41 cases and skipped the opt-in live integration case; its one responsive-navigation failure exposed an overly broad initial disclosure breakpoint. After correcting the layout, the unchanged affected responsive test passed separately. A full final Phase 2 E2E run remains due after the selected logo is implemented.
+- Playwright visual QA at 320, 375, 640, 768, 1024 and 1440px found no horizontal overflow or clipped Hero/brand. Signed-in fixture headers remain 80px at 768/1024px and 64px below 768px. Home, API, login/register, profile/files and verification/recovery routes have consistent branded titles; no page runtime errors were observed in the route sweep. Chrome DevTools was unavailable because its profile was already in use, so existing Playwright was used.
+- Concept board and screenshots are retained in `.cache/tasks/phase-2/`, including self-contained `logo-concepts-preview.html`, `logo-concepts.png`, and homepage desktop/mobile captures. They are review artifacts, not production replacements; no additional worktree was created. IMP-02.02 and final Phase 2 acceptance await the owner's logo selection. The improvement plan and completion statuses are untouched.
+
 ## 2026-11-07 — IMP-01.02 accounting and recovery verification evidence
 
 ### Changes

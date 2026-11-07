@@ -9,7 +9,7 @@ export function AppLayout() {
   const previousPath = useRef(pathname);
 
   useEffect(() => {
-    document.title = `${getRouteTitle(pathname)} — converter`;
+    document.title = `${getRouteTitle(pathname)} — Clarity Converter`;
     if (previousPath.current !== pathname) {
       document.getElementById('main-content')?.focus({ preventScroll: true });
       window.scrollTo(0, 0);
@@ -26,14 +26,14 @@ export function AppLayout() {
       <main
         id="main-content"
         tabIndex={-1}
-        aria-label="File Converter"
+        aria-label="Clarity Converter"
         className={`container ${styles.main}`}
       >
         <Outlet />
       </main>
       <footer className={`container ${styles.footer}`}>
-        <Link className={styles.brand} to="/" aria-label="converter — головна">
-          converter
+        <Link className={styles.brand} to="/" aria-label="Clarity Converter — головна">
+          Clarity Converter
         </Link>
         <nav aria-label="Навігація в підвалі" className={styles.footerLinks}>
           <Link to="/" className={styles.navLink}>

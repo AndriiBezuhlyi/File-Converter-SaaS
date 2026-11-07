@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "File Converter API",
+    "title": "Clarity Converter API",
     "version": "0.0.0",
     "description": "Operational health, authentication, account settings, API keys, guest context, validated conversion admission, real isolated processing, status polling and protected result downloads."
   },

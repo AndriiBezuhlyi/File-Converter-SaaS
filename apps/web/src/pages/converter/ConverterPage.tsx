@@ -22,9 +22,7 @@ export function ConverterPage({ gateway }: { gateway?: ConversionGateway } = {})
     <>
       <div className={styles.hero}>
         <div>
-          <h1 className={styles.heading}>
-            <span>Інший формат.</span> <span>Той самий файл.</span>
-          </h1>
+          <h1 className={styles.heading}>Конвертуй файли без зайвих труднощів</h1>
           <p className={styles.intro}>Зображення та документи — у потрібному форматі.</p>
           <p className={styles.formats}>
             <span className="sr-only">JPG у PNG та PNG у JPG; DOCX у PDF.</span>

@@ -23,7 +23,7 @@ describe('application navigation', () => {
   it('renders the homepage without presenting unavailable conversion controls', () => {
     renderRoute();
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Інший формат. Той самий файл.' }),
+      screen.getByRole('heading', { level: 1, name: 'Конвертуй файли без зайвих труднощів' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Вибрати файл' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Конвертувати' })).toBeDisabled();
@@ -34,7 +34,7 @@ describe('application navigation', () => {
     renderRoute();
     await user.click(screen.getByRole('link', { name: 'Увійти' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Увійти' })).toBeInTheDocument();
-    expect(document.title).toBe('Увійти — converter');
+    expect(document.title).toBe('Увійти — Clarity Converter');
     expect(screen.getByRole('main')).toHaveFocus();
     expect(screen.getByLabelText('Пароль', { exact: true })).toHaveAttribute(
       'autocomplete',
@@ -45,7 +45,7 @@ describe('application navigation', () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'До конвертера' }));
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Інший формат. Той самий файл.' }),
+      screen.getByRole('heading', { level: 1, name: 'Конвертуй файли без зайвих труднощів' }),
     ).toBeInTheDocument();
   });
 
@@ -72,7 +72,7 @@ describe('application navigation', () => {
     expect(screen.getByRole('heading', { name: 'Сторінку не знайдено' })).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'До конвертера' }));
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Інший формат. Той самий файл.' }),
+      screen.getByRole('heading', { level: 1, name: 'Конвертуй файли без зайвих труднощів' }),
     ).toBeInTheDocument();
   });
 });

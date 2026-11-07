@@ -13,7 +13,7 @@ test('keyboard skip link, route navigation, deep links, and 404 recovery work', 
     .getByRole('link', { name: 'API' })
     .click();
   await expect(page).toHaveURL('/api-docs');
-  await expect(page).toHaveTitle('Документація API — converter');
+  await expect(page).toHaveTitle('Документація API — Clarity Converter');
   await expect(page.getByRole('main')).toBeFocused();
   await page.reload();
   await expect(page.getByRole('heading', { level: 1, name: 'Документація API' })).toBeVisible();

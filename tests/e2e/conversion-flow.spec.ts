@@ -5,7 +5,7 @@ test.use({ baseURL: 'http://127.0.0.1:4174' });
 
 async function open(page: Page, scenario = 'success') {
   await page.goto(`/test-fixtures/converter/?scenario=${scenario}`);
-  await expect(page).toHaveTitle('Конвертер файлів — converter');
+  await expect(page).toHaveTitle('Конвертер файлів — Clarity Converter');
   await expect(page.getByRole('note')).toContainText('без реальної конвертації');
 }
 

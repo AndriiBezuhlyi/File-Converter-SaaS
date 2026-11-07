@@ -41,7 +41,7 @@ type ConversionInput = {
 
 async function open(page: Page, scenario: 'success' | 'failed-once' = 'success') {
   await page.goto(`/test-fixtures/converter/?scenario=${scenario}`);
-  await expect(page).toHaveTitle('Конвертер файлів — converter');
+  await expect(page).toHaveTitle('Конвертер файлів — Clarity Converter');
   await expect(page.getByRole('note')).toContainText('без реальної конвертації');
 }
 

@@ -28,8 +28,8 @@ export function AppHeader() {
         }
       }}
     >
-      <Link className={styles.brand} to="/" aria-label="converter — головна">
-        converter
+      <Link className={styles.brand} to="/" aria-label="Clarity Converter — головна">
+        Clarity Converter
       </Link>
       <Button
         ref={menuButton}
