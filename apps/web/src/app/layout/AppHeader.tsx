@@ -59,7 +59,7 @@ export function AppHeader() {
         <NavLink to="/api-docs" className={styles.navLink ?? ''}>
           API
         </NavLink>
-        <SessionActions />
+        <SessionActions navLinkClassName={styles.navLink ?? ''} />
         {status === 'unavailable' || (status === 'ready' && session?.kind === 'anonymous') ? (
           <ActionLink
             to="/login"

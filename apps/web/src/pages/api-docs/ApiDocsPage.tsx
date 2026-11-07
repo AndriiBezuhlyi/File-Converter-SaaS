@@ -1,34 +1,11 @@
-import { useEffect } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { CodeBlock } from '../../shared/ui/CodeBlock';
 import { errors, examples, fileOperations, sections } from './api-reference';
 import styles from './ApiDocsPage.module.scss';
+import { useActiveSection } from './use-active-section';
 
 export function ApiDocsPage() {
-  useEffect(() => {
-    const fragment = window.location.hash.slice(1);
-    if (fragment !== 'api-docs-title' && !sections.some((section) => section.id === fragment))
-      return;
-    const target = document.getElementById(fragment);
-    if (!target) return;
-    let active = true;
-    let frame: number | undefined;
-
-    // Native fragment restoration can precede SPA rendering or font layout.
-    void (document.fonts?.ready ?? Promise.resolve()).then(() => {
-      if (!active) return;
-      frame = window.requestAnimationFrame(() => {
-        if (!active || window.location.hash.slice(1) !== fragment) return;
-        target.scrollIntoView({ block: 'start', behavior: 'instant' });
-        target.focus({ preventScroll: true });
-      });
-    });
-
-    return () => {
-      active = false;
-      if (frame !== undefined) window.cancelAnimationFrame(frame);
-    };
-  }, []);
+  const activeSection = useActiveSection();
 
   return (
     <div className={styles.layout}>
@@ -50,7 +27,12 @@ export function ApiDocsPage() {
           <ul role="list" className={styles.contents}>
             {sections.map((section) => (
               <li key={section.id}>
-                <a href={`#${section.id}`}>{section.title}</a>
+                <a
+                  href={`#${section.id}`}
+                  aria-current={activeSection === section.id ? 'location' : undefined}
+                >
+                  {section.title}
+                </a>
               </li>
             ))}
           </ul>

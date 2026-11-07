@@ -1,10 +1,10 @@
-import { Link, useNavigate } from 'react-router';
+import { NavLink, useNavigate } from 'react-router';
 import { Button } from '../../../shared/ui/Button';
 import { useAuth } from '../lib/auth-context';
 import { useAuthAction } from '../lib/use-auth-action';
 import styles from './Auth.module.scss';
 
-export function SessionActions() {
+export function SessionActions({ navLinkClassName }: { navLinkClassName?: string }) {
   const { gateway, session, status, refreshSession } = useAuth();
   const action = useAuthAction();
   const navigate = useNavigate();
@@ -40,8 +40,12 @@ export function SessionActions() {
   return (
     <div className={styles.feedback}>
       <div className={styles.sessionLinks}>
-        <Link to="/files">Мої файли</Link>
-        <Link to="/account">Профіль</Link>
+        <NavLink to="/files" className={navLinkClassName ?? ''}>
+          Мої файли
+        </NavLink>
+        <NavLink to="/account" className={navLinkClassName ?? ''}>
+          Профіль
+        </NavLink>
         <Button
           variant="secondary"
           disabled={action.pending}

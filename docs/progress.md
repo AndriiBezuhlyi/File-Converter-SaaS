@@ -4,6 +4,23 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-07 — Phase 3 navigation, anchor scrolling and active states
+
+### Changes
+
+- IMP-03.01: enabled native CSS smooth scrolling with the existing reduced-motion override; centralized initial/cross-route fragment repair after font readiness in AppLayout. Encoded/malformed fragments, StrictMode cleanup, keyboard target focus and user-interaction cancellation are handled. Known SPA history entries retain in-memory scroll positions without changing browser history or native scrollRestoration. Position capture guards against native fragment scrolling preceding the router commit.
+- IMP-03.02: added a local scrollspy for the six API headings using passive scroll events batched through requestAnimationFrame, resize/font updates and optional ResizeObserver cleanup. Selection uses the last heading reaching its CSS scroll margin, with a final-section rule at document bottom. It never changes focus, URL or history. The active sidebar link exposes aria-current="location" and the existing accent; a short desktop viewport can scroll the sidebar independently.
+- IMP-03.03: authenticated Files/Profile links now use NavLink and receive the same layout-owned class as Converter/API through a feature prop. Existing active underlines remain deliberate; inactive links lose their accidental native underline. Matching consistently supports query/hash/trailing slashes and nested paths.
+- Added three separate focused unit/component test files and one E2E file. Existing tests, dependencies, routes and improvement-plan.md are unchanged.
+
+### Verification and limitations
+
+- Passed the complete frontend Vitest suite (156 tests), then the final 16 focused regression tests after the history timing repair. Root npm run typecheck and npm run lint passed, including all six lint-configuration tests; final scoped ESLint and explicit Prettier checks passed. Frontend production builds passed with the existing chunk-size warning.
+- Final Phase 3 Chromium E2E stability run passed all seven scenarios twice (14/14): keyboard/repeated/top anchors, same-document Back/Forward, initial encoded hash and delayed fonts, reduced motion/mobile, malformed/unknown fragments, missing observers, rapid/manual scrolling and viewport changes, cross-route fragments, saved manual position across routes, authenticated active styling and logout/mobile focus.
+- The broader Chromium run passed 47 tests, skipped one opt-in live integration test and failed one unchanged mobile-navigation test. The failure snapshot shows session-read failure instead of the expected anonymous login link; the local API at 127.0.0.1:3000 was unavailable (ECONNREFUSED). A separate controlled anonymous-session/mobile regression passes. This broader run preceded the final history timing guard; its unrelated infrastructure failure remains unresolved rather than being reported as a pass. No existing assertions were changed.
+- Chrome DevTools could not acquire its occupied profile; the existing Playwright installation supplied real Chromium evidence. Visual QA at 1366x768, 1024x300 and 390x844 confirmed page identity, content, no framework overlay, target focus, active states, reachable overflowing sidebar and no horizontal overflow. The controlled API-documentation flow had no console errors/warnings or failed HTTP responses. Firefox/Safari and live backend authentication remain unverified.
+- QA script and desktop/mobile screenshots are retained outside the repository in ../Converter-artifacts/phase-3/. No additional worktrees or branches were created. Phase 3 behavior is verified in controlled Chromium; full-suite acceptance retains the API-availability blocker above. Plan markers are untouched.
+
 ## 2026-11-07 — Approved Flux Converter identity and document logo
 
 ### Changes
