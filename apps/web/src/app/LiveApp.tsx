@@ -8,6 +8,7 @@ import { createApiKeyGateway } from '../features/api-keys/lib/api-key-http-gatew
 import { createHttpClient } from '../shared/api/http-client';
 import { createSessionClient } from '../shared/api/session-client';
 import { createConversionGateway } from '../features/converter/lib/conversion-http-gateway';
+import { createFilesGateway } from '../features/files/lib/files-http-gateway';
 
 const client = createSessionClient(createHttpClient());
 const auth = createAuthGateway(client);
@@ -25,5 +26,13 @@ function ConnectedApp() {
   const account = useMemo(() => createAccountGateway(client, identity), [identity]);
   const keys = useMemo(() => createApiKeyGateway(client, identity), [identity]);
   const conversions = useMemo(() => createConversionGateway(client, identity), [identity]);
-  return <App accountGateway={account} apiKeyGateway={keys} conversionGateway={conversions} />;
+  const files = useMemo(() => createFilesGateway(client, identity), [identity]);
+  return (
+    <App
+      accountGateway={account}
+      apiKeyGateway={keys}
+      conversionGateway={conversions}
+      filesGateway={files}
+    />
+  );
 }

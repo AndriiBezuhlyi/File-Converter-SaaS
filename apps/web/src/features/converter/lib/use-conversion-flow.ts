@@ -27,11 +27,13 @@ export function useConversionFlow(
   const attempt = useRef(0);
   const mounted = useRef(false);
   const terminalSeen = useRef<string | null>(null);
+  const uploadController = useRef<AbortController | null>(null);
 
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
+      uploadController.current?.abort();
     };
   }, []);
 
@@ -98,10 +100,15 @@ export function useConversionFlow(
       }
       setStage('uploading');
       try {
-        const result = await gateway.submit(selection, (next) => {
-          if (!mounted.current || !submitting.current || attempt.current !== currentAttempt) return;
-          setProgress(next);
-        });
+        const result = await gateway.submit(
+          selection,
+          (next) => {
+            if (!mounted.current || !submitting.current || attempt.current !== currentAttempt)
+              return;
+            setProgress(next);
+          },
+          uploadController.current?.signal,
+        );
         if (result.kind === 'accepted' && !isJobId(result.job.id)) return { kind: 'unknown' };
         return result;
       } catch {
@@ -122,6 +129,7 @@ export function useConversionFlow(
     },
     onSettled: () => {
       submitting.current = false;
+      uploadController.current = null;
     },
   });
 
@@ -133,6 +141,7 @@ export function useConversionFlow(
       return;
     }
     submitting.current = true;
+    uploadController.current = new AbortController();
     attempt.current += 1;
     setStage('checking');
     setProgress(null);

@@ -14,7 +14,7 @@ export function EmailVerification({
   token: string | null;
   onTokenUsed: () => void;
 }) {
-  const { gateway } = useAuth();
+  const { gateway, refreshSession } = useAuth();
   const action = useAuthAction();
   const [verified, setVerified] = useState(false);
   if (verified)
@@ -39,6 +39,8 @@ export function EmailVerification({
               () => {
                 onTokenUsed();
                 setVerified(true);
+                // Email changes revoke sessions; synchronize only after the token is committed.
+                void refreshSession().catch(() => {});
               },
             );
           }}

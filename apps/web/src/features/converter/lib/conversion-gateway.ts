@@ -55,6 +55,7 @@ export interface ConversionGateway {
   submit(
     selection: FileSelection,
     onProgress: (progress: UploadProgress) => void,
+    signal?: AbortSignal,
   ): Promise<SubmissionOutcome>;
   readJob(id: string, signal: AbortSignal): Promise<ConversionJob>;
   download(id: string): Promise<{ blob: Blob; name: string }>;

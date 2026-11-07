@@ -22,7 +22,11 @@ function ConnectedAuthProvider({ gateway, children }: PropsWithChildren<{ gatewa
     staleTime: 0,
   };
   const session = useQuery(options);
-  const identity = session.data?.kind === 'authenticated' ? session.data.email : session.data?.kind;
+  const identity = session.isError
+    ? 'unavailable'
+    : session.data?.kind === 'authenticated'
+      ? session.data.email
+      : session.data?.kind;
   const previousIdentity = useRef(identity);
   useEffect(() => {
     if (identity !== undefined && previousIdentity.current !== identity) {
@@ -31,12 +35,14 @@ function ConnectedAuthProvider({ gateway, children }: PropsWithChildren<{ gatewa
       if (previous !== undefined) {
         const privateQueries = {
           predicate: (query: { queryKey: readonly unknown[] }) =>
-            query.queryKey[0] !== 'auth' && query.queryKey[1] === previous,
+            query.queryKey[0] !== 'auth' &&
+            (query.queryKey[1] === previous ||
+              query.queryKey[1] === `${gateway.scope}:${previous}`),
         };
         void client.cancelQueries(privateQueries).then(() => client.removeQueries(privateQueries));
       }
     }
-  }, [client, identity]);
+  }, [client, gateway.scope, identity]);
   async function refreshSession() {
     // Drop account-scoped data after a confirmed identity mutation; guest credentials stay server-owned.
     const otherQueries = {

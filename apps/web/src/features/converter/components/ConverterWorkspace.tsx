@@ -10,6 +10,7 @@ import {
   type ConversionGateway,
 } from '../lib/conversion-gateway';
 import { useConversionFlow } from '../lib/use-conversion-flow';
+import { useAuth } from '../../auth/lib/auth-context';
 import styles from './ConversionWorkspace.module.scss';
 
 interface WorkspaceProps {
@@ -33,6 +34,7 @@ function ConnectedWorkspace({
   onJobId,
 }: WorkspaceProps & { gateway: ConversionGateway }) {
   const flow = useConversionFlow(gateway, requestedId, onJobId);
+  const { status: sessionStatus } = useAuth();
   const current = flow.job.data;
   const waiting = flow.upload.isPending || flow.outcome?.kind === 'unknown';
   const showState = waiting || flow.jobId !== null;
@@ -78,7 +80,7 @@ function ConnectedWorkspace({
         <FileSelector
           key={flow.selectionVersion}
           onConvert={canStart ? flow.submit : undefined}
-          locked={waiting}
+          locked={waiting || sessionStatus === 'pending'}
           submissionError={rejected}
           availability={
             flow.access.isError

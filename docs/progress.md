@@ -4,6 +4,24 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for current completion status. Plan items 15 and 16 are complete; item 8 remains open for its remaining frontend integration gates.
 
+## 2026-11-07 — Item 8 frontend integration audit and completion work
+
+### Changes
+
+- Audited all six backend/frontend integration areas against controllers, generated OpenAPI contracts, gateways, hooks and tests. Auth/CSRF and conversions were partial; guest and account/settings/API keys already had real transports; saved-file transport and production wiring were missing. No production conversion simulator was found: controlled gateways remain in development fixtures.
+- Added the generated-contract-backed saved-files HTTP gateway and production wiring. Search, format, date sorting and opaque pagination map to the existing API. Downloads use the shared Axios Blob transport; deletion obtains fresh CSRF and synchronizes file and conversion caches. Search respects the server's 200-character limit.
+- Corrected private-cache cleanup for transport-prefixed scopes on background identity changes and session-read failures; email confirmation now refreshes sessions after the committed mutation. Abort upload HTTP on converter unmount without inventing server-side job cancellation or replaying ambiguous acceptance. Lock selection during initial session hydration to prevent identity remounts discarding a newly selected file.
+- Added separate focused HTTP/component regression tests and opt-in `tests/e2e/live-integration.spec.ts`. Existing tests, API/schema/dependencies, implementation-plan markers and Item 17 were not changed. Reused the established design, Axios transport, generated types and Query architecture.
+
+### Verification and limitations
+
+- Live browser acceptance passed with an actual API, Linux worker using Sharp/LibreOffice in its configured sandbox, PostgreSQL, Redis, MinIO and Mailpit: guest success/download and second-upload sign-in gate; registration/email verification/login; retained guest access after login; account JPG → PNG, PNG → JPG and DOCX → PDF; acceptance-time saving, My Files filters/search/sort, protected downloads and confirmed deletion. Download signatures and saved/download byte equality were checked. Desktop/mobile screenshots are outside the repository.
+- Existing live suites passed: auth 10, guest 11, account 6, conversions 9, processing 6, files 9. These suites use protocol fixtures for storage/mail, and processing tests substitute the engine; their passing results alone are not real full-stack conversion evidence. An initial guest-suite run shared its database with the active worker and observed reconciliation interference; the isolated-database rerun passed all 11.
+- Production build, contract drift check, full typecheck, lint/config checks, backend unit tests (27) and frontend Vitest (134 tests across 26 files, `--maxWorkers=2`) passed. Build retains the existing roughly 550 kB entry-chunk warning.
+- Existing browser regression run: 41 passed, one opt-in live test skipped, one failed. `tests/e2e/file-selection.spec.ts:68` expects all requests to be session reads, but the real converter gateway already at baseline `878076c` bootstraps guest eligibility using CSRF and POST. The test's local file-selection assertions pass; its request allowlist is stale. AGENTS.md prohibits modifying existing tests during functionality changes, so that test was preserved. Item 8 remains open until this gate is resolved; Item 17 was not started.
+- Chrome DevTools verified the clean-context page identity, content, no overlay/console errors and no overflow; its upload tool denied both artifact and repository fixture paths as outside configured roots. Browser plugin is unavailable; the existing Playwright Chromium completed live interactions and responsive screenshots. No new browser dependencies were installed. Context7 documentation was available; React best practices preserved existing query ownership and component boundaries.
+- No extra branches/worktrees, integration, push, reset or rebase. Local synthetic services/data and unique QA scripts/screenshots remain in `Converter-artifacts/item8/`, `.cache/tasks/item8/` and the five `converter-item8-*` containers; these were not destructively removed. The API supervisor keeps generated credentials in memory and does not modify secret-bearing configuration. Synthetic users/messages remain within the dedicated test environment.
+
 ## 2026-11-07 — Task workspace and artifact cleanup
 
 ### Changes

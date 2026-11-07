@@ -76,6 +76,7 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
         <Field
           label="Пошук за назвою"
           type="search"
+          maxLength={200}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
@@ -217,6 +218,7 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
                       async () => {
                         await gateway.remove(id);
                         await client.cancelQueries({ queryKey: ['files', gateway.scope] });
+                        await client.invalidateQueries({ queryKey: ['converter'] });
                       },
                       () => deleted(id),
                     );

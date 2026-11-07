@@ -114,10 +114,11 @@ export function createConversionGateway(
         return requestError(error);
       }
     },
-    async submit(selection, onProgress) {
+    async submit(selection, onProgress, signal) {
       try {
         const token = await client.http.json({
           path: 'auth/csrf',
+          ...(signal ? { signal } : {}),
           decode: (value) => z.object({ csrfToken: z.string() }).parse(value),
         });
         const body = new FormData();
@@ -125,6 +126,7 @@ export function createConversionGateway(
         body.append('targetFormat', selection.targetFormat);
         const job = await client.http.json({
           path: 'conversions',
+          ...(signal ? { signal } : {}),
           method: 'POST',
           body,
           csrf: { headerName: 'X-CSRF-Token', value: token.csrfToken },
