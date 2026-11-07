@@ -4,6 +4,21 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for current completion status. Plan items 15 and 16 are complete; item 8 remains open for its remaining frontend integration gates.
 
+## 2026-11-07 — Task workspace and artifact cleanup
+
+### Changes
+
+- With explicit user approval, removed the unused `Converter-task16-cleanup` worktree using Git and deleted its fully merged `task16-cleanup` branch. The branch pointed to `516b538`, already contained in `main`; no merge, cherry-pick, forced deletion or application change was needed.
+- Preserved all 12 loose `item15-*` diagnostic scripts, build/HTTP logs and screenshots together in the sibling `Converter-artifacts/item15/` directory. File contents were unchanged; the directory is a local QA archive outside the repository.
+- Added scoped workspace-hygiene guidance to the local AGENTS.md: group disposable artifacts, prefer the existing checkout for read-only review, report retained worktrees/artifacts and inspect unique work before authorized Git cleanup. Global rules, implementation-plan status and application/runtime data were unchanged.
+
+### Verification and limitations
+
+- Confirmed the task worktree had no tracked changes, untracked/ignored files or commits absent from `main` before removal. Git now lists only the primary `Converter` worktree, and the disposable branch is absent. The implementation commits remain in `main`.
+- Verified SHA-256 equality for all 12 moved files (508,646 bytes total) and confirmed no loose `item15-*` files remain in the workspace root. The archive preserves unique historical QA evidence; its scripts still contain their original environment/path assumptions and were not rerun or promoted into maintained tests.
+- Passed explicit Prettier and whitespace checks, verified 17 relative documentation links and confirmed the same structure and reverse chronological order across all 28 progress entries.
+- No application tests/builds or services were required for this filesystem/documentation maintenance. No remote push was performed as part of cleanup.
+
 ## 2026-11-05 — Saved files and retention cleanup (plan item 16)
 
 ### Changes

@@ -33,6 +33,12 @@ Use [api-audit](.agents/skills/api-audit/SKILL.md) or [conversion-test](.agents/
 
 Use [$database-review](.agents/skills/database-review/SKILL.md) for schema, migration, SQL/ORM query, index, constraint, transaction/concurrency, database security, ownership/tenant isolation, or database performance changes and reviews.
 
+## Workspace Hygiene
+
+- Group disposable local scripts, logs and screenshots in `.cache/tasks/<task>/`. If an active skill requires storage outside the repository, use a sibling `<repo-name>-artifacts/<task>/` directory. Keep maintained source, test fixtures and product assets in their intended locations; do not scatter loose task files in the workspace root.
+- Create additional worktrees when isolation is needed; read-only reviews normally use the existing checkout. At handoff, report retained task worktrees and artifact directories, including whether they contain unique work.
+- Within authorized cleanup, inspect tracked changes, untracked/ignored files and commits absent from the target branch before removing a worktree. Use `git worktree remove` without force, then delete only a fully merged disposable task branch. Preserve unique work and existing integration/removal approval requirements.
+
 ## Testing
 
 When implementing new functionality, create only the most essential unit, integration, and component tests.
