@@ -30,6 +30,7 @@
     "test:infrastructure": "npm run test:infrastructure --workspace=@converter/backend",
     "test:auth": "npm run test:auth --workspace=@converter/backend",
     "test:guest": "npm run test:guest --workspace=@converter/backend",
+    "test:guest:recovery": "npm run test:guest:recovery --workspace=@converter/backend --",
     "test:account": "npm run test:account --workspace=@converter/backend",
     "test:conversions": "npm run test:conversions --workspace=@converter/backend",
     "test:e2e": "node scripts/playwright.mjs test",

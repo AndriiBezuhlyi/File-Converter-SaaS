@@ -19,6 +19,7 @@
     "test:infrastructure": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.infrastructure.config.cjs --runInBand",
     "test:auth": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.auth.config.cjs --runInBand",
     "test:guest": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.guest.config.cjs --runInBand",
+    "test:guest:recovery": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.guest-recovery.config.cjs --runInBand",
     "test:account": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.account.config.cjs --runInBand",
     "test:conversions": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.conversions.config.cjs --runInBand",
     "db:validate": "prisma validate",

@@ -4,6 +4,24 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-07 — IMP-01.02 accounting and recovery verification evidence
+
+### Changes
+
+- Verified that the current branch includes IMP-01.01 commit `d7c806b`. Reviewed guest row locking, admission rollback/ambiguous COMMIT reconciliation, processing version/token/lease fencing, durable dispatch and frontend recovery without changing those mechanisms or the existing tests.
+- Added a separate seven-case live regression suite and `npm run test:guest:recovery`. It reuses the real API/modules, existing private-storage/SMTP fixtures, PostgreSQL/Redis and a controlled Sharp engine boundary. It verifies lost COMMIT acknowledgements with both available and unavailable reconciliation, interrupted pre-admission guest uploads, lost acceptance response recovery in another tab, honest unresolved acceptance without replay, first-cookie bootstrap races, and terminal failure/retry with delayed old-job delivery.
+- No production defect requiring an accounting, schema, API, credential or quota-policy change was demonstrated. Production code and the improvement plan remain unchanged; owner acceptance/status markers are not updated.
+
+### Verification and limitations
+
+- Applied the three existing migrations only to the task-owned PostgreSQL 18 database `converter_test_imp0102` on port 55439. A separate Redis 8 instance on port 56389 isolates queues, sessions and limits from the active application. No shared application database or queue was used.
+- Passed the existing `npm run test:guest` (11), `test:conversions` (9) and `test:processing` (6), including real PostgreSQL concurrent reservation/rollback/settlement and BullMQ consumer/reconciliation/late-lease cases. Passed the seven new recovery regressions and the existing 27 converter frontend tests, backend typecheck, scoped ESLint, Prettier and all six lint-configuration checks.
+- Browser tests use Chromium via Playwright because Chrome DevTools was unavailable in this session (profile already in use). The frontend is served at `http://127.0.0.1:5173`; every browser API request is forwarded to the suite's isolated API. Assertions check database reservation/consumption and exactly one output, downloaded PNG decoding, active-ID recovery, authentication before another upload and absence of automatic POST replay. No application page runtime errors were observed. Early fixture failures were corrected by draining in-flight routes during teardown and waiting for the file input to become enabled after session hydration.
+- A barrier-controlled race before a guest cookie exists produced two successful bootstraps and two credentials; the browser retains one cookie, and subsequent concurrent submissions using that credential produce one 202 and one 409 with one durable job. Gateway-local bootstrap deduplication does not span tabs. This is a documented first-issuance limitation, not a per-person quota guarantee or a trial reset. No fingerprinting, cross-tab protocol or replacement-credential policy was added.
+- COMMIT ambiguity is injected after a real transaction has committed, with an optional failed reconciliation read; it is not a destructive database/network fault test. The new suite uses real Sharp output behind a test engine adapter, not the Linux subprocess sandbox; existing processing tests likewise control the engine boundary. Production storage providers and Linux engine isolation were not revalidated for this orchestration-only change.
+- To rerun the new suite, provide explicit loopback `TEST_DATABASE_URL`/`TEST_REDIS_URL` for an isolated migrated test database, `TEST_WEB_ORIGIN=http://127.0.0.1:5173`, and `PLAYWRIGHT_BROWSERS_PATH` pointing to the installed project browser cache. No dependency installation or service configuration change is required.
+- Task containers `converter-imp0102-postgres` and `converter-imp0102-redis` are stopped and retained with synthetic verification data for review; no additional worktree or disposable task scripts were created. Release/owner acceptance remains separate from this evidence.
+
 ## 2026-11-07 — IMP-01.01 invalid guest session feedback (partial acceptance)
 
 ### Changes
