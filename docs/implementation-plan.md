@@ -12,7 +12,7 @@
 
 7. [x] Frontend: build the API documentation page with API-key authentication, operations, examples, limits, and errors. Completed 2026-10-20.
 
-8. Frontend: prepare typed API clients and TanStack Query hooks against the agreed contract, including polling, cache updates, connection failures, and focused UI tests; verify live integration once the backend is available.
+8. [x] Frontend: prepare typed API clients and TanStack Query hooks against the agreed contract, including polling, cache updates, connection failures, and focused UI tests; verify live integration once the backend is available. Completed 2026-11-07.
 
 9. [x] Database: add PostgreSQL/Prisma models, constraints, indexes, and migrations for users, settings, credentials, guest trials, API keys, files, and conversions; document the schema. Completed 2026-11-01.
 

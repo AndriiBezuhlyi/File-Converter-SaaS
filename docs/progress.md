@@ -2,7 +2,19 @@
 
 Entries are ordered from newest to oldest. Each entry uses the same structure: changes, followed by verification and limitations. Implementation-plan references identify the covered scope; partial delivery is labeled explicitly.
 
-Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 frontend integration implementation and automated verification are recorded below; plan markers remain unchanged and Item 17 has not started.
+Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
+
+## 2026-11-07 — Item 8 completion marker
+
+### Changes
+
+- At the user's request, marked Item 8 complete in the implementation plan after resolving its final E2E blocker. Implementation and verification are recorded in the preceding commits `fe49113` and `43e5e63` and the entries below.
+- Item 17 remains unstarted. The next step is the user's manual application testing and a separate list of requested fixes or improvements.
+
+### Verification and limitations
+
+- Documentation-only status correction, based on the previously executed 134 frontend tests, 27 backend unit tests, 51 PostgreSQL/Redis integration checks, 42 ordinary browser tests and the separate successful real-engine live E2E. The ordinary suite's opt-in live skip does not replace its separately verified run.
+- Checked formatting, the diff and preservation of Item 17. Application tests were not rerun because no implementation or test behavior changed.
 
 ## 2026-11-07 — Authorized Item 8 E2E expectation update
 
