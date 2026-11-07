@@ -65,7 +65,12 @@ test('keyboard picker selects, replaces, and removes a file without sending it t
   });
   await expect(page.getByText('report.docx', { exact: true })).toBeVisible();
   expect(apiRequests.length).toBeGreaterThan(0);
-  expect(apiRequests.every((value) => value === 'GET /api/v1/auth/session')).toBe(true);
+  const allowedRequests = new Set([
+    'GET /api/v1/auth/session',
+    'GET /api/v1/auth/csrf',
+    'POST /api/v1/guest-session',
+  ]);
+  expect(apiRequests.every((value) => allowedRequests.has(value))).toBe(true);
 });
 
 test('real DataTransfer accepts the size boundary and rejects oversized, unsupported, empty, and multiple files', async ({

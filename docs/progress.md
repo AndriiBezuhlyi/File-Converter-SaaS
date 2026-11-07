@@ -2,7 +2,20 @@
 
 Entries are ordered from newest to oldest. Each entry uses the same structure: changes, followed by verification and limitations. Implementation-plan references identify the covered scope; partial delivery is labeled explicitly.
 
-Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for current completion status. Plan items 15 and 16 are complete; item 8 remains open for its remaining frontend integration gates.
+Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 frontend integration implementation and automated verification are recorded below; plan markers remain unchanged and Item 17 has not started.
+
+## 2026-11-07 — Authorized Item 8 E2E expectation update
+
+### Changes
+
+- With explicit user approval, updated only the request allowlist in the existing keyboard file-selection E2E test. It permits session reads, CSRF reads and guest bootstrap; conversion submissions and other API requests still fail the test. Application behavior and other tests were unchanged.
+- Resolved the remaining automated regression blocker from the preceding Item 8 audit. Implementation-plan markers and Item 17 remain unchanged; the user will manually test the application before requesting further work.
+
+### Verification and limitations
+
+- Passed scoped ESLint, Prettier and `npm run test:e2e -- --workers=2`: 42 passed, one intentionally skipped opt-in live test, zero failures. The formerly failing keyboard selection test passed.
+- The skipped test requires `CONVERTER_LIVE_E2E=1` and separately provisioned local API/worker/storage/mail services. It already passed separately during the preceding task with real conversion engines; that live test was not rerun for this test-only change. Ordinary E2E fixtures remain distinct from live integration evidence.
+- No new dependencies, branches, worktrees, containers, services or artifact directories. Existing Item 8 artifacts and synthetic services are retained as previously reported; no destructive cleanup or push.
 
 ## 2026-11-07 — Item 8 frontend integration audit and completion work
 
