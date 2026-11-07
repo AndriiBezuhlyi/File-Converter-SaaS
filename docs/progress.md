@@ -4,6 +4,24 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-07 — Approved Flux Converter identity and document logo
+
+### Changes
+
+- The owner selected logo concept 2 (folded document with a conversion arrow) and explicitly replaced the public name Clarity with Flux. Flux Converter is the current public identity; this user decision supersedes the plan's earlier naming references without editing the plan or completion markers.
+- Implemented the approved mark and stacked Flux/Converter wordmark in one reusable layout component, used by header and footer. Flux and the mark use `--color-accent`; the technical subtitle uses existing IBM Plex Mono and the cream text token. The link retains the full accessible home-link name while the graphic is decorative.
+- Replaced the provisional favicon with an original, simplified document-and-arrow SVG. Its standalone color variables mirror the existing canvas/accent tokens; no new font, icon library or production dependency was introduced.
+- Updated public names in route titles, accessible names, HTML description, OpenAPI display metadata and all transactional email subjects. Updated only branding expectations in existing tests under the user's prior explicit authorization. Synchronized the intended visual specification in DESIGN.md; historical documentation, internal identifiers and technical contracts remain unchanged.
+- The approved Ukrainian Hero “Конвертуй файли без зайвих труднощів” remains in place. The earlier `ea732e8` commit contains the public-copy implementation and responsive adjustments; this slice applies the owner's final name and logo selection.
+
+### Verification and limitations
+
+- Passed all 140 frontend tests, all three controlled notification-branding tests, backend typecheck, scoped ESLint and contract-drift checks. Frontend and both API/worker builds passed; the existing frontend bundle-size warning remains.
+- The final ordinary Chromium E2E run passed all 42 enabled cases with one opt-in live integration case skipped. No existing non-branding assertions were changed; no real recipient email was sent.
+- Playwright verified the production UI source at 320, 375, 640, 768, 1024 and 1440px, branded titles across the eight non-home routes, guest and signed-in navigation, both accessible home links and the actual accent color. No horizontal overflow, clipped brand/Hero or page runtime errors were observed. The final favicon was fetched successfully and visually reviewed at 16/32/64px.
+- Reflow was checked at a 640x450 CSS viewport (equivalent to the viewport reduction from a 1280x900 browser at 200% zoom). Native browser zoom UI and other browser engines were not automated. An initial whole-page CSS `zoom` probe was rejected as an inaccurate browser-zoom simulation because it does not update media queries; no unrelated layout changes were made for that probe. Chrome DevTools remained unavailable due to its occupied profile; existing Playwright provided browser evidence.
+- Final screenshots and the disposable QA script are retained in `.cache/tasks/phase-2/`: `flux-home-1440.png`, `flux-home-320.png`, `flux-favicon.png`, `flux-zoom-reflow-640.png`, and `flux-qa.mjs`. Original concepts remain preserved for comparison. No additional worktrees were created. Both branding slices are ready for owner acceptance under the approved Flux naming; plan/status markers are untouched.
+
 ## 2026-11-07 — Phase 2 public branding and logo concept review
 
 ### Changes

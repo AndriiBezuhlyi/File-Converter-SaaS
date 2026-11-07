@@ -7,9 +7,9 @@ import { NotificationCipher, type Delivery } from './notification-cipher.js';
 import { validateNotificationConfig } from './notification-config.js';
 
 it.each([
-  ['email_verification', 'Confirm your Clarity Converter email', '/verify-email'],
-  ['password_reset', 'Reset your Clarity Converter password', '/reset-password'],
-  ['email_change', 'Confirm your Clarity Converter email', '/verify-email'],
+  ['email_verification', 'Confirm your Flux Converter email', '/verify-email'],
+  ['password_reset', 'Reset your Flux Converter password', '/reset-password'],
+  ['email_change', 'Confirm your Flux Converter email', '/verify-email'],
 ] as const)(
   'brands the %s notification without changing its protected link',
   async (purpose, subject, route) => {

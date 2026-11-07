@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 test.use({ baseURL: 'http://127.0.0.1:4174' });
 async function open(page: Page, scenario = 'success') {
   await page.goto(`/test-fixtures/account/?scenario=${scenario}#/files`);
-  await expect(page).toHaveTitle('Мої файли — Clarity Converter');
+  await expect(page).toHaveTitle('Мої файли — Flux Converter');
   await expect(page.getByRole('note')).toContainText('вигадані дані');
 }
 function list(page: Page) {

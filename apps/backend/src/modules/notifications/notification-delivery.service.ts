@@ -52,8 +52,8 @@ export class NotificationDeliveryService {
         link.hash = new URLSearchParams({ token: delivery.token }).toString();
         const subject =
           delivery.purpose === 'password_reset'
-            ? 'Reset your Clarity Converter password'
-            : 'Confirm your Clarity Converter email';
+            ? 'Reset your Flux Converter password'
+            : 'Confirm your Flux Converter email';
         await this.email.send({
           to: delivery.to,
           subject,

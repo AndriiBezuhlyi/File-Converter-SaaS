@@ -3,13 +3,14 @@ import { Link, Outlet, useLocation } from 'react-router';
 import { AppHeader } from './AppHeader';
 import { getRouteTitle } from '../routes';
 import styles from './AppLayout.module.scss';
+import { Brand } from './Brand';
 
 export function AppLayout() {
   const { pathname } = useLocation();
   const previousPath = useRef(pathname);
 
   useEffect(() => {
-    document.title = `${getRouteTitle(pathname)} — Clarity Converter`;
+    document.title = `${getRouteTitle(pathname)} — Flux Converter`;
     if (previousPath.current !== pathname) {
       document.getElementById('main-content')?.focus({ preventScroll: true });
       window.scrollTo(0, 0);
@@ -26,14 +27,14 @@ export function AppLayout() {
       <main
         id="main-content"
         tabIndex={-1}
-        aria-label="Clarity Converter"
+        aria-label="Flux Converter"
         className={`container ${styles.main}`}
       >
         <Outlet />
       </main>
       <footer className={`container ${styles.footer}`}>
-        <Link className={styles.brand} to="/" aria-label="Clarity Converter — головна">
-          Clarity Converter
+        <Link className={styles.brand} to="/" aria-label="Flux Converter — головна">
+          <Brand />
         </Link>
         <nav aria-label="Навігація в підвалі" className={styles.footerLinks}>
           <Link to="/" className={styles.navLink}>

@@ -34,7 +34,7 @@ describe('application navigation', () => {
     renderRoute();
     await user.click(screen.getByRole('link', { name: 'Увійти' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Увійти' })).toBeInTheDocument();
-    expect(document.title).toBe('Увійти — Clarity Converter');
+    expect(document.title).toBe('Увійти — Flux Converter');
     expect(screen.getByRole('main')).toHaveFocus();
     expect(screen.getByLabelText('Пароль', { exact: true })).toHaveAttribute(
       'autocomplete',

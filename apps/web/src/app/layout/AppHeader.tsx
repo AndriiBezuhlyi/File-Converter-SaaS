@@ -6,6 +6,7 @@ import { Button } from '../../shared/ui/Button';
 import { useAuth } from '../../features/auth/lib/auth-context';
 import { SessionActions } from '../../features/auth/components/SessionActions';
 import styles from './AppLayout.module.scss';
+import { Brand } from './Brand';
 
 export function AppHeader() {
   const { pathname } = useLocation();
@@ -28,8 +29,8 @@ export function AppHeader() {
         }
       }}
     >
-      <Link className={styles.brand} to="/" aria-label="Clarity Converter — головна">
-        Clarity Converter
+      <Link className={styles.brand} to="/" aria-label="Flux Converter — головна">
+        <Brand />
       </Link>
       <Button
         ref={menuButton}

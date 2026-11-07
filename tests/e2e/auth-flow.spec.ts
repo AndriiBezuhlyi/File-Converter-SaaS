@@ -67,7 +67,7 @@ test('production forms validate, support password managers, and use the session/
   });
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('http://127.0.0.1:4173/login?returnTo=https%3A%2F%2Fevil.invalid');
-  await expect(page).toHaveTitle('Увійти — Clarity Converter');
+  await expect(page).toHaveTitle('Увійти — Flux Converter');
   await expect(page.getByRole('button', { name: 'Увійти', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Увійти', exact: true }).click();
   await expect(page.getByLabel('Електронна пошта')).toBeFocused();

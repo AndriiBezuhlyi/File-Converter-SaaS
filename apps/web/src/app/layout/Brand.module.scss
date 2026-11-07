@@ -1,0 +1,34 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375em;
+  vertical-align: middle;
+}
+
+.symbol {
+  inline-size: 1.3125em;
+  block-size: 1.3125em;
+  color: var(--color-accent);
+}
+
+.wordmark {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15em;
+}
+
+.name {
+  color: var(--color-accent);
+  font-family: var(--font-body);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.descriptor {
+  color: var(--color-text);
+  font: 400 0.34375em/1.4 var(--font-mono);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}

@@ -1,6 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#0e100f" />
-  <g fill="none" stroke="#abff84" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M7 11h18l-4-4M25 21H7l4 4" />
+  <title>Flux Converter</title>
+  <style>
+    :root {
+      --color-canvas: #0e100f;
+      --color-accent: #abff84;
+    }
+  </style>
+  <rect width="32" height="32" rx="6" fill="var(--color-canvas)" />
+  <g fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linejoin="round">
+    <path d="M6 2h14l8 8v20H6zM20 2v8h8M12 18h10m-4-4 4 4-4 4" />
   </g>
 </svg>
