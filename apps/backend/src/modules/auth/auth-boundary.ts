@@ -16,7 +16,8 @@ import { AuthError, unavailable } from './auth-error.js';
 import { SessionService, type AuthRequest } from './session.service.js';
 import { RateLimitService } from './rate-limit.service.js';
 
-export type Policy = 'public' | 'login' | 'link' | 'token' | 'csrf' | 'account' | 'sensitive';
+export type Policy =
+  'public' | 'login' | 'link' | 'token' | 'csrf' | 'account' | 'sensitive' | 'registration-status';
 export const AuthPolicy = (policy: Policy) => SetMetadata('authPolicy', policy);
 
 @Injectable()
@@ -64,6 +65,16 @@ export class AuthBoundaryGuard implements CanActivate {
     }
     if (policy === 'csrf') await this.rates.check('csrf', ip, 30, 60_000, response);
     if (policy === 'token') await this.rates.check('token', ip, 10, 60_000, response);
+    if (policy === 'registration-status') {
+      await this.rates.check('registration-status:ip', ip, 60, 60_000, response);
+      await this.rates.check(
+        'registration-status:session',
+        request.sessionID,
+        30,
+        60_000,
+        response,
+      );
+    }
     if (policy === 'login' || policy === 'link') {
       const body: unknown = request.body;
       const email =

@@ -3,6 +3,19 @@ import type { AuthGateway } from './auth-gateway';
 import { AuthRequestError } from './auth-gateway';
 import { sessionSchema, type SessionClient } from '../../../shared/api/session-client';
 import { ApiRequestError } from '../../../shared/api/api-error';
+import type { components } from '@converter/contracts';
+
+const registrationSchema: z.ZodType<components['schemas']['RegistrationReceipt']> = z.object({
+  receipt: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  expiresAt: z.iso.datetime(),
+});
+const registrationAcceptedSchema = z.object({
+  status: z.literal('accepted'),
+  registration: registrationSchema,
+});
+const registrationStatusSchema: z.ZodType<components['schemas']['RegistrationStatus']> = z.object({
+  status: z.enum(['pending', 'verified', 'expired']),
+});
 
 export function createAuthGateway(client: SessionClient): AuthGateway {
   async function run<T>(work: () => Promise<T>): Promise<T> {
@@ -37,7 +50,32 @@ export function createAuthGateway(client: SessionClient): AuthGateway {
           ? { kind: 'authenticated', email: session.user.email }
           : session;
       }),
-    register: (input) => run(() => client.mutate('auth/register', 'POST', input, accepted, [202])),
+    async register(input) {
+      try {
+        return await client.mutate(
+          'auth/register',
+          'POST',
+          { ...input, trackStatus: true },
+          (value) => registrationAcceptedSchema.parse(value).registration,
+          [202],
+        );
+      } catch (error) {
+        if (!(error instanceof ApiRequestError) || !error.status || error.status >= 500)
+          throw new AuthRequestError('registration-unknown');
+        return run(() => Promise.reject(error));
+      }
+    },
+    readRegistrationStatus: (receipt, signal) =>
+      run(() =>
+        client.mutate(
+          'auth/registration/status',
+          'POST',
+          { receipt },
+          (value) => registrationStatusSchema.parse(value).status,
+          [200],
+          signal,
+        ),
+      ),
     async signIn(input) {
       try {
         await run(() =>

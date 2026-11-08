@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsString, Length, MaxLength, Matches } from 'class-validator';
+import { IsEmail, IsString, Length, MaxLength, Matches, ValidateIf, Equals } from 'class-validator';
 import { z } from 'zod';
 
 export class EmailDto {
@@ -21,6 +21,15 @@ export class RegisterDto extends EmailDto {
   @IsString()
   @Length(10, 128)
   password!: string;
+
+  @ValidateIf((_object: unknown, value: unknown) => value !== undefined)
+  @Equals(true)
+  trackStatus?: true;
+}
+export class RegistrationStatusDto {
+  @IsString()
+  @Matches(/^[A-Za-z0-9_-]{43}$/)
+  receipt!: string;
 }
 export class TokenDto {
   @IsString()

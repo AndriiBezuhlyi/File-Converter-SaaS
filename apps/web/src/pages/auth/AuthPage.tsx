@@ -79,7 +79,12 @@ export function AuthPage({ kind }: { kind: AuthPageKind }) {
           <Link to={returnTo}>Продовжити</Link>
         </div>
       ) : kind === 'verify-email' ? (
-        <EmailVerification key={link.version} token={link.token} onTokenUsed={consumeToken} />
+        <EmailVerification
+          key={link.version}
+          token={link.token}
+          onTokenUsed={consumeToken}
+          returnTo={returnTo}
+        />
       ) : kind === 'forgot-password' ? (
         <EmailRequestForm purpose="recovery" />
       ) : (

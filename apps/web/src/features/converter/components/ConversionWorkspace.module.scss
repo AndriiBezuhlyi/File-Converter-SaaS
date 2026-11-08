@@ -61,6 +61,11 @@
 .actions > * {
   inline-size: 100%;
 }
+.accessActions {
+  inline-size: 100%;
+  margin-block-start: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .bar {
   block-size: 4px;
   background: var(--color-border-subtle);
@@ -116,6 +121,9 @@
   border-color: transparent;
 }
 @media (max-width: 639px) {
+  .accessActions {
+    grid-template-columns: 1fr;
+  }
   .dialog {
     padding: var(--space-6);
   }

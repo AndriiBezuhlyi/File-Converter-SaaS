@@ -154,7 +154,7 @@
         "operationId": "authRegister",
         "summary": "Register and queue verification; neutral acknowledgement",
         "tags": ["Authentication"],
-        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.",
+        "description": "First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store. With trackStatus:true, both new and duplicate attempts receive indistinguishable receipts; duplicates cannot reveal existing-account verification. Without the flag the legacy acknowledgement is unchanged.",
         "security": [],
         "parameters": [
           {
@@ -201,7 +201,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Accepted"
+                  "$ref": "#/components/schemas/RegistrationAccepted"
                 }
               }
             }
@@ -2354,6 +2354,81 @@
           }
         }
       }
+    },
+    "/api/v1/auth/registration/status": {
+      "post": {
+        "operationId": "authRegistrationStatus",
+        "summary": "Read verification of the current session's registration attempt",
+        "tags": ["Authentication"],
+        "description": "Status-only session-bound receipt; never verifies email or authenticates. Wrong-session, missing, expired and invalidated correlations return expired. No arbitrary email/user lookup input. Exact Origin, synchronizer CSRF, API-key rejection and no-store apply. Limited to 30/session/minute and 60/IP/minute plus the global limit. Redis/database failures return 503. Duplicate decoys remain pending until expiry.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must exactly match configured APP_ORIGIN."
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["no-store"]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Auth400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Auth401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Auth403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Auth429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Auth503"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2505,6 +2580,11 @@
             "maxLength": 128,
             "format": "password",
             "description": "Never trimmed or normalized."
+          },
+          "trackStatus": {
+            "type": "boolean",
+            "enum": [true],
+            "description": "Opt in to a session-bound, status-only receipt; omission preserves the legacy response."
           }
         }
       },
@@ -2969,6 +3049,58 @@
           "nextCursor": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "RegistrationReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["receipt", "expiresAt"],
+        "properties": {
+          "receipt": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "description": "Status-only receipt bound to the first-party session. Never log, store in browser storage or share in messages."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Absolute 15-minute expiry; reads never renew it."
+          }
+        }
+      },
+      "RegistrationAccepted": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["accepted"]
+          },
+          "registration": {
+            "$ref": "#/components/schemas/RegistrationReceipt"
+          }
+        }
+      },
+      "RegistrationStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["receipt"],
+        "properties": {
+          "receipt": {
+            "$ref": "#/components/schemas/RegistrationReceipt/properties/receipt"
+          }
+        }
+      },
+      "RegistrationStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["pending", "verified", "expired"]
           }
         }
       }

@@ -89,7 +89,7 @@ export interface paths {
         put?: never;
         /**
          * Register and queue verification; neutral acknowledgement
-         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store.
+         * @description First-party cookie context only. X-API-Key is rejected; guest conversion credentials do not authorize account access. All responses, including errors, are no-store. With trackStatus:true, both new and duplicate attempts receive indistinguishable receipts; duplicates cannot reveal existing-account verification. Without the flag the legacy acknowledgement is unchanged.
          */
         post: operations["authRegister"];
         delete?: never;
@@ -495,6 +495,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/registration/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read verification of the current session's registration attempt
+         * @description Status-only session-bound receipt; never verifies email or authenticates. Wrong-session, missing, expired and invalidated correlations return expired. No arbitrary email/user lookup input. Exact Origin, synchronizer CSRF, API-key rejection and no-store apply. Limited to 30/session/minute and 60/IP/minute plus the global limit. Redis/database failures return 503. Duplicate decoys remain pending until expiry.
+         */
+        post: operations["authRegistrationStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -561,6 +581,11 @@ export interface components {
              * @description Never trimmed or normalized.
              */
             password: string;
+            /**
+             * @description Opt in to a session-bound, status-only receipt; omission preserves the legacy response.
+             * @enum {boolean}
+             */
+            trackStatus?: true;
         };
         LoginRequest: {
             /**
@@ -734,6 +759,27 @@ export interface components {
         SavedFilesPage: {
             items: components["schemas"]["SavedFile"][];
             nextCursor: string | null;
+        };
+        RegistrationReceipt: {
+            /** @description Status-only receipt bound to the first-party session. Never log, store in browser storage or share in messages. */
+            receipt: string;
+            /**
+             * Format: date-time
+             * @description Absolute 15-minute expiry; reads never renew it.
+             */
+            expiresAt: string;
+        };
+        RegistrationAccepted: {
+            /** @enum {string} */
+            status: "accepted";
+            registration?: components["schemas"]["RegistrationReceipt"];
+        };
+        RegistrationStatusRequest: {
+            receipt: components["schemas"]["RegistrationReceipt"]["receipt"];
+        };
+        RegistrationStatus: {
+            /** @enum {string} */
+            status: "pending" | "verified" | "expired";
         };
     };
     responses: {
@@ -926,7 +972,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Accepted"];
+                    "application/json": components["schemas"]["RegistrationAccepted"];
                 };
             };
             400: components["responses"]["Auth400"];
@@ -2110,6 +2156,41 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+        };
+    };
+    authRegistrationStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match configured APP_ORIGIN. */
+                Origin: string;
+                /** @description Fetch GET /auth/csrf with the same cookie first. After login fetch a fresh token. */
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationStatus"];
+                };
+            };
+            400: components["responses"]["Auth400"];
+            401: components["responses"]["Auth401"];
+            403: components["responses"]["Auth403"];
+            429: components["responses"]["Auth429"];
+            503: components["responses"]["Auth503"];
         };
     };
 }

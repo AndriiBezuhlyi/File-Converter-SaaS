@@ -64,8 +64,8 @@ Session rotation, logout or cookie expiry makes old receipts unusable because th
 
 IMP-04.02 must add separate backend contract/service tests, frontend gateway/component lifecycle tests and two-page browser tests for the cases above; existing tests remain unchanged. Run existing auth/CSRF/session regressions, generated-contract checks, lint/typecheck/build and available browser checks. Live dependencies and another-device simulation must be distinguished from fixture evidence.
 
-## Approval requested
+## Approved scope
 
-Approve the opt-in registration response and status endpoint, session-bound Redis correlations with a 15-minute absolute lifetime, in-memory-only browser context with explicit reload recovery, 15-second visible polling and the stated rate limits. This approval would authorize only IMP-04.02 within this mechanism, not password policy, automatic login, schema migrations, email blocking or later plan tasks.
+The owner approved the opt-in registration response and status endpoint, session-bound Redis correlations with a 15-minute absolute lifetime, in-memory-only browser context with explicit reload recovery, 15-second visible polling and the stated rate limits. This authorizes only IMP-04.02 within this mechanism, not password policy, automatic login, schema migrations, email blocking or later plan tasks.
 
 Reference for the session-store comparison: [express-session 1.19.0 documentation](https://github.com/expressjs/session/blob/v1.19.0/README.md), consulted through Context7. Source inspection confirms the current RevocableSessionStore serializes whole session objects; no running-service or migration claim is made here.

@@ -1,19 +1,22 @@
-import { useEffect, useRef, type PropsWithChildren } from 'react';
+import { useEffect, useRef, useState, type PropsWithChildren } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AuthContext } from '../lib/auth-context';
-import type { AuthGateway } from '../lib/auth-gateway';
+import type { AuthGateway, PendingRegistration } from '../lib/auth-gateway';
 
 export function AuthProvider({
   gateway,
   children,
 }: PropsWithChildren<{ gateway?: AuthGateway | undefined }>) {
   return gateway ? (
-    <ConnectedAuthProvider gateway={gateway}>{children}</ConnectedAuthProvider>
+    <ConnectedAuthProvider key={gateway.scope} gateway={gateway}>
+      {children}
+    </ConnectedAuthProvider>
   ) : (
     children
   );
 }
 function ConnectedAuthProvider({ gateway, children }: PropsWithChildren<{ gateway: AuthGateway }>) {
+  const [pendingRegistration, rememberRegistration] = useState<PendingRegistration>();
   const client = useQueryClient();
   const options = {
     queryKey: ['auth', gateway.scope, 'session'],
@@ -22,6 +25,8 @@ function ConnectedAuthProvider({ gateway, children }: PropsWithChildren<{ gatewa
     staleTime: 0,
   };
   const session = useQuery(options);
+  if (session.data?.kind === 'authenticated' && pendingRegistration)
+    rememberRegistration(undefined);
   const identity = session.isError
     ? 'unavailable'
     : session.data?.kind === 'authenticated'
@@ -60,6 +65,9 @@ function ConnectedAuthProvider({ gateway, children }: PropsWithChildren<{ gatewa
         session: session.isError ? null : (session.data ?? null),
         status: session.isPending ? 'pending' : session.isError ? 'error' : 'ready',
         refreshSession,
+        pendingRegistration:
+          session.data?.kind === 'authenticated' ? undefined : pendingRegistration,
+        rememberRegistration,
       }}
     >
       {children}

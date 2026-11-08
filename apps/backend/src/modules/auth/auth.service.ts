@@ -17,14 +17,16 @@ export class AuthService {
   async register(email: string, password: string) {
     const passwordHash = await this.passwords.hash(password);
     try {
-      await this.accounts.transaction(async (tx) => {
+      return await this.accounts.transaction(async (tx) => {
         const user = await tx.user.create({
           data: { email, passwordHash, settings: { create: {} } },
         });
         await this.notifications.issue(tx, user.id, 'email_verification', email);
+        return { id: user.id, email: user.email, sessionVersion: user.sessionVersion };
       });
     } catch (error) {
       if (!isUniqueConflict(error)) throw error;
+      return null;
     }
   }
   async login(email: string, password: string): Promise<User> {

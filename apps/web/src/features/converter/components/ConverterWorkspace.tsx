@@ -81,7 +81,7 @@ function ConnectedWorkspace({
     ? 'Гостьова сесія недійсна або строк її дії завершився. Увійдіть або створіть акаунт, щоб продовжити. Нову безкоштовну спробу автоматично не надаємо.'
     : 'Не вдалося перевірити доступ. Оновіть перевірку перед конвертацією.';
   const accessRecovery = invalidGuest ? (
-    <div className={styles.actions}>
+    <div className={`${styles.actions} ${styles.accessActions}`}>
       <ActionLink to="/login?returnTo=%2F">Увійти</ActionLink>
       <ActionLink variant="secondary" to="/register?returnTo=%2F">
         Створити акаунт

@@ -1,11 +1,13 @@
 import { createContext, useContext } from 'react';
-import type { AuthGateway, AuthSession } from './auth-gateway';
+import type { AuthGateway, AuthSession, PendingRegistration } from './auth-gateway';
 
 interface AuthContextValue {
   gateway: AuthGateway | undefined;
   session: AuthSession | null;
   status: 'unavailable' | 'pending' | 'error' | 'ready';
   refreshSession: () => Promise<AuthSession>;
+  pendingRegistration?: PendingRegistration | undefined;
+  rememberRegistration?: (registration: PendingRegistration | undefined) => void;
 }
 export const AuthContext = createContext<AuthContextValue>({
   gateway: undefined,

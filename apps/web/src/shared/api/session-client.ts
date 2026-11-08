@@ -27,10 +27,12 @@ export function createSessionClient(http: HttpClient) {
       body: unknown,
       decode: (value: unknown) => T,
       statuses = [200],
+      signal?: AbortSignal,
     ) {
       // Obtain the current synchronizer token after any SID rotation; never cache it in Query.
       const token = await http.json({
         path: 'auth/csrf',
+        ...(signal ? { signal } : {}),
         decode: (value) => csrfSchema.parse(value),
       });
       return http.json({
@@ -40,6 +42,7 @@ export function createSessionClient(http: HttpClient) {
         csrf: { headerName: 'X-CSRF-Token', value: token.csrfToken },
         decode,
         statuses,
+        ...(signal ? { signal } : {}),
       });
     },
   };

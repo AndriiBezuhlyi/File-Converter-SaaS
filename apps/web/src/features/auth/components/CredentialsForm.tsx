@@ -23,7 +23,7 @@ export function CredentialsForm({
   token?: string | null;
   onTokenUsed?: () => void;
 }) {
-  const { gateway, refreshSession, status } = useAuth();
+  const { gateway, refreshSession, status, rememberRegistration } = useAuth();
   const navigate = useNavigate();
   const action = useAuthAction();
   const [done, setDone] = useState(false);
@@ -74,8 +74,11 @@ export function CredentialsForm({
             async () => {
               if (!gateway) throw new AuthRequestError('unavailable');
               if (mode === 'register') {
-                await gateway.register({ email: data.email, password: data.password });
-                return 'verification-required';
+                const registration = await gateway.register({
+                  email: data.email,
+                  password: data.password,
+                });
+                return { kind: 'registered' as const, registration };
               }
               if (mode === 'reset') {
                 await gateway.resetPassword(token!, data.password);
@@ -96,9 +99,13 @@ export function CredentialsForm({
                 // The password change is committed; session read failure cannot undo it.
                 // AuthProvider exposes a separate retry if session synchronization fails.
                 void refreshSession().catch(() => {});
-              } else if (result === 'verification-required')
+              } else if (typeof result === 'object') {
+                rememberRegistration?.(result.registration ?? undefined);
                 void navigate(authHref('/verify-email', returnTo));
-              else void navigate(returnTo);
+              } else if (result === 'verification-required') {
+                rememberRegistration?.(undefined);
+                void navigate(authHref('/verify-email', returnTo));
+              } else void navigate(returnTo);
             },
           );
         })(event);
@@ -146,6 +153,11 @@ export function CredentialsForm({
           </p>
           {mode === 'reset' ? (
             <Link to={authHref('/forgot-password', returnTo)}>Запросити нове посилання</Link>
+          ) : null}
+          {mode === 'register' ? (
+            <Link to={authHref('/verify-email', returnTo)}>
+              Перевірити пошту або надіслати лист повторно
+            </Link>
           ) : null}
         </div>
       ) : null}

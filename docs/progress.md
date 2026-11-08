@@ -4,6 +4,24 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-08 — Phase 4 Part 1 registration verification and error presentation
+
+### Changes
+
+- IMP-04.01: prepared `registration-status-proposal.md`, reviewed session-store races, enumeration, replay, expiry, resend, wrong-session/account and other-device cases; obtained explicit owner approval before implementing the opt-in contract.
+- IMP-04.02: added optional `trackStatus: true` registration receipts and a first-party POST status endpoint. Independent 15-minute Redis records bind receipts to the session and newly created account; duplicates receive decoys, including a comparable database dependency path. Status reads expose no account data, do not authenticate/verify email, preserve Origin/CSRF/API-key boundaries, have session/IP limits and never renew expiry. PostgreSQL remains authoritative; no migration, dependency or cookie-policy change.
+- Added in-memory registration context, status-only BroadcastChannel hints, coalesced authorized rechecks, 15-second visible polling, expiry/unmount/success cleanup and abort/stale-response handling. Hidden tabs can react to a channel hint without forced focus. Explicit email-token confirmation and URL scrubbing remain; both verified views offer Sign in. Reload/expiry/uncertain registration have honest sign-in/resend recovery.
+- Refined only presentation of homepage errors: dedicated responsive Header feedback, recovery controls inside the converter Surface, consistent spacing and responsive expired-guest action rows. Existing homepage error conditions, handlers, retries and API behavior are unchanged by the visual changes.
+- Added separate essential unit/HTTP/live/browser regression files; existing tests and `improvement-plan.md` are unchanged. Source review used the local database-review skill and current express-session/Redis/React documentation through Context7.
+
+### Verification and limitations
+
+- Passed 161 frontend tests, including receipt retention across anonymous session refresh/failure and cleanup on authentication; the affected lifecycle/converter rerun also passed 23 tests. Passed 35 backend unit/security tests, all 16 offline integration tests, root typecheck/build/lint (including six lint-configuration tests), generated-contract drift checks and changed-file formatting. Final frontend rebuild and scoped lint cover the last presentation/live-test additions. Build retains the existing chunk-size warning.
+- Chromium: all four new two-page registration tests passed (spoofed hint, server-confirmed success without refocus/login, missing channel/another context, reload/expiry, API failure and duplicate decoy). All six existing auth E2E tests passed. The visual slice also passed 18 existing converter/file-selection/navigation E2E tests. Tests use controlled HTTP responses where stated, with traces disabled for the new credential-bearing flow.
+- Real PostgreSQL 18 and Redis 8: started only new disposable task-owned containers from cached images, applied existing migrations only to their empty dedicated test database, then passed all ten existing auth/session/notification live tests and the new receipt live scenario. It verifies real cookie/CSRF/session binding, other-session token confirmation, replay, duplicate isolation, independent contexts, security-version invalidation, rate limiting and logout rotation. Only owned synthetic records/namespaces were used and cleaned up; no existing volumes/data/configuration changed.
+- Chrome DevTools reproduced the screenshot's expected backend-down state before edits. Verified desktop 1366×768/1920×1080 and 390/320px reflow, contained recovery controls, Header retry/error feedback and keyboard menu behavior. With the real Nest API/PostgreSQL/Redis, an isolated browser context received session/guest 200 responses, a healthy panel ending at 690px in a 768px viewport and no console errors; with API down, the retry remains inside the panel ending at 750px. A retained expired guest cookie was preserved and correctly kept its recovery state rather than resetting allowance.
+- Temporary containers were removed after live/browser checks. S3/SMTP were controlled local protocol fixtures, not production-provider evidence; real external email delivery and other browser engines were not tested. Disposable runner scripts remain outside the repository in sibling `Converter-artifacts/phase4-part1/`; they contain no stored credentials or product changes.
+
 ## 2026-11-08 — Compact homepage and reliable API navigation
 
 ### Changes

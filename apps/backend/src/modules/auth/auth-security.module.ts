@@ -8,6 +8,7 @@ import { PasswordService } from './password.service.js';
 import { SessionService } from './session.service.js';
 import { RateLimitService } from './rate-limit.service.js';
 import { AuthSessionMiddleware, AuthBoundaryGuard } from './auth-boundary.js';
+import { RegistrationStatusService } from './registration-status.service.js';
 
 const providers = [
   AccountRepository,
@@ -16,6 +17,7 @@ const providers = [
   RateLimitService,
   AuthSessionMiddleware,
   AuthBoundaryGuard,
+  RegistrationStatusService,
 ];
 @Module({
   imports: [DatabaseModule, RedisModule, AuthConfigModule, NotificationsModule],

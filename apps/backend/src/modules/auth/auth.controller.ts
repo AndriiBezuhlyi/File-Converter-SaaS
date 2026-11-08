@@ -11,7 +11,9 @@ import {
   TokenDto,
   accepted,
   EmptyDto,
+  RegistrationStatusDto,
 } from './auth.dto.js';
+import { RegistrationStatusService } from './registration-status.service.js';
 
 @Controller('auth')
 @UseGuards(AuthBoundaryGuard)
@@ -19,6 +21,7 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly sessions: SessionService,
+    private readonly registrations: RegistrationStatusService,
   ) {}
   @Get('csrf')
   @AuthPolicy('csrf')
@@ -32,9 +35,20 @@ export class AuthController {
   @Post('register')
   @HttpCode(202)
   @AuthPolicy('link')
-  async register(@Body() body: RegisterDto) {
-    await this.auth.register(body.email, body.password);
+  async register(@Body() body: RegisterDto, @Req() request: Request) {
+    const account = await this.auth.register(body.email, body.password);
+    if (body.trackStatus)
+      return {
+        ...accepted,
+        registration: await this.registrations.issue(request.sessionID, account),
+      };
     return accepted;
+  }
+  @Post('registration/status')
+  @HttpCode(200)
+  @AuthPolicy('registration-status')
+  registrationStatus(@Body() body: RegistrationStatusDto, @Req() request: Request) {
+    return this.registrations.read(request.sessionID, body.receipt);
   }
   @Post('login')
   @HttpCode(200)
