@@ -107,6 +107,7 @@ function ConnectedWorkspace({
           onConvert={canStart ? flow.submit : undefined}
           locked={waiting || sessionStatus === 'pending'}
           submissionError={rejected}
+          recovery={flow.access.isError ? accessRecovery : null}
           availability={
             flow.access.isError
               ? accessMessage
@@ -119,7 +120,6 @@ function ConnectedWorkspace({
                   : 'Файл буде оброблено відповідно до налаштувань на момент прийняття.'
           }
         />
-        {flow.access.isError ? accessRecovery : null}
       </div>
       {showState ? (
         <Surface aria-label="Стан конвертації">

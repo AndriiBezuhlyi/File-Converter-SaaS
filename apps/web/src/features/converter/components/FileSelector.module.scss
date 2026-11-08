@@ -5,7 +5,7 @@
 }
 
 .heading {
-  margin-block: var(--space-6);
+  margin-block: var(--space-4);
   font-size: clamp(1.5rem, 2.5vw, 2rem);
   font-weight: 600;
   line-height: 1.2;
@@ -121,9 +121,20 @@
   inline-size: 100%;
 }
 .availability {
-  margin: var(--space-3) 0 0;
+  margin: 0;
   font-size: 0.875rem;
   color: var(--color-text-muted);
+}
+.accessFeedback {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
+
+  > * {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
 }
 .error {
   display: flex;

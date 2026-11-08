@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type DragEvent } from 'react';
+import { useEffect, useId, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { AlertCircle, ArrowRight, FileImage, FileText, Upload, X } from 'lucide-react';
 import { Button } from '../../../shared/ui/Button';
 import { Surface } from '../../../shared/ui/Surface';
@@ -16,6 +16,7 @@ interface FileSelectorProps {
   locked?: boolean;
   availability?: string | undefined;
   submissionError?: string | undefined;
+  recovery?: ReactNode;
 }
 
 export function FileSelector({
@@ -23,6 +24,7 @@ export function FileSelector({
   locked = false,
   availability,
   submissionError,
+  recovery,
 }: FileSelectorProps) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -240,9 +242,12 @@ export function FileSelector({
         Конвертувати
         <ArrowRight size={20} strokeWidth={1.75} aria-hidden="true" />
       </Button>
-      <p className={styles.availability} id={availabilityId}>
-        {availability ?? 'Наразі доступний вибір файлу. Конвертація — незабаром.'}
-      </p>
+      <div className={styles.accessFeedback}>
+        <p className={styles.availability} id={availabilityId}>
+          {availability ?? 'Наразі доступний вибір файлу. Конвертація — незабаром.'}
+        </p>
+        {recovery}
+      </div>
       <p className="sr-only" role="status">
         {announcement}
       </p>

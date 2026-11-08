@@ -16,7 +16,7 @@ export function SessionActions({ navLinkClassName }: { navLinkClassName?: string
     );
   if (status === 'error')
     return (
-      <div className={styles.feedback}>
+      <div className={styles.sessionFeedback}>
         <span role="status" className={styles.helper}>
           Не вдалося перевірити вхід.
         </span>
