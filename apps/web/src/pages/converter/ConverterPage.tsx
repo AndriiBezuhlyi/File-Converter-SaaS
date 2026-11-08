@@ -20,7 +20,7 @@ export function ConverterPage({ gateway }: { gateway?: ConversionGateway } = {})
   const [search, setSearch] = useSearchParams();
   return (
     <>
-      <div className={styles.hero}>
+      <div className={styles.hero} data-home-hero>
         <div>
           <h1 className={styles.heading}>Конвертуй файли без зайвих труднощів</h1>
           <p className={styles.intro}>Зображення та документи — у потрібному форматі.</p>

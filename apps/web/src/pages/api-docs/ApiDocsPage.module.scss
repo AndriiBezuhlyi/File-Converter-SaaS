@@ -61,15 +61,13 @@
   display: flex;
   align-items: center;
   min-block-size: 44px;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   text-decoration: none;
 }
 .contents a:hover,
 .contents a[aria-current='location'] {
-  color: var(--color-accent);
-}
-.contents a[aria-current='location'] {
   text-decoration: underline;
+  text-decoration-color: var(--color-accent);
   text-underline-offset: 6px;
 }
 .base {

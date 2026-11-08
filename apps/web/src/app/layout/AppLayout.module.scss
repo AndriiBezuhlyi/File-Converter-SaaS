@@ -59,6 +59,9 @@
 .main:focus {
   outline: none;
 }
+.main:has(> [data-home-hero]) {
+  padding-block-start: var(--space-8);
+}
 .footer {
   display: flex;
   align-items: center;

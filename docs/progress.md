@@ -4,6 +4,20 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-08 — Compact homepage and reliable API navigation
+
+### Changes
+
+- Moderately reduced desktop hero typography and supporting spacing; reduced only the homepage header-to-content gap. Preserved stacked layouts and natural overflow for small viewports.
+- Kept native smooth anchors and keyboard focus. Scrollspy holds the destination during navigation, releases on user input or scroll completion, and cleans up timers/listeners. Retargeted native fragment scrolling after rapid clicks; excluded native fragment entries from competing SPA position restoration.
+- Kept sidebar text cream with the existing lime underline. No dependencies, existing tests, or improvement-plan.md changes.
+
+### Verification and limitations
+
+- Passed 156 frontend Vitest tests, frontend typecheck/build, root lint and all six lint-configuration tests. Build retains the existing chunk-size warning.
+- Chrome DevTools verified desktop 1366×768 and 1920×1080, mobile 390×844, narrow 320×384 reflow, repeated/rapid anchor clicks, interruption, manual PageUp scrolling, encoded direct hashes, Back/Forward and keyboard Enter with reduced motion. Primary controls fit both desktop viewports, including the backend-error recovery button; narrow layouts scroll naturally without horizontal overflow. The converter fixture also rendered without alerts.
+- Existing Playwright navigation suites: 11/12 passed, including all API documentation and Phase 3 navigation tests. The unrelated mobile disclosure test expects a sign-in link without mocking the session endpoint; the unavailable local backend produces a session error instead. Existing test remains unchanged. Trace retained in ignored test-results/. Live backend conversion and actual browser zoom were not tested; narrow viewport reflow was verified instead.
+
 ## 2026-11-07 — Phase 3 navigation, anchor scrolling and active states
 
 ### Changes

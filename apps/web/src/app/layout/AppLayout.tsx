@@ -9,6 +9,7 @@ export function AppLayout() {
   const { pathname, search, hash, key } = useLocation();
   const navigationType = useNavigationType();
   const previousPath = useRef(pathname);
+  const previousKey = useRef(key);
   const initial = useRef(true);
   const positions = useRef(new Map<string, { top: number; left: number }>());
   const entry = `${key}:${pathname}${search}${hash}`;
@@ -35,10 +36,14 @@ export function AppLayout() {
   useLayoutEffect(() => {
     document.title = `${getRouteTitle(pathname)} — Flux Converter`;
     const pathChanged = previousPath.current !== pathname;
+    // Native fragment entries retain the router key. Let the browser own their
+    // scrolling and history restoration instead of interrupting it with scrollTo.
+    const nativeFragment = !pathChanged && previousKey.current === key;
+    previousKey.current = key;
     const restoreHash =
       hash && (initial.current || (pathChanged && navigationType !== NavigationType.Pop));
     const position =
-      !initial.current && navigationType === NavigationType.Pop
+      !initial.current && !nativeFragment && navigationType === NavigationType.Pop
         ? positions.current.get(entry)
         : undefined;
     if (!positions.current.has(entry)) positions.current.set(entry, { top: 0, left: 0 });
@@ -90,7 +95,7 @@ export function AppLayout() {
       window.removeEventListener('pointerdown', cancel);
       window.removeEventListener('keydown', cancel);
     };
-  }, [pathname, hash, entry, navigationType]);
+  }, [pathname, hash, entry, key, navigationType]);
 
   return (
     <div className={styles.layout}>
