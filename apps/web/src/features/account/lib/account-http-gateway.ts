@@ -24,6 +24,7 @@ export async function accountRequest<T>(work: () => Promise<T>): Promise<T> {
         throw new DataAccessError('network');
       if (error.status === 401) throw new DataAccessError('unauthorized');
       if (error.code === 'CURRENT_PASSWORD_INVALID') throw new DataAccessError('confirmation');
+      if (error.code === 'PASSWORD_POLICY_REJECTED') throw new DataAccessError('password-policy');
       if (error.status === 429) throw new DataAccessError('rate-limited');
     }
     throw new DataAccessError('rejected');

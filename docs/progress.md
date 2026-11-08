@@ -4,6 +4,44 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-08 — Phase 4 Part 2 credential UX and file success feedback
+
+### Changes
+
+- IMP-04.03 / G4: owner explicitly retained the 10-character minimum and approved 10–128 Unicode code points, spaces without trimming/normalization, unchanged login/current-password proof and Argon2id, and bundled case-insensitive common/expected-password screening. All three new-secret DTOs reject before service mutation/token consumption; auth/account forms share the frontend schema and useful feedback. A curated v1 baseline is limited coverage, not comprehensive breach detection. Maintainers update the source through reviewed commits; missing policy modules fail loading, without a silent screening bypass. Frontend/backend pure policy mirrors preserve existing workspace boundaries without a runtime dependency; exact source parity is tested. OpenAPI/generated descriptions and relevant README passages match.
+- IMP-04.04: reviewed the sole application email sender and verification/recovery/email-change delivery path. Owner confirmed account-only email practice before publication. Added the approved reassurance once on the registration form and guest registration prompt, using existing helper styles.
+- IMP-04.05 / G5: no sanitized operational abuse evidence was supplied; source review identifies IP/email limits and verified-email sign-in, not proof of abuse prevention per human. Owner approved retaining these controls without disposable-domain blocking. Verification/rate limits reduce automated signup/mail pressure; domain detection cannot enforce guest uniqueness. Compared a local maintained list (staleness, licensing/update ownership, false positives), warning/risk signal (bypassable but lower user impact), and external service/blocking (privacy disclosure, cost, outage dependency and support burden). Recommendation: no detector/subscription/restriction now; any future local risk signal should fail open on missing/stale data, while existing security limits remain mandatory. Product owner owns policy/support decisions; maintainers would own reviewed list updates. Blocking would first require an approved appeal/override process and provenance/license review. Future test design: case-insensitive domain handling; IDNA/punycode equivalents; explicitly scoped subdomains with label-boundary matching; no substring matches, plus-alias stripping or assumptions that legitimate privacy relays are disposable; stale-list/outage behavior and neutral registration/rate-limit regressions. These are proposed detector checks, not an implemented detector. Reference: [OWASP email validation and verification](https://cheatsheetseries.owasp.org/cheatsheets/Email_Validation_and_Verification_Cheat_Sheet.html).
+- IMP-04.06: reused the native shared Dialog, safe initial Cancel focus, Escape and focus restoration; confirmed Hide clears only the in-memory reveal and returns focus to key management. Cancel preserves the exact secret and clipboard/manual fallback. Metadata replacement/unmount discards the dialog with the reveal. Hide never revokes or stores a secret; revoke/rotate stay separate backend operations.
+- Additional My Files UX: one accessible success notice expires after 4 seconds, fades in its last 200 ms, honors reduced motion, and refreshes on consecutive deletions. Timers/animation-frame work clear on replacement, scope change and unmount; stale callbacks cannot clear a replacement notice. Restored heading focus after native-dialog cleanup. File deletion requests, backend behavior and cache mutation semantics are unchanged. Reviewed adjacent profile/auth messages: profile feedback resets on submission/navigation; verification/recovery instructions remain persistent rather than being indiscriminately dismissed.
+- Existing AccountFlow/account E2E confirmation assertions and auth HTTP/live positive fixtures were changed only after explicit owner approval; boundary/security assertions remain. Added separate regression files. No dependencies, persisted schema, secret configuration, instruction files or improvement-plan markers changed.
+
+### Verification and limitations
+
+- Backend: all 40 unit/HTTP tests passed; final focused policy HTTP/parity rerun passed 5 tests, including rejected numeric/common/product-name secrets on register/reset/change, Unicode/space boundaries and existing 10-character common-password login/current proof. All 16 offline HTTP integration tests passed. Full frontend suite passed 182 tests with two workers; the final focused run passed 31 tests covering the subsequent focus/unmount additions.
+- Real PostgreSQL 18 / Redis 8: all 10 auth and 6 account live tests passed in new task-owned disposable containers with existing migrations applied only to an empty test database. Real-browser sign-in with an existing shorter/common password, key issue, cancel, hide and revoke passed: API authentication 200 before Hide, 200 after Hide, 401 after revoke; Hide made zero server mutations. S3/SMTP are local protocol fixtures. All owned containers were removed; existing services/data were preserved.
+- Chromium on local Vite/preview: registration/auth regressions, files download/details/cancel/delete, repeated notice lifetime/navigation, native-dialog keyboard/focus, new-password insertion/autocomplete and 390px registration copy checked. Visual QA at 1366×900 and 390×844 passed page identity, meaningful content, no framework overlay, console health, screenshots and target interactions; reduced-motion dismissal also passed. Browser plugin was absent; Chrome DevTools returned a busy-profile error, so existing Playwright was used without restarting another session.
+- Root lint (including six lint-configuration tests), final changed-file typed lint/format checks, workspace typecheck, generated-contract drift, backend build/API rebuild and final web build passed. Final Chromium run passed all 12 account/files/new-flow tests; the six existing auth browser tests also passed. Existing fixture tests hit their short async waits under concurrent CPU load; the final sequential focused run passed without changing assertions/timeouts. Builds retain the existing large-chunk warning. Other browser engines, production mail delivery, comprehensive breach detection and final owner/release acceptance are not established by this slice.
+- Temporary runners and screenshots remain outside the repository in sibling Converter-artifacts/phase-4-part-2; no worktree was created. Scripts contain no stored live credentials; task secrets were generated in process memory and screenshots mask any live reveal. improvement-plan.md and completion statuses are unchanged.
+
+Changed files (31):
+
+- `./`: `README.md`.
+- `apps/backend/src/modules/auth/`: `auth.dto.ts`, `configure-auth-api.ts`, `new-password-policy.ts`, `new-password.validator.ts`, `password-policy-http.spec.ts`.
+- `apps/backend/test/`: `auth-http.spec.ts`, `auth.live.ts`.
+- `apps/web/src/app/`: `AccountFlow.test.tsx`.
+- `apps/web/src/features/account/components/`: `PasswordEditor.tsx`.
+- `apps/web/src/features/account/lib/`: `account-http-gateway.ts`, `account-validation.ts`.
+- `apps/web/src/features/api-keys/components/`: `ApiKeyPanel.tsx`, `SecretReveal-confirmation.test.tsx`, `SecretReveal.tsx`.
+- `apps/web/src/features/auth/components/`: `CredentialsForm.tsx`.
+- `apps/web/src/features/auth/lib/`: `auth-gateway.ts`, `auth-http-gateway.ts`, `auth-validation.ts`, `new-password-policy.test.ts`, `new-password-policy.ts`.
+- `apps/web/src/features/converter/components/`: `GuestAuthDialog.tsx`.
+- `apps/web/src/features/files/components/`: `Files-notice.test.tsx`, `Files.module.scss`, `FilesWorkspace.tsx`.
+- `apps/web/src/shared/lib/`: `data-access-error.ts`.
+- `docs/`: `progress.md`.
+- `packages/contracts/`: `openapi.json`.
+- `packages/contracts/src/generated/`: `api.d.ts`.
+- `tests/e2e/`: `account-flow.spec.ts`, `phase-4-part-2.spec.ts`.
+
 ## 2026-11-08 — Phase 4 Part 1 registration verification and error presentation
 
 ### Changes

@@ -68,7 +68,7 @@ describe('real PostgreSQL/Redis auth and notification delivery', () => {
   const email = `${runId}@example.test`;
   const nextEmail = `${runId}-changed@example.test`;
   const origin = 'http://127.0.0.1:5173';
-  const password = '1234567890';
+  const password = 'r7V!m2Q#z9';
   const newPassword = '1234567890 changed';
   const auth = validateAuthConfig({
     SESSION_SECRET: randomBytes(32).toString('hex'),

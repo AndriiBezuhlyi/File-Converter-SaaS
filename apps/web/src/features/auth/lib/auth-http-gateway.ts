@@ -29,6 +29,8 @@ export function createAuthGateway(client: SessionClient): AuthGateway {
         if (error.status === 429) throw new AuthRequestError('rate-limited');
         if (error.code === 'INVALID_CREDENTIALS') throw new AuthRequestError('invalid-credentials');
         if (error.code === 'TOKEN_INVALID') throw new AuthRequestError('invalid-token');
+        if (error.code === 'PASSWORD_POLICY_REJECTED')
+          throw new AuthRequestError('password-policy');
       }
       throw new AuthRequestError('rejected');
     }

@@ -79,7 +79,7 @@ describe('first-party auth HTTP boundary (controlled service/session adapters)',
   it('rejects a 9-character password and extra fields, accepts 10 and normalizes email', async () => {
     for (const body of [
       { email: 'owned@example.test', password: '123456789' },
-      { email: 'owned@example.test', password: '1234567890', role: 'admin' },
+      { email: 'owned@example.test', password: 'r7V!m2Q#z9', role: 'admin' },
     ])
       await post()
         .set('Origin', 'http://127.0.0.1:5173')
@@ -90,10 +90,10 @@ describe('first-party auth HTTP boundary (controlled service/session adapters)',
     await post()
       .set('Origin', 'http://127.0.0.1:5173')
       .set('X-CSRF-Token', 'controlled-csrf')
-      .send({ email: '  OWNED@EXAMPLE.TEST ', password: '1234567890' })
+      .send({ email: '  OWNED@EXAMPLE.TEST ', password: 'r7V!m2Q#z9' })
       .expect(202)
       .expect({ status: 'accepted' });
-    expect(register).toHaveBeenLastCalledWith('owned@example.test', '1234567890');
+    expect(register).toHaveBeenLastCalledWith('owned@example.test', 'r7V!m2Q#z9');
   });
   it('keeps auth rejection codes and no-store headers without exposing inputs', async () => {
     await request(app.getHttpServer())

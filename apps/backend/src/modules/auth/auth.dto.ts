@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import { IsEmail, IsString, Length, MaxLength, Matches, ValidateIf, Equals } from 'class-validator';
 import { z } from 'zod';
+import { NewPassword } from './new-password.validator.js';
 
 export class EmailDto {
   @Transform(({ value }: { value: unknown }) =>
@@ -19,7 +20,7 @@ export class LoginDto extends EmailDto {
 }
 export class RegisterDto extends EmailDto {
   @IsString()
-  @Length(10, 128)
+  @NewPassword()
   password!: string;
 
   @ValidateIf((_object: unknown, value: unknown) => value !== undefined)
@@ -40,7 +41,7 @@ export class TokenDto {
 }
 export class PasswordResetDto extends TokenDto {
   @IsString()
-  @Length(10, 128)
+  @NewPassword()
   newPassword!: string;
 }
 export class PasswordChangeDto {
@@ -49,7 +50,7 @@ export class PasswordChangeDto {
   currentPassword!: string;
 
   @IsString()
-  @Length(10, 128)
+  @NewPassword()
   newPassword!: string;
 }
 export class ProfileUpdateDto extends EmailDto {

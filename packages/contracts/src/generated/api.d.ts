@@ -578,7 +578,7 @@ export interface components {
             email: string;
             /**
              * Format: password
-             * @description Never trimmed or normalized.
+             * @description 10–128 Unicode code points, including spaces; never trimmed or normalized. Case-insensitive curated local common/expected-password screening (limited coverage, not comprehensive breach detection); Rejected before mutation: length errors use 400 VALIDATION_FAILED; screening errors use 400 PASSWORD_POLICY_REJECTED. Existing login/current-password proof is unchanged.
              */
             password: string;
             /**
@@ -605,7 +605,7 @@ export interface components {
             token: string;
             /**
              * Format: password
-             * @description Never trimmed or normalized.
+             * @description 10–128 Unicode code points, including spaces; never trimmed or normalized. Case-insensitive curated local common/expected-password screening (limited coverage, not comprehensive breach detection); Rejected before mutation: length errors use 400 VALIDATION_FAILED; screening errors use 400 PASSWORD_POLICY_REJECTED. Existing login/current-password proof is unchanged.
              */
             newPassword: string;
         };
@@ -625,7 +625,7 @@ export interface components {
             currentPassword: string;
             /**
              * Format: password
-             * @description Never trimmed or normalized.
+             * @description 10–128 Unicode code points, including spaces; never trimmed or normalized. Case-insensitive curated local common/expected-password screening (limited coverage, not comprehensive breach detection); Rejected before mutation: length errors use 400 VALIDATION_FAILED; screening errors use 400 PASSWORD_POLICY_REJECTED. Existing login/current-password proof is unchanged.
              */
             newPassword: string;
         };

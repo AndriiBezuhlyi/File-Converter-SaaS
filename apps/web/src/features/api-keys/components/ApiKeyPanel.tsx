@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,6 +28,14 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
   const [revoking, setRevoking] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const [secret, setSecret] = useState<{ prefix: string; value: string } | null>(null);
+  const keyAction = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(false);
+  useEffect(() => {
+    if (!secret && restoreFocus.current) {
+      restoreFocus.current = false;
+      keyAction.current?.focus();
+    }
+  }, [secret]);
   const {
     register,
     handleSubmit,
@@ -78,7 +86,14 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
         </p>
       </div>
       {secret ? (
-        <SecretReveal key={secret.prefix} secret={secret.value} onHide={() => setSecret(null)} />
+        <SecretReveal
+          key={secret.prefix}
+          secret={secret.value}
+          onHide={() => {
+            restoreFocus.current = true;
+            setSecret(null);
+          }}
+        />
       ) : null}
       {uncertain ? (
         <div className={styles.feedback}>
@@ -102,6 +117,7 @@ export function ApiKeyPanel({ gateway }: { gateway: ApiKeyGateway }) {
       ) : null}
       <div className={styles.controls}>
         <Button
+          ref={keyAction}
           disabled={uncertain}
           onClick={() => {
             reset();

@@ -1,12 +1,20 @@
 import { z } from 'zod';
+import { newPasswordIssue } from './new-password-policy';
 
 export type CredentialsMode = 'login' | 'register' | 'reset';
 export const emailSchema = z.string().trim().pipe(z.email('Вкажіть коректну електронну пошту.'));
 // Match the agreed server policy without trimming or transforming passwords.
-const newPassword = z
-  .string()
-  .min(10, 'Щонайменше 10 символів.')
-  .max(128, 'Не більше 128 символів.');
+export const newPassword = z.string().superRefine((value, context) => {
+  const issue = newPasswordIssue(value);
+  if (issue)
+    context.addIssue({
+      code: 'custom',
+      message:
+        issue === 'length'
+          ? 'Від 10 до 128 символів (Unicode).'
+          : 'Цей пароль надто поширений або передбачуваний. Оберіть інший, наприклад довгу фразу.',
+    });
+});
 export const emailFormSchema = z.object({ email: emailSchema });
 export function credentialsSchema(mode: CredentialsMode) {
   return z

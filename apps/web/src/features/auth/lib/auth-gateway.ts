@@ -30,6 +30,7 @@ export class AuthRequestError extends Error {
       | 'invalid-token'
       | 'rate-limited'
       | 'registration-unknown'
+      | 'password-policy'
       | 'rejected',
   ) {
     super('Authentication request could not be completed.');
@@ -44,6 +45,8 @@ export function authErrorMessage(error: unknown) {
     'invalid-credentials': 'Не вдалося увійти. Перевірте пошту та пароль.',
     'invalid-token': 'Посилання недійсне або строк його дії минув. Запросіть нове.',
     'rate-limited': 'Забагато спроб. Зачекайте перед наступною спробою.',
+    'password-policy':
+      'Використайте 10–128 символів. Уникайте поширених паролів і назви сервісу; спробуйте довгу фразу.',
     'registration-unknown':
       'Не отримали підтвердження реєстрації. Перевірте пошту. Якщо акаунт уже створено, увійдіть або надішліть лист підтвердження повторно.',
     rejected: 'Не вдалося виконати дію. Спробуйте ще раз пізніше.',

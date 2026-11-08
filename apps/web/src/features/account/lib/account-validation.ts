@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emailSchema } from '../../auth/lib/auth-validation';
+import { emailSchema, newPassword } from '../../auth/lib/auth-validation';
 
 export const confirmationPassword = z.string().min(1, 'Введіть поточний пароль.');
 export const profileSchema = z.object({
@@ -10,7 +10,7 @@ export const profileSchema = z.object({
 export const changePasswordSchema = z
   .object({
     currentPassword: confirmationPassword,
-    newPassword: z.string().min(10, 'Щонайменше 10 символів.').max(128, 'Не більше 128 символів.'),
+    newPassword,
     confirmation: z.string(),
   })
   .refine((value) => value.newPassword === value.confirmation, {

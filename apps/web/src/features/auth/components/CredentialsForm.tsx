@@ -128,7 +128,11 @@ export function CredentialsForm({
           autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
           {...register('password')}
           error={errors.password?.message}
-          hint={mode !== 'login' ? 'Від 10 до 128 символів. Пробіли враховуються.' : undefined}
+          hint={
+            mode !== 'login'
+              ? 'Від 10 до 128 символів Unicode. Пробіли враховуються. Уникайте поширених паролів і назви сервісу; спробуйте довгу фразу.'
+              : undefined
+          }
         />
         {mode !== 'login' ? (
           <PasswordField
@@ -146,6 +150,9 @@ export function CredentialsForm({
           <ArrowRight size={20} aria-hidden="true" />
         </Button>
       </fieldset>
+      {mode === 'register' ? (
+        <p className={styles.helper}>Без спаму. Писатимемо лише щодо вашого акаунту.</p>
+      ) : null}
       {action.error ? (
         <div className={styles.feedback}>
           <p className={styles.error} role="alert">

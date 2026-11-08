@@ -98,6 +98,23 @@
 .error {
   color: var(--color-danger);
 }
+.successNotice {
+  animation: dismissNotice 4s ease-out forwards;
+}
+@keyframes dismissNotice {
+  0%,
+  95% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .successNotice {
+    animation: none;
+  }
+}
 @media (max-width: 1199px) {
   .row article {
     grid-template-columns: 1fr 1fr;

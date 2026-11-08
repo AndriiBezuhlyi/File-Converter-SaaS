@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '../../../shared/ui/Button';
+import { Dialog } from '../../../shared/ui/Dialog';
 import styles from './ApiKey.module.scss';
 
 export function SecretReveal({ secret, onHide }: { secret: string; onHide: () => void }) {
   const id = useId();
+  const [confirmHide, setConfirmHide] = useState(false);
   const [state, setState] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle');
   const mounted = useRef(false);
   useEffect(() => {
@@ -42,7 +44,7 @@ export function SecretReveal({ secret, onHide }: { secret: string; onHide: () =>
               ? 'Копіювання…'
               : 'Копіювати ключ'}
         </Button>
-        <Button variant="secondary" onClick={onHide}>
+        <Button variant="secondary" onClick={() => setConfirmHide(true)}>
           Приховати назавжди
         </Button>
       </div>
@@ -51,6 +53,20 @@ export function SecretReveal({ secret, onHide }: { secret: string; onHide: () =>
         <p role="alert" className={styles.error}>
           Не вдалося скопіювати. Виділіть ключ і скопіюйте вручну.
         </p>
+      ) : null}
+      {confirmHide ? (
+        <Dialog title="Приховати API-ключ?" onClose={() => setConfirmHide(false)}>
+          <p>
+            Повний ключ більше не можна буде відобразити. Скопіюйте його перед приховуванням.
+            Приховування не відкликає ключ — він і далі працюватиме.
+          </p>
+          <div className={styles.actions}>
+            <Button onClick={onHide}>Приховати ключ</Button>
+            <Button variant="secondary" data-initial-focus onClick={() => setConfirmHide(false)}>
+              Скасувати
+            </Button>
+          </div>
+        </Dialog>
       ) : null}
     </div>
   );

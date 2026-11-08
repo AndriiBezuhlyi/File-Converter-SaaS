@@ -65,6 +65,10 @@ test('one-time key copy, irreversible hiding and dialog keyboard behavior', asyn
   );
   await expect(page.getByRole('button', { name: 'Копіювати ключ', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Приховати назавжди' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Приховати ключ', exact: true })
+    .click();
   await expect(page.getByLabel('Новий API-ключ', { exact: true })).not.toBeVisible();
   await expect(page.getByLabel('Маскований API-ключ')).toHaveText('demo_2••••••••');
 });

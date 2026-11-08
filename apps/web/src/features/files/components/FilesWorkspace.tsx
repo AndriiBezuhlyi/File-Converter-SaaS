@@ -24,8 +24,28 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
   const [format, setFormat] = useState<FilesFilter['format']>('all');
   const [order, setOrder] = useState<FilesFilter['order']>('newest');
   const [modal, setModal] = useState<{ kind: 'details' | 'delete'; file: SavedFile } | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{
+    message: string;
+    transient: boolean;
+    scope: string;
+    version: number;
+  } | null>(null);
+  if (notice && notice.scope !== gateway.scope) setNotice(null);
   const action = useRequestAction(dataErrorMessage);
+  useEffect(() => {
+    if (!notice?.transient || notice.scope !== gateway.scope) return;
+    const frame = window.requestAnimationFrame(() =>
+      document.getElementById('files-title')?.focus(),
+    );
+    const timer = window.setTimeout(
+      () => setNotice((current) => (current === notice ? null : current)),
+      4000,
+    );
+    return () => {
+      window.clearTimeout(timer);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [notice, gateway.scope]);
   useEffect(() => {
     const timer = window.setTimeout(() => setDebounced(search.trim()), 300);
     return () => window.clearTimeout(timer);
@@ -67,8 +87,12 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
     );
     void client.invalidateQueries({ queryKey: ['files', gateway.scope] });
     setModal(null);
-    setNotice('Файл видалено.');
-    window.requestAnimationFrame(() => document.getElementById('files-title')?.focus());
+    setNotice((previous) => ({
+      message: 'Файл видалено.',
+      transient: true,
+      scope: gateway.scope,
+      version: (previous?.version ?? 0) + 1,
+    }));
   }
   return (
     <div className={styles.workspace}>
@@ -109,7 +133,15 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
           </select>
         </div>
       </div>
-      {notice ? <p role="status">{notice}</p> : null}
+      {notice && notice.scope === gateway.scope ? (
+        <p
+          key={notice.version}
+          role="status"
+          className={notice.transient ? styles.successNotice : undefined}
+        >
+          {notice.message}
+        </p>
+      ) : null}
       {query.isError ? (
         <div>
           <p role="alert">{dataErrorMessage(query.error)}</p>
@@ -159,7 +191,12 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
                 setModal({ kind: 'delete', file });
               }}
               onDenied={() => {
-                setNotice('Файл більше недоступний для завантаження. Список оновлюється.');
+                setNotice((previous) => ({
+                  message: 'Файл більше недоступний для завантаження. Список оновлюється.',
+                  transient: false,
+                  scope: gateway.scope,
+                  version: (previous?.version ?? 0) + 1,
+                }));
                 void client.invalidateQueries({ queryKey: ['files', gateway.scope] });
               }}
             />

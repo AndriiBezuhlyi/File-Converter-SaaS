@@ -222,6 +222,9 @@ it('shows a created key only once and keeps secrets out of both caches, with cli
   expect(cached).not.toContain('fixture_key_public_demo_1');
   expect(cached).not.toContain('synthetic-current');
   await user.click(screen.getByRole('button', { name: 'Приховати назавжди' }));
+  await user.click(
+    within(screen.getByRole('dialog')).getByRole('button', { name: 'Приховати ключ' }),
+  );
   expect(screen.queryByLabelText('Новий API-ключ')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Маскований API-ключ')).toHaveTextContent('demo_1••••••••');
   expect(screen.queryByRole('button', { name: 'Копіювати ключ' })).not.toBeInTheDocument();
