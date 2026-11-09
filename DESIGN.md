@@ -120,8 +120,8 @@ Use Lucide React icons with 1.5–2px strokes and 20–24px visual sizes. Give i
 The composition below is the homepage reference. Guest eligibility changes the helper copy and authentication trigger, not the visual system.
 
 1. **Header:** `Flux Converter`, `Конвертер`, `API`, `Увійти`. Signed-in navigation exposes `Мої файли` and `Профіль`.
-2. **Intro:** `Конвертуй файли без зайвих труднощів`. Supporting copy: `Зображення та документи — у потрібному форматі.` Show three compact rows: `JPG · PNG · WebP · AVIF ↔ між собою`; `GIF (static) · SVG → JPG · PNG · WebP · AVIF`; `DOCX · ODT · XLSX · PPTX · CSV · TXT → PDF`. Give each format its own accent token, with muted separators/directions. Allow natural wrapping on narrow screens; do not imply GIF/SVG output or reverse PDF conversion.
-3. **Converter:** `Перетягніть файл сюди`, `Вибрати файл`, `JPG, PNG або DOCX · до 20 МБ`, target selector, and `Конвертувати`. Eligible guests see `1 файл безкоштовно без реєстрації`.
+2. **Intro:** `Конвертуй файли без зайвих труднощів`. Supporting copy: `Зображення та документи — у потрібному форматі.` Show two compact groups: `Зображення: JPG · PNG · WebP · AVIF · GIF (стат.) · SVG` and `Документи: DOCX · ODT · XLSX · PPTX · CSV · TXT → PDF`. Show each format once with its existing accent token. Explain below that the first four image formats convert mutually and the last two are input-only. Format labels scale to approximately 17–18px at representative desktop widths, reducing at narrower desktop widths to keep both groups inside their column; allow natural wrapping on mobile. Preserve surrounding Hero typography/layout.
+3. **Converter:** `Перетягніть файл сюди`, `Вибрати файл`, a compact supported-format/20 MB summary, keyboard-accessible `Вимоги до файлів` disclosure after the file-picker button, target selector, and `Конвертувати`. Eligible guests see `1 файл безкоштовно без реєстрації`.
 4. **Instructions:** `{ Як це працює }` with three open steps: choose a file, select a format and convert, download. The first conversion does not require sign-in.
 5. **Retention note and footer:** explain temporary availability; repeat useful navigation only.
 

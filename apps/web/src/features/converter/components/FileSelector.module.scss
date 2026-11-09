@@ -51,6 +51,27 @@
   color: var(--color-text-muted);
   font-size: 0.875rem;
 }
+.restrictions {
+  max-inline-size: 100%;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+
+  summary {
+    min-block-size: 44px;
+    align-content: center;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  p {
+    margin: var(--space-2) 0 0;
+    text-align: start;
+  }
+}
+.limit {
+  white-space: nowrap;
+}
 .file {
   display: flex;
   align-items: flex-start;

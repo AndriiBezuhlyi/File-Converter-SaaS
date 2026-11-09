@@ -16,7 +16,7 @@ const steps = [
   },
 ];
 
-const rasterFormats = ['jpg', 'png', 'webp', 'avif'] as const;
+const imageFormats = ['jpg', 'png', 'webp', 'avif', 'gif', 'svg'] as const;
 const documentFormats = ['docx', 'odt', 'xlsx', 'pptx', 'csv', 'txt'] as const;
 
 function FormatGroup({ formats }: { formats: readonly string[] }) {
@@ -24,7 +24,7 @@ function FormatGroup({ formats }: { formats: readonly string[] }) {
     <span className={styles.formatGroup}>
       {formats.map((format) => (
         <span key={format} className={`${styles.format} ${styles[format]}`}>
-          {format === 'webp' ? 'WebP' : format === 'gif' ? 'GIF (static)' : format.toUpperCase()}
+          {format === 'webp' ? 'WebP' : format === 'gif' ? 'GIF (стат.)' : format.toUpperCase()}
         </span>
       ))}
     </span>
@@ -41,22 +41,19 @@ export function ConverterPage({ gateway }: { gateway?: ConversionGateway } = {})
           <p className={styles.intro}>Зображення та документи — у потрібному форматі.</p>
           <div className={styles.formats}>
             <p>
-              <FormatGroup formats={rasterFormats} />
-              <span className={styles.direction}>↔ між собою</span>
+              <span className={styles.groupLabel}>Зображення:</span>
+              <FormatGroup formats={imageFormats} />
             </p>
             <p>
-              <FormatGroup formats={['gif', 'svg']} />
-              <span className={styles.direction} aria-label="у">
-                →
-              </span>
-              <FormatGroup formats={rasterFormats} />
-            </p>
-            <p>
+              <span className={styles.groupLabel}>Документи:</span>
               <FormatGroup formats={documentFormats} />
               <span className={styles.direction} aria-label="у">
                 →
               </span>
               <FormatGroup formats={['pdf']} />
+            </p>
+            <p className={styles.formatNote}>
+              Перші чотири формати зображень — між собою; останні два — лише на вході.
             </p>
           </div>
           <a className={styles.anchor} href="#how-it-works">

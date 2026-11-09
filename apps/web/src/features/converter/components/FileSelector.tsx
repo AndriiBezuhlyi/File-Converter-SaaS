@@ -189,10 +189,8 @@ export function FileSelector({
           </>
         )}
         <p className={styles.hint} id={hintId}>
-          JPG, PNG, WebP, AVIF, GIF, SVG, DOCX, ODT, XLSX, PPTX, CSV або TXT · до 20 МБ. Лише
-          статичні зображення; SVG — прості фігури без тексту, стилів і зовнішніх ресурсів.
-          Документи → PDF. CSV — UTF-8, коми, усі клітинки як текст; TXT — UTF-8. Зовнішні ресурси й
-          макроси заборонені.
+          JPG, PNG, WebP, AVIF, GIF, SVG, DOCX, ODT, XLSX, PPTX, CSV або TXT{' '}
+          <span className={styles.limit}>· до 20 МБ</span>
         </p>
         <Button
           ref={picker}
@@ -203,6 +201,14 @@ export function FileSelector({
         >
           {selection ? 'Змінити файл' : 'Вибрати файл'}
         </Button>
+        <details className={styles.restrictions}>
+          <summary>Вимоги до файлів</summary>
+          <p>
+            Лише статичні зображення. SVG — прості фігури без тексту, стилів і зовнішніх ресурсів.
+            Документи → PDF. CSV — UTF-8, коми, усі клітинки як текст; TXT — UTF-8. Зовнішні ресурси
+            й макроси заборонені.
+          </p>
+        </details>
       </div>
       {error ? (
         <div id={errorId} className={styles.error} role="alert">

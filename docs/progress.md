@@ -4,6 +4,23 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-09 - Two Hero format groups and upload guidance
+
+### Changes
+
+- Replaced three format rows with the requested labeled image/document groups, listing every format once and retaining all existing individual accent colors. Static GIF uses the concise Ukrainian designation; a muted note explains mutual raster conversion and input-only GIF/SVG without duplicating format labels.
+- Increased labels to approximately 17.2px at 1366px and 18px at 1920px. Responsive desktop sizing keeps both groups on one line inside their existing Hero column; mobile uses natural inline wrapping. Existing heading, intro, spacing tokens and two-column layout remain unchanged.
+- Reduced upload guidance to supported formats and an unbroken 20 MB limit. Moved all existing detailed restrictions into a native disclosure after the picker, retaining keyboard access and the original first-focus target. No conversion, API, supported-format or improvement-plan changes.
+- Synchronized the affected DESIGN reference; no existing tests changed.
+
+### Verification and limitations
+
+- Chromium verified 1366x768, 1920x1080, 1024x768, 390x844 and 320x844: all 13 formats appear once with their original colors; desktop groups occupy one line each, every label stays inside the Hero column, no horizontal scrolling, and the complete converter fits the representative desktop viewport. Desktop/mobile screenshots visually inspected.
+- Verified native disclosure opening/closing with Enter, readable restrictions, file selection/removal and the unchanged four SVG targets. Page identity/content and absence of Vite overlay checked. Final controlled guest/session browser run had no console/page errors.
+- An initial live repeat hit the existing guest-issuance 429 limit. The final responsive run uses controlled guest/session HTTP responses to avoid issuing a new identity on every navigation; no security or runtime configuration changes. Chrome DevTools profile was busy, so used existing Playwright.
+- Frontend typecheck, focused ESLint and 33 existing regression tests passed; final frontend build and formatting checks passed. The focus regression found during implementation was fixed by placing the disclosure after the picker. Build retains the large-chunk advisory. Backend integration and native zoom were not retested for this presentation change.
+- Retained QA scripts/screenshots in sibling `Converter-artifacts/hero-groups/`; no additional branches/worktrees or unintegrated product work.
+
 ## 2026-11-09 - Hero format summary refinement
 
 ### Changes

@@ -41,7 +41,7 @@
   display: grid;
   gap: var(--space-2);
   margin-block: 0 var(--space-6);
-  font: 400 1rem/1.5 var(--font-mono);
+  font: 400 1.0625rem/1.5 var(--font-mono);
   color: var(--color-text-muted);
 }
 .formats p {
@@ -71,6 +71,27 @@
 
 .direction {
   white-space: nowrap;
+}
+
+.groupLabel {
+  font-family: var(--font-body);
+  white-space: nowrap;
+}
+
+.formats .formatNote {
+  display: block;
+  font: 400 0.875rem/1.45 var(--font-body);
+}
+
+@media (min-width: 1024px) {
+  .formats {
+    font-size: clamp(0.875rem, calc(1.2vw + 0.05rem), 1.125rem);
+  }
+
+  .formats p:not(.formatNote),
+  .formatGroup {
+    flex-wrap: nowrap;
+  }
 }
 
 .annotation {
@@ -141,6 +162,21 @@
 }
 
 @media (max-width: 1023px) {
+  .formats p:not(.formatNote) {
+    display: block;
+  }
+  .formatGroup {
+    display: inline;
+  }
+  .format {
+    display: inline-block;
+  }
+  .groupLabel {
+    margin-inline-end: var(--space-2);
+  }
+  .direction {
+    margin-inline: var(--space-2);
+  }
   .hero {
     grid-template-columns: 1fr;
     gap: var(--space-12);
