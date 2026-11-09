@@ -52,9 +52,6 @@ export function ConverterPage({ gateway }: { gateway?: ConversionGateway } = {})
               </span>
               <FormatGroup formats={['pdf']} />
             </p>
-            <p className={styles.formatNote}>
-              Перші чотири формати зображень — між собою; останні два — лише на вході.
-            </p>
           </div>
           <a className={styles.anchor} href="#how-it-works">
             Як це працює <ArrowDown size={20} strokeWidth={1.75} aria-hidden="true" />

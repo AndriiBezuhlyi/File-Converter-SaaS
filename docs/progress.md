@@ -4,6 +4,20 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-09 - Larger Hero format names
+
+### Changes
+
+- Removed the explanatory sentence below the format groups at the owner's request. Increased names to 20–22px, with small muted category labels above each group and natural wrapping. Preserved all individual format colors and surrounding Hero/converter behavior.
+- Simplified the section's CSS by removing obsolete note styling and desktop no-wrap overrides. Synchronized the affected DESIGN reference; no conversion, API, upload or improvement-plan changes.
+
+### Verification and limitations
+
+- Passed frontend typecheck/build, focused ESLint and existing ConverterFlow/App tests, plus changed-file formatting and diff checks. Existing tests remain unchanged; build retains its large-chunk advisory.
+- Existing Playwright/Chromium verified 1366x768, 1920x1080, 1024x768, 390x844 and 320x844 with controlled guest/session responses. All 13 formats remain unique with their existing colors and inside the Hero column; names measure 20–22px, there is no horizontal overflow, and the converter action remains in the initial representative desktop viewport. Desktop/mobile screenshots visually inspected.
+- Rechecked native restrictions disclosure via keyboard and SVG selection/removal/targets; no console/page errors. This is presentation QA, not live backend integration. Reused Playwright because the Chrome DevTools profile is already occupied.
+- QA artifacts retained outside source in `Converter-artifacts/hero-larger-formats/`; no extra branches/worktrees or unintegrated product work.
+
 ## 2026-11-09 - Two Hero format groups and upload guidance
 
 ### Changes
