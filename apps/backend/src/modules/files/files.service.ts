@@ -8,7 +8,7 @@ import { AuthError } from '../auth/auth-error.js';
 const querySchema = z
   .object({
     search: z.string().trim().max(200).default(''),
-    format: z.enum(['jpg', 'png', 'pdf']).optional(),
+    format: z.enum(['jpg', 'png', 'webp', 'avif', 'pdf']).optional(),
     sort: z.enum(['newest', 'oldest']).default('newest'),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     cursor: z.string().max(2048).optional(),

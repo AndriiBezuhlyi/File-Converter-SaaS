@@ -1,4 +1,4 @@
-export type SavedFormat = 'jpg' | 'png' | 'pdf';
+export type SavedFormat = 'jpg' | 'png' | 'webp' | 'avif' | 'pdf';
 export interface SavedFile {
   id: string;
   name: string;

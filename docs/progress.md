@@ -4,6 +4,22 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-09 - Phase 6 image format expansion (IMP-06.01/06.02)
+
+### Changes
+
+- Implemented the owner-approved static image matrix: JPG/PNG/WebP/AVIF cross-conversion without same-format output; static GIF and restricted SVG input to all four raster targets. DOCX to PDF remains unchanged. Animated GIF/WebP/AVIF are rejected before reservation and again in the worker, including AVIF sequence brands/boxes.
+- Reused the credential-free Linux Bubblewrap/prlimit runner for new-format API metadata validation, with one validation slot per API process and unchanged upload/pixel/result/time budgets. The API runtime adds only required Bubblewrap/util-linux and shares the existing worker seccomp/cgroup boundary. SVG uses approved saxes 6.0.0 and a namespace-aware element/attribute/value allowlist with XML complexity bounds; unsafe declarations, references, text/fonts/CSS/active content are rejected before Sharp.
+- Added two approved additive enum/constraint migrations without changing historical migrations. Synchronized policy, processing MIME, files filters, UI selection/download decoders, OpenAPI/generated contracts and API/product/schema documentation. Auto-orientation, sRGB/metadata privacy, alpha and approved encoder defaults are maintained. No improvement-plan markers were edited.
+
+### Verification and limitations
+
+- Backend unit/security 69/69; frontend 202/202; PostgreSQL constraints 14/14; live conversions/guest/processing/files suites 9/11/6/9 passed. Linux suites cover all 20 image pairs, real decoding/color/alpha/metadata, malformed/animated/1000-frame/unsafe SVG cases, exact byte/pixel boundaries, output cap, kernel isolation and the 60-second process-tree deadline. Legacy JPG/PNG/DOCX real conversions pass.
+- All 60 account/API-key/guest image HTTP cases passed with polling, protected downloads, saved-file filters and quota semantics; extra animation and exact 20,000,000-byte / one-byte-over HTTP assertions passed. Both migrations were applied only to a dedicated local test database; upgrade tests preserve seeded legacy data.
+- Chromium real Linux API/worker QA passed six input/output flows and owned AVIF filtering at desktop/mobile sizes, with no overflow or relevant errors in the final run. Existing conversion E2E suites passed 13/13. Chrome DevTools could not acquire its profile; Browser plugin unavailable, so existing Playwright was used. Other browsers and final owner/release acceptance are unverified.
+- Lint, formatting, typecheck, workspace build, generated contracts, Prisma validation and Compose syntax checks passed. Worker/API Docker images built; minimal production API sandbox validates all four new sources. Audit reports 35 unrelated dependency-tree advisories; saxes/xmlchars have no reported advisory. No automatic dependency upgrades or production deployment were performed. SVG remains a geometry-only subset, images static, and large inputs may fail safely within fixed budgets.
+- Retained local evidence in .cache/tasks/imp-06-images/ and sibling Converter-artifacts/imp-06-images/, dedicated synthetic converter_test_imp06_20261109 database and tagged local images. No worktrees/subagents or integration operations. Rollout requires compatible consumers before new values and Linux sandbox prerequisites; see README.
+
 ## 2026-11-09 — Phase 5 converter draft preservation and state transitions
 
 ### Changes

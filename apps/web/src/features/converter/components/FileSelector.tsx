@@ -188,7 +188,8 @@ export function FileSelector({
           </>
         )}
         <p className={styles.hint} id={hintId}>
-          JPG, PNG або DOCX · до 20 МБ
+          JPG, PNG, WebP, AVIF, GIF, SVG або DOCX · до 20 МБ. Лише статичні зображення; SVG — прості
+          фігури без тексту, стилів і зовнішніх ресурсів.
         </p>
         <Button
           ref={picker}

@@ -6,6 +6,6 @@
     "types": ["node"],
     "sourceMap": true
   },
-  "include": ["src/entrypoints/api.main.ts"],
+  "include": ["src/entrypoints/api.main.ts", "src/modules/conversions/engine-process.ts"],
   "exclude": ["**/*.spec.ts", "test", "dist", "node_modules"]
 }

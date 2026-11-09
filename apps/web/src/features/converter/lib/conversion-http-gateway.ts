@@ -10,8 +10,8 @@ import {
 
 const summary = z.object({
   id: z.string().uuid(),
-  sourceFormat: z.enum(['jpg', 'png', 'docx']),
-  targetFormat: z.enum(['jpg', 'png', 'pdf']),
+  sourceFormat: z.enum(['jpg', 'png', 'webp', 'avif', 'gif', 'svg', 'docx']),
+  targetFormat: z.enum(['jpg', 'png', 'webp', 'avif', 'pdf']),
   createdAt: z.string(),
   saveResult: z.boolean(),
 });
@@ -28,7 +28,7 @@ const statusSchema: z.ZodType<components['schemas']['ConversionStatus']> = summa
       id: z.string().uuid(),
       owner: z.enum(['guest', 'account']),
       name: z.string(),
-      format: z.enum(['jpg', 'png', 'pdf']),
+      format: z.enum(['jpg', 'png', 'webp', 'avif', 'pdf']),
       sizeBytes: z.number().positive(),
       retention: z.enum(['temporary', 'saved']),
       expiresAt: z.string().nullable(),
@@ -175,7 +175,7 @@ export function createConversionGateway(
         return await client.http.download({
           path: `conversions/${id}/download`,
           fallbackName: 'conversion',
-          contentTypes: ['image/jpeg', 'image/png', 'application/pdf'],
+          contentTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'application/pdf'],
         });
       } catch (error) {
         return requestError(error);

@@ -18,7 +18,13 @@ import { MAX_UPLOAD_BYTES, type SourceFormat, type TargetFormat } from './conver
 
 const LEASE_MS = 120_000;
 const WINDOW_MS = 3_600_000;
-const MIME = { jpg: 'image/jpeg', png: 'image/png', pdf: 'application/pdf' } as const;
+const MIME = {
+  jpg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  avif: 'image/avif',
+  pdf: 'application/pdf',
+} as const;
 
 @Injectable()
 export class ConversionProcessingService {

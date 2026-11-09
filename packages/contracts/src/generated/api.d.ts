@@ -365,7 +365,7 @@ export interface paths {
         put?: never;
         /**
          * Validate an upload and durably accept a queued conversion
-         * @description Explicit X-API-Key takes precedence and never falls back to cookies. Otherwise use a verified account session or the first-party guest cookie. All responses are no-store. Status reads may use the retained owning guest cookie after login; API keys cannot access guest jobs. Unknown, malformed or unowned IDs return 404. Cookie POST requires exact Origin and X-CSRF-Token from /auth/csrf. Exactly one file and targetFormat; client MIME/extension are untrusted. JPG to PNG, PNG to JPG, DOCX to PDF only. Images are limited to 40 million pixels; DOCX to 1000 entries, 80 MB expanded and 200:1 per entry, without encryption, ZIP64, macros, embedded programs or external relationships. Admission: 20/IP/minute, 10/principal/minute, at most 5 active jobs/principal and 1000 globally. Guest eligibility is checked before receiving bytes and atomically reserved at acceptance. HTTP rejection does not consume a trial. A dispatch failure after durable acceptance still returns 202; do not automatically replay an ambiguous upload. Worker processing/reconciliation is delivered separately. Each API process permits four concurrent uploads with a 60-second deadline; rejected or aborted staging files are removed. Excess in-flight uploads return 429 UPLOAD_CAPACITY_REACHED. Capacity release waits for multipart cleanup.
+         * @description Explicit X-API-Key takes precedence and never falls back to cookies. Otherwise use a verified account session or the first-party guest cookie. All responses are no-store. Status reads may use the retained owning guest cookie after login; API keys cannot access guest jobs. Unknown, malformed or unowned IDs return 404. Cookie POST requires exact Origin and X-CSRF-Token from /auth/csrf. Exactly one file and targetFormat; client MIME/extension are untrusted. Static JPG/PNG/WebP/AVIF cross-conversion without same-format output; static GIF and restricted SVG to JPG/PNG/WebP/AVIF; DOCX to PDF. Animated GIF/WebP/AVIF, HEIC/HEVC, SVG/GIF output and other pairs are rejected. SVG is UTF-8 XML 1.0 with numeric dimensions and allowlisted geometry only: no text, CSS, transforms, references, entities, DTD or active content. New image metadata validation runs inside a credential-free Linux sandbox before guest reservation, at most one per API process; unavailable isolation returns 503 and concurrent validation 429. Images are limited to 40 million pixels; DOCX to 1000 entries, 80 MB expanded and 200:1 per entry, without encryption, ZIP64, macros, embedded programs or external relationships. Admission: 20/IP/minute, 10/principal/minute, at most 5 active jobs/principal and 1000 globally. Guest eligibility is checked before receiving bytes and atomically reserved at acceptance. HTTP rejection does not consume a trial. A dispatch failure after durable acceptance still returns 202; do not automatically replay an ambiguous upload. Worker processing/reconciliation is delivered separately. Each API process permits four concurrent uploads with a 60-second deadline; rejected or aborted staging files are removed. Excess in-flight uploads return 429 UPLOAD_CAPACITY_REACHED. Capacity release waits for multipart cleanup.
          */
         post: operations["createConversion"];
         delete?: never;
@@ -675,9 +675,9 @@ export interface components {
             /** @enum {string} */
             status: "queued";
             /** @enum {string} */
-            sourceFormat: "jpg" | "png" | "docx";
+            sourceFormat: "jpg" | "png" | "webp" | "avif" | "gif" | "svg" | "docx";
             /** @enum {string} */
-            targetFormat: "jpg" | "png" | "pdf";
+            targetFormat: "jpg" | "png" | "webp" | "avif" | "pdf";
             /** Format: date-time */
             createdAt: string;
             /** @description Acceptance-time auto-save snapshot; always false for guests. */
@@ -689,9 +689,9 @@ export interface components {
             /** @enum {string} */
             status: "queued" | "processing" | "completed" | "failed";
             /** @enum {string} */
-            sourceFormat: "jpg" | "png" | "docx";
+            sourceFormat: "jpg" | "png" | "webp" | "avif" | "gif" | "svg" | "docx";
             /** @enum {string} */
-            targetFormat: "jpg" | "png" | "pdf";
+            targetFormat: "jpg" | "png" | "webp" | "avif" | "pdf";
             /** Format: date-time */
             createdAt: string;
             /** @description Acceptance-time auto-save snapshot; always false for guests. */
@@ -710,7 +710,7 @@ export interface components {
                 id: string;
                 name: string;
                 /** @enum {string} */
-                format: "jpg" | "png" | "pdf";
+                format: "jpg" | "png" | "webp" | "avif" | "pdf";
                 sizeBytes: number;
                 /** @enum {string} */
                 retention: "temporary" | "saved";
@@ -737,8 +737,12 @@ export interface components {
             /** @enum {integer} */
             pollIntervalMs: 1500;
             directions: {
-                jpg: "png"[];
-                png: "jpg"[];
+                jpg: ("png" | "webp" | "avif")[];
+                png: ("jpg" | "webp" | "avif")[];
+                webp: ("jpg" | "png" | "avif")[];
+                avif: ("jpg" | "png" | "webp")[];
+                gif: ("jpg" | "png" | "webp" | "avif")[];
+                svg: ("jpg" | "png" | "webp" | "avif")[];
                 docx: "pdf"[];
             };
         };
@@ -747,7 +751,7 @@ export interface components {
             id: string;
             name: string;
             /** @enum {string} */
-            format: "jpg" | "png" | "pdf";
+            format: "jpg" | "png" | "webp" | "avif" | "pdf";
             sizeBytes: number;
             /** Format: date-time */
             createdAt: string;
@@ -1562,7 +1566,7 @@ export interface operations {
                      */
                     file: string;
                     /** @enum {string} */
-                    targetFormat: "jpg" | "png" | "pdf";
+                    targetFormat: "jpg" | "png" | "webp" | "avif" | "pdf";
                 };
             };
         };
@@ -1773,6 +1777,8 @@ export interface operations {
                     "image/jpeg": string;
                     "image/png": string;
                     "application/pdf": string;
+                    "image/webp": string;
+                    "image/avif": string;
                 };
             };
             /** @description Invalid credentials or consumed guest trial */
@@ -1820,7 +1826,7 @@ export interface operations {
         parameters: {
             query?: {
                 search?: string;
-                format?: "jpg" | "png" | "pdf";
+                format?: "jpg" | "png" | "webp" | "avif" | "pdf";
                 sort?: "newest" | "oldest";
                 limit?: number;
                 cursor?: string;

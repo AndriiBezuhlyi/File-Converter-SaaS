@@ -1,13 +1,17 @@
-export type SourceFormat = 'jpg' | 'png' | 'docx';
-export type TargetFormat = 'jpg' | 'png' | 'pdf';
+export type SourceFormat = 'jpg' | 'png' | 'webp' | 'avif' | 'gif' | 'svg' | 'docx';
+export type TargetFormat = 'jpg' | 'png' | 'webp' | 'avif' | 'pdf';
 
 // Local UX limit in decimal MB; the future server capabilities remain authoritative.
 export const MAX_FILE_SIZE_BYTES = 20_000_000;
-export const FILE_ACCEPT = '.jpg,.jpeg,.png,.docx';
+export const FILE_ACCEPT = '.jpg,.jpeg,.png,.webp,.avif,.gif,.svg,.docx';
 
 const targets: Record<SourceFormat, readonly TargetFormat[]> = {
-  jpg: ['png'],
-  png: ['jpg'],
+  jpg: ['png', 'webp', 'avif'],
+  png: ['jpg', 'webp', 'avif'],
+  webp: ['jpg', 'png', 'avif'],
+  avif: ['jpg', 'png', 'webp'],
+  gif: ['jpg', 'png', 'webp', 'avif'],
+  svg: ['jpg', 'png', 'webp', 'avif'],
   docx: ['pdf'],
 };
 
@@ -32,13 +36,20 @@ export function validateFileSelection(files: readonly File[]): SelectionResult {
     return { ok: false, error: 'Файл завеликий. Максимальний розмір — 20 МБ.' };
   const extension = file.name.split('.').at(-1)?.toLowerCase();
   const sourceFormat = extension === 'jpeg' ? 'jpg' : extension;
-  if (
-    !file.name.includes('.') ||
-    (sourceFormat !== 'jpg' && sourceFormat !== 'png' && sourceFormat !== 'docx')
-  ) {
-    return { ok: false, error: 'Цей формат не підтримується. Виберіть JPG, PNG або DOCX.' };
+  if (!file.name.includes('.') || !sourceFormat || !Object.hasOwn(targets, sourceFormat)) {
+    return {
+      ok: false,
+      error: 'Цей формат не підтримується. Виберіть JPG, PNG, WebP, AVIF, GIF, SVG або DOCX.',
+    };
   }
-  return { ok: true, selection: { file, sourceFormat, targetFormat: targets[sourceFormat][0]! } };
+  return {
+    ok: true,
+    selection: {
+      file,
+      sourceFormat: sourceFormat as SourceFormat,
+      targetFormat: targets[sourceFormat as SourceFormat][0]!,
+    },
+  };
 }
 
 const numberFormat = new Intl.NumberFormat('uk-UA', { maximumFractionDigits: 2 });

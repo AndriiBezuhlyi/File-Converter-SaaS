@@ -111,13 +111,22 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
             value={format}
             onChange={(event) => {
               const value = event.target.value;
-              if (value === 'all' || value === 'jpg' || value === 'png' || value === 'pdf')
+              if (
+                value === 'all' ||
+                value === 'jpg' ||
+                value === 'png' ||
+                value === 'webp' ||
+                value === 'avif' ||
+                value === 'pdf'
+              )
                 setFormat(value);
             }}
           >
             <option value="all">Усі</option>
             <option value="jpg">JPG</option>
             <option value="png">PNG</option>
+            <option value="webp">WebP</option>
+            <option value="avif">AVIF</option>
             <option value="pdf">PDF</option>
           </select>
         </div>

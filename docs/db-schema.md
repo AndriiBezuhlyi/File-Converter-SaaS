@@ -2,6 +2,10 @@
 
 PostgreSQL 18 with Prisma 7. The source model is [schema.prisma](../apps/backend/prisma/schema.prisma); migration history is [prisma/migrations](../apps/backend/prisma/migrations). API/worker share the runtime Prisma/pg provider. Authentication/profile transactions, persisted settings, hashed API keys, notification intents, guest credentials and guest-trial transaction helpers are implemented; conversion admission and owned status reads are implemented; processing and file/download services remain pending. Settings updates and key lifecycle mutations lock the user row and recheck the session snapshot; the existing one-active-key partial unique index serializes the final invariant. Key validity is read directly from PostgreSQL on every authentication. No schema change is required for these services, and no existing environment is migrated automatically.
 
+## Image format expansion
+
+Migration 20261109000000_image_formats adds webp, avif, gif and svg to FileFormat. After it commits, 20261109000001_image_constraints replaces only File_mime_matches_format and Conversion_supported_pair, preserving legacy rows and ownership/lifecycle guards. New MIME mappings are image/webp, image/avif, image/gif and image/svg+xml. JPG/PNG/WebP/AVIF cross-convert without same-format output; GIF/SVG are input-only and target those four raster formats. DOCX to PDF is unchanged. No destructive down migration is defined; retain expanded-enum readers after new values are persisted. See README's image rollout requirements before deployment.
+
 ## Models and relationships
 
 | Model               | Purpose and important fields                                                                                                                                                                                                                             |

@@ -30,7 +30,9 @@ type JsonRequest<T> = RequestOptions & {
 
 interface DownloadRequest extends Omit<RequestOptions, 'statuses' | 'params'> {
   fallbackName: string;
-  contentTypes: readonly ('image/png' | 'image/jpeg' | 'application/pdf')[];
+  contentTypes: readonly (
+    'image/png' | 'image/jpeg' | 'image/webp' | 'image/avif' | 'application/pdf'
+  )[];
 }
 
 export interface HttpClient {

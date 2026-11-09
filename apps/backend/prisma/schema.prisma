@@ -26,6 +26,10 @@ enum FileFormat {
   png
   docx
   pdf
+  webp
+  avif
+  gif
+  svg
 }
 
 enum FilePurpose {

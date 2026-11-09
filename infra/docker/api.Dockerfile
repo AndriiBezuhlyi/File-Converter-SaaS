@@ -12,6 +12,9 @@ RUN npm run build:api --workspace=@converter/backend
 
 FROM node:24-bookworm-slim AS runtime
 ENV NODE_ENV=production
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends bubblewrap util-linux \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/package.json

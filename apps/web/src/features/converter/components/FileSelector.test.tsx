@@ -30,7 +30,9 @@ describe('local file selection', () => {
     await user.upload(screen.getByLabelText('Файл для конвертації'), new File(['synthetic'], name));
     expect(screen.getByText(name)).toBeInTheDocument();
     expect(screen.getByLabelText('Конвертувати у')).toHaveValue(target.toLowerCase());
-    expect(screen.getAllByRole('option')).toHaveLength(1);
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(
+      target === 'PDF' ? ['PDF'] : [target, 'WEBP', 'AVIF'],
+    );
     expect(screen.getByRole('option', { name: target })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Конвертувати' })).toBeDisabled();
   });

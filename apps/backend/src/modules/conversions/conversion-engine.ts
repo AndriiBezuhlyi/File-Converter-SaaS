@@ -47,13 +47,13 @@ export function sandboxArguments(input: string, source: SourceFormat, target: Ta
     '--ro-bind-try',
     '/lib64',
     '/lib64',
-    '--ro-bind',
+    '--ro-bind-try',
     '/etc/fonts',
     '/etc/fonts',
     '--ro-bind',
     '/etc/ld.so.cache',
     '/etc/ld.so.cache',
-    '--ro-bind',
+    '--ro-bind-try',
     '/etc/libreoffice',
     '/etc/libreoffice',
     '--proc',
@@ -76,6 +76,11 @@ export function sandboxArguments(input: string, source: SourceFormat, target: Ta
     '--ro-bind',
     fileURLToPath(new URL('./conversion-policy.js', import.meta.url)),
     '/app/conversion-policy.js',
+    ...['image-input.js', 'svg-validation.js'].flatMap((name) => [
+      '--ro-bind',
+      fileURLToPath(new URL(`./${name}`, import.meta.url)),
+      `/app/${name}`,
+    ]),
     '--ro-bind',
     input,
     source === 'docx' ? '/input.docx' : '/input',
@@ -106,6 +111,11 @@ export class ConversionEngine {
   }
   async convert(input: string, source: SourceFormat, target: TargetFormat): Promise<Buffer> {
     return this.run(sandboxArguments(input, source, target));
+  }
+  async validateImage(input: string, source: SourceFormat): Promise<void> {
+    const args = sandboxArguments(input, source, 'png');
+    args.push('--validate-only');
+    if ((await this.run(args)).toString() !== 'valid') throw new EngineFailure('Invalid image.');
   }
   async check() {
     const args = sandboxArguments('/dev/null', 'jpg', 'png');

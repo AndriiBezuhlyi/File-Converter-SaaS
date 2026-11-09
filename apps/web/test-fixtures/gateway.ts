@@ -160,7 +160,7 @@ export class FixtureGateway implements ConversionGateway {
     if (this.scenario === 'download-expired') throw new ConversionRequestError('expired');
     if (!this.result || this.result.availability !== 'available')
       throw new ConversionRequestError('expired');
-    const output = outputs[this.targetFormat];
+    const output = this.fixtureOutput();
     const response = await fetch(output.url);
     if (!response.ok) throw new ConversionRequestError('network');
     return { blob: await response.blob(), name: output.name };
@@ -178,7 +178,7 @@ export class FixtureGateway implements ConversionGateway {
 
   private finish() {
     this.trial = 'consumed';
-    const output = outputs[this.targetFormat];
+    const output = this.fixtureOutput();
     this.result = {
       name: output.name,
       sizeBytes: output.sizeBytes,
@@ -195,5 +195,10 @@ export class FixtureGateway implements ConversionGateway {
             },
       availability: this.scenario === 'expired' ? 'expired' : 'available',
     };
+  }
+  private fixtureOutput() {
+    if (this.targetFormat === 'webp' || this.targetFormat === 'avif')
+      throw new Error('New image outputs require the real-engine acceptance harness.');
+    return outputs[this.targetFormat];
   }
 }

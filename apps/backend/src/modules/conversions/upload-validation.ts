@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
+import { ConversionEngine, EngineFailure } from './conversion-engine.js';
 import { AuthError } from '../auth/auth-error.js';
 import { validateDocx } from './docx-validation.js';
 import {
@@ -15,6 +16,8 @@ export interface StagedUpload {
   size: number;
   originalname: string;
 }
+const imageValidator = new ConversionEngine();
+let validatingImage = false;
 export async function validateUpload(file: StagedUpload | undefined, body: unknown) {
   if (
     !file ||
@@ -23,7 +26,7 @@ export async function validateUpload(file: StagedUpload | undefined, body: unkno
     Object.keys(body).length !== 1 ||
     !('targetFormat' in body) ||
     typeof body.targetFormat !== 'string' ||
-    !['jpg', 'png', 'pdf'].includes(String(body.targetFormat))
+    !['jpg', 'png', 'webp', 'avif', 'pdf'].includes(String(body.targetFormat))
   )
     throw new AuthError(400, 'VALIDATION_FAILED', 'Provide one file and a supported targetFormat.');
   if (file.size > MAX_UPLOAD_BYTES)
@@ -35,12 +38,42 @@ export async function validateUpload(file: StagedUpload | undefined, body: unkno
   let format: SourceFormat;
   if (bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) format = 'png';
   else if (bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255) format = 'jpg';
+  else if (bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP')
+    format = 'webp';
+  else if (bytes.toString('ascii', 0, 6) === 'GIF87a' || bytes.toString('ascii', 0, 6) === 'GIF89a')
+    format = 'gif';
+  else if (bytes.toString('ascii', 4, 8) === 'ftyp') format = 'avif';
+  else if (
+    bytes.toString('utf8', 0, 256).trimStart().startsWith('<') ||
+    bytes.subarray(0, 3).equals(Buffer.from([239, 187, 191]))
+  )
+    format = 'svg';
   else if (bytes.length >= 22 && bytes.readUInt32LE(0) === 0x04034b50) format = 'docx';
-  else
-    throw new AuthError(415, 'UNSUPPORTED_FORMAT', 'Only JPG, PNG and DOCX inputs are supported.');
+  else throw new AuthError(415, 'UNSUPPORTED_FORMAT', 'Unsupported input format.');
   try {
     if (format === 'docx') validateDocx(bytes);
-    else {
+    else if (format !== 'jpg' && format !== 'png') {
+      if (validatingImage)
+        throw new AuthError(
+          429,
+          'UPLOAD_CAPACITY_REACHED',
+          'Image validation is temporarily full.',
+        );
+      validatingImage = true;
+      try {
+        await imageValidator.validateImage(file.path, format);
+      } catch (error) {
+        if (!(error instanceof EngineFailure))
+          throw new AuthError(
+            503,
+            'SERVICE_UNAVAILABLE',
+            'Image validation sandbox is unavailable.',
+          );
+        throw error;
+      } finally {
+        validatingImage = false;
+      }
+    } else {
       const metadata = await sharp(bytes, {
         limitInputPixels: MAX_IMAGE_PIXELS,
         failOn: 'warning',
@@ -54,11 +87,12 @@ export async function validateUpload(file: StagedUpload | undefined, body: unkno
       )
         throw new Error('Invalid image dimensions.');
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof AuthError) throw error;
     throw new AuthError(
       422,
       'INVALID_FILE',
-      'The file is malformed or exceeds safe resource limits.',
+      'The file is malformed, animated, unsupported SVG content, or exceeds safe resource limits.',
     );
   }
   const target = body.targetFormat as TargetFormat;

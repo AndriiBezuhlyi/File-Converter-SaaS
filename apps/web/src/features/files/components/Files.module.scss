@@ -135,3 +135,10 @@
     gap: var(--space-4);
   }
 }
+
+.webp,
+.avif,
+.gif,
+.svg {
+  color: var(--color-format-png);
+}

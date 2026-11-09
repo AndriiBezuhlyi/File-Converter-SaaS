@@ -224,7 +224,15 @@ describe('conversion REST lifecycle with real PostgreSQL, Redis and BullMQ', () 
         expect(body).toMatchObject({
           maxUploadBytes: MAX_UPLOAD_BYTES,
           pollIntervalMs: 1500,
-          directions: { jpg: ['png'], png: ['jpg'], docx: ['pdf'] },
+          directions: {
+            jpg: ['png', 'webp', 'avif'],
+            png: ['jpg', 'webp', 'avif'],
+            webp: ['jpg', 'png', 'avif'],
+            avif: ['jpg', 'png', 'webp'],
+            gif: ['jpg', 'png', 'webp', 'avif'],
+            svg: ['jpg', 'png', 'webp', 'avif'],
+            docx: ['pdf'],
+          },
         });
       });
     const { key, user } = await account(true);

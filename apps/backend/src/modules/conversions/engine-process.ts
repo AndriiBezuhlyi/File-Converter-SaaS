@@ -1,7 +1,8 @@
 // This entry point runs only inside the per-attempt Linux sandbox, without service credentials.
 import { spawn } from 'node:child_process';
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
-import { MAX_IMAGE_PIXELS } from './conversion-policy.js';
+import { CONVERSION_DIRECTIONS, MAX_IMAGE_PIXELS, type SourceFormat } from './conversion-policy.js';
+import { validateImageInput } from './image-input.js';
 
 interface Converter {
   supports(source: string | undefined, target: string | undefined): boolean;
@@ -15,19 +16,28 @@ interface Converter {
 
 class SharpImageConverter implements Converter {
   supports(source: string, target: string) {
-    return (source === 'jpg' && target === 'png') || (source === 'png' && target === 'jpg');
+    return (
+      source !== 'docx' &&
+      Object.hasOwn(CONVERSION_DIRECTIONS, source) &&
+      (CONVERSION_DIRECTIONS[source as SourceFormat] as readonly string[]).includes(target)
+    );
   }
   async convert(inputPath: string, outputPath: string, { target }: { target: string }) {
     const { default: sharp } = await import('sharp');
     sharp.cache(false);
     sharp.concurrency(1);
+    await validateImageInput(inputPath, process.argv[2]!);
     const image = sharp(inputPath, { limitInputPixels: MAX_IMAGE_PIXELS, failOn: 'warning' })
       .autoOrient()
       .timeout({ seconds: 45 });
     await (
       target === 'jpg'
         ? image.flatten({ background: '#ffffff' }).jpeg({ quality: 90 })
-        : image.png()
+        : target === 'webp'
+          ? image.webp({ quality: 80, effort: 4 })
+          : target === 'avif'
+            ? image.avif({ quality: 50, effort: 4, bitdepth: 8 })
+            : image.png()
     ).toFile(outputPath);
   }
 }
@@ -74,6 +84,11 @@ class LibreOfficeDocumentConverter implements Converter {
 
 async function main() {
   const [source, target] = process.argv.slice(2);
+  if (process.argv[4] === '--validate-only') {
+    await validateImageInput('/input', source!);
+    process.stdout.write('valid');
+    return;
+  }
   const adapters: Converter[] = [new SharpImageConverter(), new LibreOfficeDocumentConverter()];
   const adapter = adapters.find((candidate) => candidate.supports(source, target));
   if (!adapter || !target) throw new Error('Unsupported direction.');

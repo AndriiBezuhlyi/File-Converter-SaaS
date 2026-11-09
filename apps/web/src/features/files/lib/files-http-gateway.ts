@@ -8,7 +8,7 @@ import type { FilesGateway } from './files-gateway';
 const fileSchema: z.ZodType<components['schemas']['SavedFile']> = z.object({
   id: z.string().uuid(),
   name: z.string(),
-  format: z.enum(['jpg', 'png', 'pdf']),
+  format: z.enum(['jpg', 'png', 'webp', 'avif', 'pdf']),
   sizeBytes: z.number().int().positive(),
   createdAt: z.string().datetime(),
   retention: z.literal('saved'),
@@ -58,7 +58,7 @@ export function createFilesGateway(client: SessionClient, identity: string): Fil
         client.http.download({
           path: `files/${id}/download`,
           fallbackName: 'conversion',
-          contentTypes: ['image/jpeg', 'image/png', 'application/pdf'],
+          contentTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'application/pdf'],
         }),
       ),
     remove: (id) =>

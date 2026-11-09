@@ -1379,7 +1379,7 @@
         "operationId": "createConversion",
         "tags": ["Conversions"],
         "summary": "Validate an upload and durably accept a queued conversion",
-        "description": "Explicit X-API-Key takes precedence and never falls back to cookies. Otherwise use a verified account session or the first-party guest cookie. All responses are no-store. Status reads may use the retained owning guest cookie after login; API keys cannot access guest jobs. Unknown, malformed or unowned IDs return 404. Cookie POST requires exact Origin and X-CSRF-Token from /auth/csrf. Exactly one file and targetFormat; client MIME/extension are untrusted. JPG to PNG, PNG to JPG, DOCX to PDF only. Images are limited to 40 million pixels; DOCX to 1000 entries, 80 MB expanded and 200:1 per entry, without encryption, ZIP64, macros, embedded programs or external relationships. Admission: 20/IP/minute, 10/principal/minute, at most 5 active jobs/principal and 1000 globally. Guest eligibility is checked before receiving bytes and atomically reserved at acceptance. HTTP rejection does not consume a trial. A dispatch failure after durable acceptance still returns 202; do not automatically replay an ambiguous upload. Worker processing/reconciliation is delivered separately. Each API process permits four concurrent uploads with a 60-second deadline; rejected or aborted staging files are removed. Excess in-flight uploads return 429 UPLOAD_CAPACITY_REACHED. Capacity release waits for multipart cleanup.",
+        "description": "Explicit X-API-Key takes precedence and never falls back to cookies. Otherwise use a verified account session or the first-party guest cookie. All responses are no-store. Status reads may use the retained owning guest cookie after login; API keys cannot access guest jobs. Unknown, malformed or unowned IDs return 404. Cookie POST requires exact Origin and X-CSRF-Token from /auth/csrf. Exactly one file and targetFormat; client MIME/extension are untrusted. Static JPG/PNG/WebP/AVIF cross-conversion without same-format output; static GIF and restricted SVG to JPG/PNG/WebP/AVIF; DOCX to PDF. Animated GIF/WebP/AVIF, HEIC/HEVC, SVG/GIF output and other pairs are rejected. SVG is UTF-8 XML 1.0 with numeric dimensions and allowlisted geometry only: no text, CSS, transforms, references, entities, DTD or active content. New image metadata validation runs inside a credential-free Linux sandbox before guest reservation, at most one per API process; unavailable isolation returns 503 and concurrent validation 429. Images are limited to 40 million pixels; DOCX to 1000 entries, 80 MB expanded and 200:1 per entry, without encryption, ZIP64, macros, embedded programs or external relationships. Admission: 20/IP/minute, 10/principal/minute, at most 5 active jobs/principal and 1000 globally. Guest eligibility is checked before receiving bytes and atomically reserved at acceptance. HTTP rejection does not consume a trial. A dispatch failure after durable acceptance still returns 202; do not automatically replay an ambiguous upload. Worker processing/reconciliation is delivered separately. Each API process permits four concurrent uploads with a 60-second deadline; rejected or aborted staging files are removed. Excess in-flight uploads return 429 UPLOAD_CAPACITY_REACHED. Capacity release waits for multipart cleanup.",
         "security": [
           {
             "apiKey": []
@@ -1427,7 +1427,7 @@
                   },
                   "targetFormat": {
                     "type": "string",
-                    "enum": ["jpg", "png", "pdf"]
+                    "enum": ["jpg", "png", "webp", "avif", "pdf"]
                   }
                 }
               }
@@ -1816,6 +1816,18 @@
                   "type": "string",
                   "format": "binary"
                 }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/avif": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
@@ -1917,7 +1929,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": ["jpg", "png", "pdf"]
+              "enum": ["jpg", "png", "webp", "avif", "pdf"]
             }
           },
           {
@@ -2807,11 +2819,11 @@
           },
           "sourceFormat": {
             "type": "string",
-            "enum": ["jpg", "png", "docx"]
+            "enum": ["jpg", "png", "webp", "avif", "gif", "svg", "docx"]
           },
           "targetFormat": {
             "type": "string",
-            "enum": ["jpg", "png", "pdf"]
+            "enum": ["jpg", "png", "webp", "avif", "pdf"]
           },
           "createdAt": {
             "type": "string",
@@ -2849,11 +2861,11 @@
           },
           "sourceFormat": {
             "type": "string",
-            "enum": ["jpg", "png", "docx"]
+            "enum": ["jpg", "png", "webp", "avif", "gif", "svg", "docx"]
           },
           "targetFormat": {
             "type": "string",
-            "enum": ["jpg", "png", "pdf"]
+            "enum": ["jpg", "png", "webp", "avif", "pdf"]
           },
           "createdAt": {
             "type": "string",
@@ -2910,7 +2922,7 @@
               },
               "format": {
                 "type": "string",
-                "enum": ["jpg", "png", "pdf"]
+                "enum": ["jpg", "png", "webp", "avif", "pdf"]
               },
               "sizeBytes": {
                 "type": "integer",
@@ -2974,20 +2986,48 @@
           "directions": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["jpg", "png", "docx"],
+            "required": ["jpg", "png", "webp", "avif", "gif", "svg", "docx"],
             "properties": {
               "jpg": {
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": ["png"]
+                  "enum": ["png", "webp", "avif"]
                 }
               },
               "png": {
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": ["jpg"]
+                  "enum": ["jpg", "webp", "avif"]
+                }
+              },
+              "webp": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["jpg", "png", "avif"]
+                }
+              },
+              "avif": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["jpg", "png", "webp"]
+                }
+              },
+              "gif": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["jpg", "png", "webp", "avif"]
+                }
+              },
+              "svg": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["jpg", "png", "webp", "avif"]
                 }
               },
               "docx": {
@@ -3015,7 +3055,7 @@
           },
           "format": {
             "type": "string",
-            "enum": ["jpg", "png", "pdf"]
+            "enum": ["jpg", "png", "webp", "avif", "pdf"]
           },
           "sizeBytes": {
             "type": "integer",

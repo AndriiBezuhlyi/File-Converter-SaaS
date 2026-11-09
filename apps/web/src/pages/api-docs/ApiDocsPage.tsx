@@ -114,15 +114,17 @@ export function ApiDocsPage() {
                   <th scope="row">
                     <code>file</code>
                   </th>
-                  <td>Один файл JPG, PNG або DOCX.</td>
+                  <td>
+                    Одне статичне зображення JPG, PNG, WebP, AVIF, GIF, SVG або документ DOCX.
+                  </td>
                 </tr>
                 <tr>
                   <th scope="row">
                     <code>targetFormat</code>
                   </th>
                   <td>
-                    <code>jpg</code>, <code>png</code> або <code>pdf</code>, відповідно до вхідного
-                    файлу.
+                    <code>jpg</code>, <code>png</code>, <code>webp</code>, <code>avif</code> або{' '}
+                    <code>pdf</code>, відповідно до вхідного файлу.
                   </td>
                 </tr>
               </tbody>
@@ -217,7 +219,11 @@ export function ApiDocsPage() {
             <tbody>
               <tr>
                 <th scope="row">Напрямки</th>
-                <td>JPG ↔ PNG та DOCX → PDF. PDF → DOCX не підтримується.</td>
+                <td>
+                  JPG, PNG, WebP, AVIF — між різними форматами; статичні GIF і SVG → JPG, PNG, WebP,
+                  AVIF; DOCX → PDF. SVG — прості фігури без тексту, стилів і ресурсів. Анімація,
+                  GIF/SVG на виході та PDF → DOCX не підтримуються.
+                </td>
               </tr>
               <tr>
                 <th scope="row">Файл</th>
