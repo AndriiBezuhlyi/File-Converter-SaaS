@@ -48,7 +48,16 @@ Change colors here by semantic role; reuse tokens throughout components.
 | `--color-danger`         | `#ff9c90`                     | Errors and destructive actions          |
 | `--color-format-jpg`     | `#ffb56b`                     | JPG label                               |
 | `--color-format-png`     | `#fec5fb`                     | PNG label                               |
+| `--color-format-webp`    | `#84dec4`                     | WebP label                              |
+| `--color-format-avif`    | `#bca9ff`                     | AVIF label                              |
+| `--color-format-gif`     | `#f4d77e`                     | Static GIF label                        |
+| `--color-format-svg`     | `#abff84`                     | SVG label                               |
 | `--color-format-docx`    | `#77d5ed`                     | DOCX label                              |
+| `--color-format-odt`     | `#a5c6ff`                     | ODT label                               |
+| `--color-format-xlsx`    | `#8fd59a`                     | XLSX label                              |
+| `--color-format-pptx`    | `#ff9c90`                     | PPTX label                              |
+| `--color-format-csv`     | `#67d8de`                     | CSV label                               |
+| `--color-format-txt`     | `#d7c3a5`                     | TXT label                               |
 | `--color-format-pdf`     | `var(--color-text)`           | PDF label                               |
 
 Always pair state colors with text or an icon. Do not tint whole sections or body paragraphs by format. Change an alias to an independent token only when its role needs to diverge.
@@ -111,7 +120,7 @@ Use Lucide React icons with 1.5–2px strokes and 20–24px visual sizes. Give i
 The composition below is the homepage reference. Guest eligibility changes the helper copy and authentication trigger, not the visual system.
 
 1. **Header:** `Flux Converter`, `Конвертер`, `API`, `Увійти`. Signed-in navigation exposes `Мої файли` and `Профіль`.
-2. **Intro:** `Конвертуй файли без зайвих труднощів`. Supporting copy: `Зображення та документи — у потрібному форматі.` Show two compact rows: `Статичні зображення → JPG, PNG, WebP, AVIF` and `Документи → PDF`, using existing format colors. These summarize output groups; the source-dependent selector remains authoritative for individual directions.
+2. **Intro:** `Конвертуй файли без зайвих труднощів`. Supporting copy: `Зображення та документи — у потрібному форматі.` Show three compact rows: `JPG · PNG · WebP · AVIF ↔ між собою`; `GIF (static) · SVG → JPG · PNG · WebP · AVIF`; `DOCX · ODT · XLSX · PPTX · CSV · TXT → PDF`. Give each format its own accent token, with muted separators/directions. Allow natural wrapping on narrow screens; do not imply GIF/SVG output or reverse PDF conversion.
 3. **Converter:** `Перетягніть файл сюди`, `Вибрати файл`, `JPG, PNG або DOCX · до 20 МБ`, target selector, and `Конвертувати`. Eligible guests see `1 файл безкоштовно без реєстрації`.
 4. **Instructions:** `{ Як це працює }` with three open steps: choose a file, select a format and convert, download. The first conversion does not require sign-in.
 5. **Retention note and footer:** explain temporary availability; repeat useful navigation only.

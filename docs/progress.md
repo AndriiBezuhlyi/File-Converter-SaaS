@@ -4,6 +4,21 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-09 - Hero format summary refinement
+
+### Changes
+
+- Limited product changes to the Hero format summary: three desktop rows show all 13 formats, mutual JPG/PNG/WebP/AVIF conversion, input-only static GIF/SVG with their four outputs, and six document sources with one-way PDF output. Verified against backend conversion-policy and frontend target mapping; conversion logic, APIs and improvement-plan are unchanged.
+- Restored individual format accents through semantic tokens, retaining the four original colors and adding nine distinct accents used by this section. Updated DESIGN's token table and summary reference. Kept existing 16px mono text, surrounding Hero layout and converter dimensions.
+- Used a small local FormatGroup renderer to keep repeated output labels consistent. Inline groups wrap naturally without hiding formats.
+
+### Verification and limitations
+
+- Passed frontend typecheck/build, focused ESLint, formatting/diff checks and 33 existing tests across ConverterFlow, App and FileSelector; existing tests are unchanged. Build retains the large-chunk advisory.
+- Playwright/Chromium verified the live page at 1366x768, 1024x768, 390x844 and 320x844. Checked all formats, 13 unique colors, text contrast of at least 4.5:1 against canvas, three unwrapped rows at 1366px, converter action within the initial desktop viewport, no horizontal overflow, page identity/content, no Vite overlay or console/page errors, and the instructions anchor interaction. Desktop/mobile screenshots visually inspected.
+- Chrome DevTools remains unavailable because its profile is already in use; existing Playwright was used without restarting that browser session. No new dependencies, native zoom or other-browser verification.
+- QA scripts/screenshots retained outside the repository in `Converter-artifacts/hero-formats/`; no additional branches/worktrees or unintegrated product work.
+
 ## 2026-11-09 - Post-testing UI refinements
 
 ### Changes

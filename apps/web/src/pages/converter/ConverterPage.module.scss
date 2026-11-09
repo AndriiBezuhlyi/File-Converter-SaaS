@@ -48,8 +48,29 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-1) var(--space-2);
   margin: 0;
+}
+
+.formatGroup {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) 0;
+}
+
+.format {
+  white-space: nowrap;
+
+  & + &::before {
+    content: '·';
+    margin-inline: var(--space-1);
+    color: var(--color-text-muted);
+  }
+}
+
+.direction {
+  white-space: nowrap;
 }
 
 .annotation {
@@ -70,6 +91,12 @@
 }
 .pdf {
   color: var(--color-format-pdf);
+}
+
+@each $format in webp, avif, gif, svg, odt, xlsx, pptx, csv, txt {
+  .#{$format} {
+    color: var(--color-format-#{$format});
+  }
 }
 
 .instructions {

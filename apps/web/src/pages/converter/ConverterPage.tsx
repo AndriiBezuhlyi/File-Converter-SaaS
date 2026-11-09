@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowRight } from 'lucide-react';
+import { ArrowDown } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 import { ConverterWorkspace } from '../../features/converter/components/ConverterWorkspace';
 import type { ConversionGateway } from '../../features/converter/lib/conversion-gateway';
@@ -16,6 +16,21 @@ const steps = [
   },
 ];
 
+const rasterFormats = ['jpg', 'png', 'webp', 'avif'] as const;
+const documentFormats = ['docx', 'odt', 'xlsx', 'pptx', 'csv', 'txt'] as const;
+
+function FormatGroup({ formats }: { formats: readonly string[] }) {
+  return (
+    <span className={styles.formatGroup}>
+      {formats.map((format) => (
+        <span key={format} className={`${styles.format} ${styles[format]}`}>
+          {format === 'webp' ? 'WebP' : format === 'gif' ? 'GIF (static)' : format.toUpperCase()}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export function ConverterPage({ gateway }: { gateway?: ConversionGateway } = {}) {
   const [search, setSearch] = useSearchParams();
   return (
@@ -26,13 +41,22 @@ export function ConverterPage({ gateway }: { gateway?: ConversionGateway } = {})
           <p className={styles.intro}>Зображення та документи — у потрібному форматі.</p>
           <div className={styles.formats}>
             <p>
-              <span className={styles.png}>Статичні зображення</span>{' '}
-              <ArrowRight size={20} strokeWidth={1.5} aria-hidden="true" /> JPG, PNG, WebP, AVIF
+              <FormatGroup formats={rasterFormats} />
+              <span className={styles.direction}>↔ між собою</span>
             </p>
             <p>
-              <span className={styles.docx}>Документи</span>{' '}
-              <ArrowRight size={20} strokeWidth={1.5} aria-hidden="true" />{' '}
-              <span className={styles.pdf}>PDF</span>
+              <FormatGroup formats={['gif', 'svg']} />
+              <span className={styles.direction} aria-label="у">
+                →
+              </span>
+              <FormatGroup formats={rasterFormats} />
+            </p>
+            <p>
+              <FormatGroup formats={documentFormats} />
+              <span className={styles.direction} aria-label="у">
+                →
+              </span>
+              <FormatGroup formats={['pdf']} />
             </p>
           </div>
           <a className={styles.anchor} href="#how-it-works">
