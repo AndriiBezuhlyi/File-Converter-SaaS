@@ -1,10 +1,44 @@
+.workspace {
+  display: grid;
+  min-inline-size: 0;
+  align-self: start;
+}
+.selection,
+.state {
+  grid-area: 1 / 1;
+  min-inline-size: 0;
+}
+.selection[data-inactive='true'] {
+  visibility: hidden;
+  pointer-events: none;
+}
+.selection > section,
+.state {
+  min-block-size: 100%;
+}
+.state {
+  animation: reveal 140ms ease-out;
+}
+@keyframes reveal {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .state {
+    animation: none;
+  }
+}
 .annotation {
   margin: 0;
   color: var(--color-text-muted);
   font: 400 0.875rem/1.45 var(--font-mono);
 }
 .heading {
-  margin-block: var(--space-6);
+  margin-block: var(--space-4);
   font-size: clamp(1.5rem, 2.5vw, 2rem);
   font-weight: 600;
   line-height: 1.2;

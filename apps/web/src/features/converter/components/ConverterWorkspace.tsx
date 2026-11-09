@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { AlertCircle, Clock3 } from 'lucide-react';
 import { Surface } from '../../../shared/ui/Surface';
 import { Button } from '../../../shared/ui/Button';
@@ -13,6 +14,8 @@ import {
 import { useConversionFlow } from '../lib/use-conversion-flow';
 import { useAuth } from '../../auth/lib/auth-context';
 import styles from './ConversionWorkspace.module.scss';
+import { ConverterDraftProvider } from './ConverterDraftProvider';
+import { useConverterDraft } from '../lib/converter-draft-context';
 
 interface WorkspaceProps {
   gateway?: ConversionGateway | undefined;
@@ -21,6 +24,17 @@ interface WorkspaceProps {
 }
 
 export function ConverterWorkspace(props: WorkspaceProps) {
+  const draft = useConverterDraft();
+  return draft ? (
+    <Workspace {...props} />
+  ) : (
+    <ConverterDraftProvider>
+      <Workspace {...props} />
+    </ConverterDraftProvider>
+  );
+}
+
+function Workspace(props: WorkspaceProps) {
   // Offline production bootstrap never creates a mock job, credential, or download.
   return props.gateway ? (
     <ConnectedWorkspace {...props} gateway={props.gateway} />
@@ -35,6 +49,38 @@ function ConnectedWorkspace({
   onJobId,
 }: WorkspaceProps & { gateway: ConversionGateway }) {
   const flow = useConversionFlow(gateway, requestedId, onJobId);
+  const draft = useConverterDraft();
+  const shell = useRef<HTMLDivElement>(null);
+  const stateHeading = useRef<HTMLHeadingElement>(null);
+  const previousState = useRef(false);
+  useLayoutEffect(() => {
+    const root = shell.current;
+    if (!root || typeof ResizeObserver === 'undefined') return;
+    let width = 0;
+    let height = 0;
+    let frame = 0;
+    const stabilize = () => {
+      const bounds = root.getBoundingClientRect();
+      if (Math.abs(bounds.width - width) > 1) {
+        width = bounds.width;
+        height = 0;
+        root.style.removeProperty('min-block-size');
+      }
+      // Retain measured space through state changes; allow natural growth and responsive reflow.
+      height = Math.max(height, root.getBoundingClientRect().height);
+      root.style.minBlockSize = `${height}px`;
+    };
+    stabilize();
+    const observer = new ResizeObserver(() => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(stabilize);
+    });
+    observer.observe(root);
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
   const { status: sessionStatus } = useAuth();
   const current = flow.job.data;
   const waiting = flow.upload.isPending || flow.outcome?.kind === 'unknown';
@@ -62,6 +108,20 @@ function ConnectedWorkspace({
               : current?.status === 'queued'
                 ? 'Файл у черзі'
                 : 'Перевіряємо стан';
+  useLayoutEffect(() => {
+    const root = shell.current;
+    const active = document.activeElement;
+    // Polls never steal focus; only a disappearing view needs a new focus target.
+    if (
+      showState !== previousState.current &&
+      root &&
+      (active === document.body || (active && root.contains(active)))
+    ) {
+      if (showState) stateHeading.current?.focus({ preventScroll: true });
+      else root.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+    }
+    previousState.current = showState;
+  }, [showState]);
   const rejected =
     flow.outcome?.kind === 'rejected'
       ? {
@@ -101,165 +161,188 @@ function ConnectedWorkspace({
 
   return (
     <>
-      <div hidden={showState}>
-        <FileSelector
-          key={flow.selectionVersion}
-          onConvert={canStart ? flow.submit : undefined}
-          locked={waiting || sessionStatus === 'pending'}
-          submissionError={rejected}
-          recovery={flow.access.isError ? accessRecovery : null}
-          availability={
-            flow.access.isError
-              ? accessMessage
-              : !flow.access.data
-                ? 'Перевіряємо доступ…'
-                : flow.access.data.kind === 'guest'
-                  ? flow.access.data.trial === 'consumed'
-                    ? 'Безкоштовну конвертацію вже використано. Наступна конвертація потребує входу.'
-                    : '1 файл безкоштовно без реєстрації'
-                  : 'Файл буде оброблено відповідно до налаштувань на момент прийняття.'
-          }
-        />
-      </div>
-      {showState ? (
-        <Surface aria-label="Стан конвертації">
-          <p className={styles.annotation}>{'{ Конвертер }'}</p>
-          <h2 className={styles.heading}>{heading}</h2>
-          <span className="sr-only" role="status">
-            {heading}
-          </span>
-          {disconnected || unknown ? (
-            <>
-              <p className={styles.notice}>
-                <AlertCircle size={24} strokeWidth={1.75} aria-hidden="true" />{' '}
-                {unknown
-                  ? 'Не отримали підтвердження прийняття. Перевірте стан, перш ніж надсилати файл знову.'
-                  : 'Не вдалося перевірити стан. Задача може продовжувати виконуватися.'}
+      <div
+        ref={shell}
+        className={styles.workspace}
+        onPointerDownCapture={draft?.touch}
+        onKeyDownCapture={draft?.touch}
+      >
+        <div
+          className={styles.selection}
+          data-inactive={showState}
+          inert={showState}
+          aria-hidden={showState}
+        >
+          <FileSelector
+            key={flow.selectionVersion}
+            onConvert={canStart ? flow.submit : undefined}
+            locked={waiting || sessionStatus === 'pending'}
+            submissionError={rejected}
+            recovery={flow.access.isError ? accessRecovery : null}
+            availability={
+              flow.access.isError
+                ? accessMessage
+                : !flow.access.data
+                  ? 'Перевіряємо доступ…'
+                  : flow.access.data.kind === 'guest'
+                    ? flow.access.data.trial === 'consumed'
+                      ? 'Безкоштовну конвертацію вже використано. Наступна конвертація потребує входу.'
+                      : '1 файл безкоштовно без реєстрації'
+                    : 'Файл буде оброблено відповідно до налаштувань на момент прийняття.'
+            }
+          />
+        </div>
+        {showState ? (
+          <Surface className={styles.state} aria-label="Стан конвертації">
+            <p className={styles.annotation}>{'{ Конвертер }'}</p>
+            <h2 ref={stateHeading} tabIndex={-1} className={styles.heading}>
+              {heading}
+            </h2>
+            <span className="sr-only" role="status">
+              {heading}
+            </span>
+            {draft?.message ? (
+              <p className={styles.helper} role="status">
+                {draft.message}
               </p>
-              <div className={styles.actions}>
-                <Button
-                  onClick={() => {
-                    if (flow.jobId) void flow.job.refetch();
-                    else void flow.access.refetch();
-                  }}
-                  disabled={flow.job.isFetching || flow.access.isFetching}
-                >
-                  Перевірити ще раз
-                </Button>
-              </div>
-              <p className={styles.helper}>Повторно файл не надсилаємо.</p>
-            </>
-          ) : inaccessible ? (
-            <>
-              <p role="alert" className={styles.warning}>
-                Немає доступу до задачі або строк доступності завершився. Повторно файл не
-                надсилаємо.
-              </p>
-              <div className={styles.actions}>
-                <Button
-                  onClick={() => {
-                    void flow.job.refetch();
-                  }}
-                  disabled={flow.job.isFetching}
-                >
-                  Перевірити стан ще раз
-                </Button>
-                <Button variant="secondary" onClick={flow.nextFile} disabled={nextDisabled}>
-                  Конвертувати інший файл
-                </Button>
-              </div>
-            </>
-          ) : current?.status === 'completed' ? (
-            <ConversionResultPanel
-              key={current.id}
-              job={current}
-              gateway={gateway}
-              nextFile={flow.nextFile}
-              nextDisabled={nextDisabled}
-            />
-          ) : current?.status === 'failed' ? (
-            <>
-              <p role="alert" className={styles.danger}>
-                {current.reason === 'invalid-file'
-                  ? 'Файл пошкоджений або не підтримує цю конвертацію. Виберіть інший файл.'
-                  : 'Конвертація завершилася помилкою. Спробуйте інший файл або повторіть пізніше.'}
-              </p>
-              <p className={styles.helper}>
-                {flow.access.data?.kind === 'account'
-                  ? 'Виберіть інший файл або спробуйте пізніше.'
-                  : 'Остаточна помилка не витрачає гостьову спробу. Перевіряємо її доступність на сервері.'}
-              </p>
-              <div className={styles.actions}>
-                <Button onClick={flow.nextFile} disabled={nextDisabled}>
-                  Вибрати інший файл
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className={styles.summary}>
-                <Clock3 size={24} strokeWidth={1.75} aria-hidden="true" />
-                <div className={styles.details}>
-                  <strong className={styles.name}>
-                    {current?.sourceName ??
-                      flow.upload.variables?.file.name ??
-                      'Відновлюємо відому задачу'}
-                  </strong>
-                  {current ? (
-                    <p className={styles.metadata}>
-                      <span className={styles.format}>
-                        {current.sourceFormat.toUpperCase()} → {current.targetFormat.toUpperCase()}
-                      </span>
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-              <div
-                className={styles.bar}
-                role="progressbar"
-                aria-label={
-                  flow.stage === 'uploading' && flow.upload.isPending
-                    ? 'Завантаження файла'
-                    : 'Обробка файла'
-                }
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={flow.upload.isPending ? percent : undefined}
-              >
-                <span
-                  style={{
-                    inlineSize: `${flow.upload.isPending && percent !== undefined ? percent : 25}%`,
-                  }}
-                />
-              </div>
-              <p className={styles.progressLabel}>
-                {flow.upload.isPending && flow.stage === 'uploading'
-                  ? percent !== undefined
-                    ? `Передано ${percent}%`
-                    : 'Передаємо файл…'
-                  : current?.status === 'queued'
-                    ? 'Очікуємо на обробку.'
-                    : 'Можна залишити сторінку відкритою.'}
-              </p>
-              {flow.upload.isPending && flow.stage === 'uploading' ? (
-                <p className={styles.helper}>
-                  {percent === 100
-                    ? 'Файл передано. Очікуємо підтвердження прийняття.'
-                    : 'Після завантаження файл ще потрібно обробити.'}
+            ) : null}
+            {disconnected || unknown ? (
+              <>
+                <p className={styles.notice}>
+                  <AlertCircle size={24} strokeWidth={1.75} aria-hidden="true" />{' '}
+                  {unknown
+                    ? 'Не отримали підтвердження прийняття. Перевірте стан, перш ніж надсилати файл знову.'
+                    : 'Не вдалося перевірити стан. Задача може продовжувати виконуватися.'}
                 </p>
-              ) : null}
-            </>
-          )}
-          {flow.access.isError ? (
-            <>
-              <p className={styles.helper} role="alert">
-                {accessMessage} Наявну задачу повторно не надсилаємо.
-              </p>
-              <div className={styles.actions}>{accessRecovery}</div>
-            </>
-          ) : null}
-        </Surface>
-      ) : null}
+                <div className={styles.actions}>
+                  <Button
+                    onClick={() => {
+                      if (flow.jobId) void flow.job.refetch();
+                      else void flow.access.refetch();
+                    }}
+                    disabled={flow.job.isFetching || flow.access.isFetching}
+                  >
+                    Перевірити ще раз
+                  </Button>
+                </div>
+                <p className={styles.helper}>Повторно файл не надсилаємо.</p>
+              </>
+            ) : inaccessible ? (
+              <>
+                <p role="alert" className={styles.warning}>
+                  Немає доступу до задачі або строк доступності завершився. Повторно файл не
+                  надсилаємо.
+                </p>
+                <div className={styles.actions}>
+                  <Button
+                    onClick={() => {
+                      void flow.job.refetch();
+                    }}
+                    disabled={flow.job.isFetching}
+                  >
+                    Перевірити стан ще раз
+                  </Button>
+                  <Button variant="secondary" onClick={flow.nextFile} disabled={nextDisabled}>
+                    Конвертувати інший файл
+                  </Button>
+                </div>
+              </>
+            ) : current?.status === 'completed' ? (
+              <ConversionResultPanel
+                key={current.id}
+                job={current}
+                gateway={gateway}
+                nextFile={flow.nextFile}
+                nextDisabled={nextDisabled}
+              />
+            ) : current?.status === 'failed' ? (
+              <>
+                <p role="alert" className={styles.danger}>
+                  {current.reason === 'invalid-file'
+                    ? 'Файл пошкоджений або не підтримує цю конвертацію. Виберіть інший файл.'
+                    : 'Конвертація завершилася помилкою. Спробуйте інший файл або повторіть пізніше.'}
+                </p>
+                <p className={styles.helper}>
+                  {flow.access.data?.kind === 'account'
+                    ? 'Виберіть інший файл або спробуйте пізніше.'
+                    : 'Остаточна помилка не витрачає гостьову спробу. Перевіряємо її доступність на сервері.'}
+                </p>
+                <div className={styles.actions}>
+                  {draft?.selection ? (
+                    <Button onClick={flow.retrySelection} disabled={nextDisabled}>
+                      Повторити конвертацію
+                    </Button>
+                  ) : null}
+                  <Button onClick={flow.nextFile} disabled={nextDisabled}>
+                    Вибрати інший файл
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.summary}>
+                  <Clock3 size={24} strokeWidth={1.75} aria-hidden="true" />
+                  <div className={styles.details}>
+                    <strong className={styles.name}>
+                      {current?.sourceName ?? flow.selectionName ?? 'Відновлюємо відому задачу'}
+                    </strong>
+                    {current ? (
+                      <p className={styles.metadata}>
+                        <span className={styles.format}>
+                          {current.sourceFormat.toUpperCase()} →{' '}
+                          {current.targetFormat.toUpperCase()}
+                        </span>
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                <div
+                  className={styles.bar}
+                  role="progressbar"
+                  aria-label={
+                    flow.stage === 'uploading' && flow.upload.isPending
+                      ? 'Завантаження файла'
+                      : 'Обробка файла'
+                  }
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={flow.upload.isPending ? percent : undefined}
+                >
+                  <span
+                    style={{
+                      inlineSize: `${flow.upload.isPending && percent !== undefined ? percent : 25}%`,
+                    }}
+                  />
+                </div>
+                <p className={styles.progressLabel}>
+                  {flow.upload.isPending && flow.stage === 'uploading'
+                    ? percent !== undefined
+                      ? `Передано ${percent}%`
+                      : 'Передаємо файл…'
+                    : current?.status === 'queued'
+                      ? 'Очікуємо на обробку.'
+                      : 'Можна залишити сторінку відкритою.'}
+                </p>
+                {flow.upload.isPending && flow.stage === 'uploading' ? (
+                  <p className={styles.helper}>
+                    {percent === 100
+                      ? 'Файл передано. Очікуємо підтвердження прийняття.'
+                      : 'Після завантаження файл ще потрібно обробити.'}
+                  </p>
+                ) : null}
+              </>
+            )}
+            {flow.access.isError ? (
+              <>
+                <p className={styles.helper} role="alert">
+                  {accessMessage} Наявну задачу повторно не надсилаємо.
+                </p>
+                <div className={styles.actions}>{accessRecovery}</div>
+              </>
+            ) : null}
+          </Surface>
+        ) : null}
+      </div>
       {flow.dialogOpen ? (
         <GuestAuthDialog
           jobId={flow.jobId}

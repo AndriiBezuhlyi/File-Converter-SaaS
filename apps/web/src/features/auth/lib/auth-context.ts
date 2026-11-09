@@ -4,6 +4,7 @@ import type { AuthGateway, AuthSession, PendingRegistration } from './auth-gatew
 interface AuthContextValue {
   gateway: AuthGateway | undefined;
   session: AuthSession | null;
+  sessionExpiresAt?: number | undefined;
   status: 'unavailable' | 'pending' | 'error' | 'ready';
   refreshSession: () => Promise<AuthSession>;
   pendingRegistration?: PendingRegistration | undefined;

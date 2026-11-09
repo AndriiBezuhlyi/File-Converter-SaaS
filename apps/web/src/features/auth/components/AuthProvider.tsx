@@ -63,6 +63,7 @@ function ConnectedAuthProvider({ gateway, children }: PropsWithChildren<{ gatewa
       value={{
         gateway,
         session: session.isError ? null : (session.data ?? null),
+        sessionExpiresAt: session.dataUpdatedAt ? gateway.sessionExpiresAt : undefined,
         status: session.isPending ? 'pending' : session.isError ? 'error' : 'ready',
         refreshSession,
         pendingRegistration:

@@ -9,6 +9,8 @@ import {
   type UploadProgress,
 } from './conversion-gateway';
 import type { FileSelection } from './file-selection';
+import { useConverterDraft } from './converter-draft-context';
+import { useAuth } from '../../auth/lib/auth-context';
 
 export function useConversionFlow(
   gateway: ConversionGateway,
@@ -16,6 +18,9 @@ export function useConversionFlow(
   onJobId: (id: string | null) => void,
 ) {
   const client = useQueryClient();
+  const { clear: clearDraft, bindJob, completeJob, isCurrent } = useConverterDraft() ?? {};
+  const { gateway: authGateway, session } = useAuth();
+  const expectedIdentity = session?.kind === 'authenticated' ? session.email : 'anonymous';
   const accessKey = ['converter', gateway.scope, 'access'] as const;
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [stage, setStage] = useState<'checking' | 'uploading'>('checking');
@@ -23,6 +28,8 @@ export function useConversionFlow(
   const [outcome, setOutcome] = useState<SubmissionOutcome | null>(null);
   const [dismissedId, setDismissedId] = useState<string | null>(null);
   const [selectionVersion, setSelectionVersion] = useState(0);
+  const [selectionName, setSelectionName] = useState<string | null>(null);
+  const attemptSelection = useRef<FileSelection | null>(null);
   const submitting = useRef(false);
   const attempt = useRef(0);
   const mounted = useRef(false);
@@ -34,6 +41,7 @@ export function useConversionFlow(
     return () => {
       mounted.current = false;
       uploadController.current?.abort();
+      attemptSelection.current = null;
     };
   }, []);
 
@@ -44,6 +52,13 @@ export function useConversionFlow(
     staleTime: 0,
   });
   const recoveredId = access.data?.jobId === dismissedId ? null : (access.data?.jobId ?? null);
+  useEffect(() => {
+    if (
+      access.error instanceof ConversionRequestError &&
+      ['guest-session-invalid', 'forbidden'].includes(access.error.kind)
+    )
+      clearDraft?.();
+  }, [access.error, clearDraft]);
   const jobId = isJobId(requestedId) ? requestedId : isJobId(recoveredId) ? recoveredId : null;
   useEffect(() => {
     if (jobId && !isJobId(requestedId)) onJobId(jobId);
@@ -72,6 +87,7 @@ export function useConversionFlow(
 
   useEffect(() => {
     const current = job.data;
+    if (current?.status === 'completed') completeJob?.(current.id);
     if (!current || !isTerminal(current) || terminalSeen.current === current.id) return;
     terminalSeen.current = current.id;
     // Eligibility is server state: success/failure never edits a local trial counter.
@@ -79,18 +95,35 @@ export function useConversionFlow(
     if (current.status === 'completed' && current.result.retention.kind === 'saved') {
       void client.invalidateQueries({ queryKey: ['files'] });
     }
-  }, [client, gateway.scope, job.data]);
+  }, [client, gateway.scope, job.data, completeJob]);
 
   const upload = useMutation({
     retry: false,
-    mutationFn: async (selection: FileSelection): Promise<SubmissionOutcome> => {
+    mutationFn: async (): Promise<SubmissionOutcome> => {
+      const selection = attemptSelection.current;
+      if (!selection) throw new Error('No active selection.');
       const currentAttempt = attempt.current;
+      if (authGateway) {
+        const checked = await client.fetchQuery({
+          queryKey: ['auth', authGateway.scope, 'session'],
+          queryFn: ({ signal }) => authGateway.readSession(signal),
+          staleTime: 0,
+        });
+        const identity = checked.kind === 'authenticated' ? checked.email : 'anonymous';
+        if (identity !== expectedIdentity) {
+          clearDraft?.();
+          throw new ConversionRequestError('forbidden');
+        }
+        if (!mounted.current || uploadController.current?.signal.aborted)
+          return { kind: 'unknown' };
+      }
       // Recheck before transmitting any file bytes; the backend still enforces the atomic reservation.
       const current = await client.fetchQuery({
         queryKey: accessKey,
         queryFn: ({ signal }) => gateway.readAccess(signal),
         staleTime: 0,
       });
+      if (!mounted.current || uploadController.current?.signal.aborted) return { kind: 'unknown' };
       if (current.kind === 'guest' && current.trial === 'consumed')
         return { kind: 'sign-in-required' };
       if (current.kind === 'guest' && current.trial === 'reserved') {
@@ -110,6 +143,10 @@ export function useConversionFlow(
           uploadController.current?.signal,
         );
         if (result.kind === 'accepted' && !isJobId(result.job.id)) return { kind: 'unknown' };
+        if (result.kind === 'accepted') {
+          bindJob?.(selection, result.job.id);
+          if (result.job.status === 'completed') completeJob?.(result.job.id);
+        }
         return result;
       } catch {
         // A lost POST response may conceal acceptance. Never replay it automatically.
@@ -130,10 +167,12 @@ export function useConversionFlow(
     onSettled: () => {
       submitting.current = false;
       uploadController.current = null;
+      attemptSelection.current = null;
     },
   });
 
   function submit(selection: FileSelection) {
+    if (isCurrent && !isCurrent(selection)) return;
     if (submitting.current || outcome?.kind === 'unknown' || (jobId && !isTerminal(job.data)))
       return;
     if (access.data?.kind === 'guest' && access.data.trial === 'consumed') {
@@ -146,10 +185,12 @@ export function useConversionFlow(
     setStage('checking');
     setProgress(null);
     setOutcome(null);
-    upload.mutate(selection);
+    attemptSelection.current = selection;
+    setSelectionName(selection.file.name);
+    upload.mutate();
   }
 
-  function nextFile() {
+  function nextFile(keepSelection = false) {
     if (access.data?.kind === 'guest' && access.data.trial === 'consumed') {
       setDialogOpen(true);
       return;
@@ -162,6 +203,7 @@ export function useConversionFlow(
     // Forget only the current view, not the server's quota or guest credential.
     setDismissedId(jobId);
     setSelectionVersion((version) => version + 1);
+    if (!keepSelection) clearDraft?.();
     onJobId(null);
     setOutcome(null);
     upload.reset();
@@ -176,9 +218,11 @@ export function useConversionFlow(
     stage,
     outcome,
     submit,
-    nextFile,
+    nextFile: () => nextFile(),
+    retrySelection: () => nextFile(true),
     dialogOpen,
     selectionVersion,
+    selectionName,
     closeDialog: () => setDialogOpen(false),
   };
 }

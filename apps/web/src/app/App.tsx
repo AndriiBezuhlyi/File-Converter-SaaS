@@ -12,6 +12,7 @@ import type { ApiKeyGateway } from '../features/api-keys/lib/api-key-gateway';
 import type { FilesGateway } from '../features/files/lib/files-gateway';
 import type { ConversionGateway } from '../features/converter/lib/conversion-gateway';
 import { RoutePreview } from '../pages/route-preview/RoutePreview';
+import { ConverterDraftProvider } from '../features/converter/components/ConverterDraftProvider';
 const AccountPage = lazy(() =>
   import('../pages/account/AccountPage').then((module) => ({ default: module.AccountPage })),
 );
@@ -34,60 +35,62 @@ export function App({
 }) {
   return (
     <AuthProvider gateway={authGateway}>
-      <Routes>
-        <Route element={<AppLayout />}>
-          <Route
-            index
-            element={
-              <ConverterPage
-                key={conversionGateway?.scope}
-                {...(conversionGateway ? { gateway: conversionGateway } : {})}
-              />
-            }
-          />
-          <Route path="/api-docs" element={<ApiDocsPage />} />
-          <Route
-            path="/account"
-            element={
-              <Suspense fallback={<p role="status">Відкриваємо профіль…</p>}>
-                <AccountPage
-                  key={accountGateway?.scope}
-                  gateway={accountGateway}
-                  keyGateway={apiKeyGateway}
-                />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/files"
-            element={
-              <Suspense fallback={<p role="status">Відкриваємо файли…</p>}>
-                <FilesPage
-                  key={accountGateway?.scope}
-                  gateway={filesGateway}
-                  settingsGateway={accountGateway}
-                />
-              </Suspense>
-            }
-          />
-          {authRoutes.map((route) => (
+      <ConverterDraftProvider>
+        <Routes>
+          <Route element={<AppLayout />}>
             <Route
-              key={route.kind}
-              path={route.path}
-              element={<AuthPage key={route.kind} kind={route.kind} />}
+              index
+              element={
+                <ConverterPage
+                  key={conversionGateway?.scope}
+                  {...(conversionGateway ? { gateway: conversionGateway } : {})}
+                />
+              }
             />
-          ))}
-          <Route
-            path="*"
-            element={
-              <RoutePreview
-                title="Сторінку не знайдено"
-                description="Перевірте адресу або поверніться до конвертера."
+            <Route path="/api-docs" element={<ApiDocsPage />} />
+            <Route
+              path="/account"
+              element={
+                <Suspense fallback={<p role="status">Відкриваємо профіль…</p>}>
+                  <AccountPage
+                    key={accountGateway?.scope}
+                    gateway={accountGateway}
+                    keyGateway={apiKeyGateway}
+                  />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/files"
+              element={
+                <Suspense fallback={<p role="status">Відкриваємо файли…</p>}>
+                  <FilesPage
+                    key={accountGateway?.scope}
+                    gateway={filesGateway}
+                    settingsGateway={accountGateway}
+                  />
+                </Suspense>
+              }
+            />
+            {authRoutes.map((route) => (
+              <Route
+                key={route.kind}
+                path={route.path}
+                element={<AuthPage key={route.kind} kind={route.kind} />}
               />
-            }
-          />
-        </Route>
-      </Routes>
+            ))}
+            <Route
+              path="*"
+              element={
+                <RoutePreview
+                  title="Сторінку не знайдено"
+                  description="Перевірте адресу або поверніться до конвертера."
+                />
+              }
+            />
+          </Route>
+        </Routes>
+      </ConverterDraftProvider>
     </AuthProvider>
   );
 }

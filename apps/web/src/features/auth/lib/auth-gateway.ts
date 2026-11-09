@@ -11,6 +11,7 @@ export interface Credentials {
 }
 export interface AuthGateway {
   readonly scope: string;
+  readonly sessionExpiresAt?: number | undefined;
   readSession(signal: AbortSignal): Promise<AuthSession>;
   register(credentials: Credentials): Promise<PendingRegistration | void>;
   readRegistrationStatus?(receipt: string, signal: AbortSignal): Promise<RegistrationStatus>;

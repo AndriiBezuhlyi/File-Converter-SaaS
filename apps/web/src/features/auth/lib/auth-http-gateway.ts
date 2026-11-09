@@ -18,6 +18,7 @@ const registrationStatusSchema: z.ZodType<components['schemas']['RegistrationSta
 });
 
 export function createAuthGateway(client: SessionClient): AuthGateway {
+  let sessionExpiresAt: number | undefined;
   async function run<T>(work: () => Promise<T>): Promise<T> {
     try {
       return await work();
@@ -41,6 +42,9 @@ export function createAuthGateway(client: SessionClient): AuthGateway {
   };
   return {
     scope: client.http.scope,
+    get sessionExpiresAt() {
+      return sessionExpiresAt;
+    },
     readSession: (signal) =>
       run(async () => {
         const session = await client.http.json({
@@ -48,6 +52,12 @@ export function createAuthGateway(client: SessionClient): AuthGateway {
           signal,
           decode: (value) => sessionSchema.parse(value),
         });
+        sessionExpiresAt =
+          session.kind === 'authenticated'
+            ? Number.isFinite(Date.parse(session.expiresAt))
+              ? Date.parse(session.expiresAt)
+              : 0
+            : undefined;
         return session.kind === 'authenticated'
           ? { kind: 'authenticated', email: session.user.email }
           : session;

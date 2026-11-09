@@ -10,6 +10,7 @@ import {
   type FileSelection,
 } from '../lib/file-selection';
 import styles from './FileSelector.module.scss';
+import { useConverterDraft } from '../lib/converter-draft-context';
 
 interface FileSelectorProps {
   onConvert?: ((selection: FileSelection) => void) | undefined;
@@ -30,7 +31,10 @@ export function FileSelector({
   const input = useRef<HTMLInputElement>(null);
   const picker = useRef<HTMLButtonElement>(null);
   const dragDepth = useRef(0);
-  const [selection, setSelection] = useState<FileSelection | null>(null);
+  const [localSelection, setLocalSelection] = useState<FileSelection | null>(null);
+  const draft = useConverterDraft();
+  const selection = draft ? draft.selection : localSelection;
+  const setSelection = draft ? draft.setSelection : setLocalSelection;
   const [error, setError] = useState('');
   const [dragging, setDragging] = useState(false);
   const [announcement, setAnnouncement] = useState('');
@@ -102,7 +106,11 @@ export function FileSelector({
   }
 
   return (
-    <Surface aria-labelledby={headingId}>
+    <Surface
+      aria-labelledby={headingId}
+      onPointerDownCapture={draft?.touch}
+      onKeyDownCapture={draft?.touch}
+    >
       <p className={styles.annotation}>{'{ Конвертер }'}</p>
       <h2 className={styles.heading} id={headingId}>
         Один файл. Інший формат.
@@ -243,6 +251,17 @@ export function FileSelector({
         <ArrowRight size={20} strokeWidth={1.75} aria-hidden="true" />
       </Button>
       <div className={styles.accessFeedback}>
+        {draft?.message ? (
+          <p className={styles.availability} role="status">
+            {draft.message}
+          </p>
+        ) : null}
+        {draft ? (
+          <p className={styles.availability}>
+            Вибір зберігається в цій вкладці до 30 хв бездіяльності. Після входу або виходу виберіть
+            файл знову.
+          </p>
+        ) : null}
         <p className={styles.availability} id={availabilityId}>
           {availability ?? 'Наразі доступний вибір файлу. Конвертація — незабаром.'}
         </p>
