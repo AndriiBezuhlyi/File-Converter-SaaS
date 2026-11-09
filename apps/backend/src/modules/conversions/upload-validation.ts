@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
-import { ConversionEngine, EngineFailure } from './conversion-engine.js';
+import { AnimatedImageFailure, ConversionEngine, EngineFailure } from './conversion-engine.js';
 import { AuthError } from '../auth/auth-error.js';
 import { readDocumentArchive } from './docx-validation.js';
 import { isDocumentSource, validateDocument } from './document-input.js';
@@ -102,6 +102,12 @@ export async function validateUpload(file: StagedUpload | undefined, body: unkno
     }
   } catch (error) {
     if (error instanceof AuthError) throw error;
+    if (error instanceof AnimatedImageFailure && ['gif', 'webp', 'avif'].includes(format))
+      throw new AuthError(
+        422,
+        `ANIMATED_${format.toUpperCase()}`,
+        'Animated images are unsupported.',
+      );
     throw new AuthError(
       422,
       'INVALID_FILE',

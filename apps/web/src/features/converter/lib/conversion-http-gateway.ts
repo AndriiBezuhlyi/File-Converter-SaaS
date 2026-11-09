@@ -152,6 +152,13 @@ export function createConversionGateway(
         return { kind: 'accepted', job: { ...job, sourceName: selection.file.name } };
       } catch (error) {
         if (error instanceof ApiRequestError) {
+          if (error.status === 422) {
+            if (error.code === 'ANIMATED_GIF') return { kind: 'rejected', reason: 'animated-gif' };
+            if (error.code === 'ANIMATED_WEBP')
+              return { kind: 'rejected', reason: 'animated-webp' };
+            if (error.code === 'ANIMATED_AVIF')
+              return { kind: 'rejected', reason: 'animated-avif' };
+          }
           if (error.status === 401) return { kind: 'sign-in-required' };
           if (error.status === 429) return { kind: 'rejected', reason: 'rate-limit' };
           if (

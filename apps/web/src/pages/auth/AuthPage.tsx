@@ -96,7 +96,7 @@ export function AuthPage({ kind }: { kind: AuthPageKind }) {
           onTokenUsed={consumeToken}
         />
       )}
-      {kind !== 'login' && kind !== 'register' ? (
+      {kind !== 'login' && kind !== 'register' && kind !== 'verify-email' ? (
         <Link to={authHref('/login', returnTo)}>До входу</Link>
       ) : null}
       <div className={styles.notice}>

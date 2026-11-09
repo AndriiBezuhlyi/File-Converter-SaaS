@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowLeftRight, ArrowRight } from 'lucide-react';
+import { ArrowDown, ArrowRight } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 import { ConverterWorkspace } from '../../features/converter/components/ConverterWorkspace';
 import type { ConversionGateway } from '../../features/converter/lib/conversion-gateway';
@@ -24,26 +24,17 @@ export function ConverterPage({ gateway }: { gateway?: ConversionGateway } = {})
         <div>
           <h1 className={styles.heading}>Конвертуй файли без зайвих труднощів</h1>
           <p className={styles.intro}>Зображення та документи — у потрібному форматі.</p>
-          <p className={styles.formats}>
-            <span className="sr-only">
-              Зображення у JPG, PNG, WebP, AVIF; DOCX, ODT, XLSX, PPTX, CSV, TXT у PDF.
-            </span>
-            <span className={styles.jpg} aria-hidden="true">
-              JPG
-            </span>
-            <ArrowLeftRight size={20} strokeWidth={1.5} aria-hidden="true" />
-            <span className={styles.png} aria-hidden="true">
-              PNG
-            </span>
-            <span aria-hidden="true">·</span>
-            <span className={styles.docx} aria-hidden="true">
-              DOCX
-            </span>
-            <ArrowRight size={20} strokeWidth={1.5} aria-hidden="true" />
-            <span className={styles.pdf} aria-hidden="true">
-              PDF
-            </span>
-          </p>
+          <div className={styles.formats}>
+            <p>
+              <span className={styles.png}>Статичні зображення</span>{' '}
+              <ArrowRight size={20} strokeWidth={1.5} aria-hidden="true" /> JPG, PNG, WebP, AVIF
+            </p>
+            <p>
+              <span className={styles.docx}>Документи</span>{' '}
+              <ArrowRight size={20} strokeWidth={1.5} aria-hidden="true" />{' '}
+              <span className={styles.pdf}>PDF</span>
+            </p>
+          </div>
           <a className={styles.anchor} href="#how-it-works">
             Як це працює <ArrowDown size={20} strokeWidth={1.75} aria-hidden="true" />
           </a>

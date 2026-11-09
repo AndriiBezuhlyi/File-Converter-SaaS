@@ -4,6 +4,26 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-09 - Post-testing UI refinements
+
+### Changes
+
+- Replaced the outdated Hero pair examples with two compact output groups derived from implemented capabilities. Updated the corresponding DESIGN reference; no Phase 7 or improvement-plan changes.
+- Applied the approved account-email reassurance to registration and the guest authentication prompt. Existing delivery code sends account verification/change and password recovery emails; no promotional mail behavior was added.
+- Moved verification sign-in navigation into the verification component so successful confirmation exposes only one local sign-in action, while converter navigation and pending/error recovery remain available.
+- Removed the two requested converter helper paragraphs and reduced workspace/dropzone/target spacing without changing selection persistence, retention, progress or controls.
+- Preserved the sandbox boundary while carrying a fixed animation classification through validation, HTTP error codes and Ukrainian UI copy. Invalid files retain their existing generic rejection; conversion directions and first-frame rejection remain unchanged. Documented the additive error codes in OpenAPI and regenerated types.
+- Added six focused animation-classification tests in a separate file; existing tests are unchanged.
+
+### Verification and limitations
+
+- Passed full workspace typecheck/build/lint, 207 frontend tests, 83 existing backend unit tests and six new animation tests. Contract generation check and changed-file formatting checks passed.
+- Passed 19 existing Chromium E2E tests covering drafts, progress, retries, downloads, guest-result ownership and registration verification. Used an external config only to reuse the running local fixture server and retain artifacts outside source.
+- Additional Playwright checks passed at 1366x768, 390x844 and 683x384: no horizontal overflow, usable selection/target/removal, correct registration-only copy and no duplicate verification navigation or page errors. Desktop converter action ends at approximately 688px even with the fixture banner; screenshots visually inspected. The narrow viewport checks reflow, not native browser zoom.
+- Real HTTP gateway with controlled responses renders each exact animation message and preserves generic INVALID_FILE without replay. Generated GIF/WebP fixtures prove static acceptance and animation classification; AVIF sequence-brand and malformed-input checks passed.
+- Chrome DevTools could not attach because its browser profile was already running; used existing Playwright without restarting that session. Full live Linux sandbox/API/storage/SMTP integration and native 200% zoom were not exercised. Build retains a large-chunk advisory.
+- Retained scripts and screenshots in sibling `Converter-artifacts/ui-refinement/`; these contain synthetic QA evidence, not unintegrated product work. No additional worktrees or branches.
+
 ## 2026-11-09 - Phase 6 document format expansion (IMP-06.03/06.04)
 
 ### Changes

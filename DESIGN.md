@@ -111,7 +111,7 @@ Use Lucide React icons with 1.5–2px strokes and 20–24px visual sizes. Give i
 The composition below is the homepage reference. Guest eligibility changes the helper copy and authentication trigger, not the visual system.
 
 1. **Header:** `Flux Converter`, `Конвертер`, `API`, `Увійти`. Signed-in navigation exposes `Мої файли` and `Профіль`.
-2. **Intro:** `Конвертуй файли без зайвих труднощів`. Supporting copy: `Зображення та документи — у потрібному форматі.` Show `JPG ↔ PNG` and `DOCX → PDF` as colored text.
+2. **Intro:** `Конвертуй файли без зайвих труднощів`. Supporting copy: `Зображення та документи — у потрібному форматі.` Show two compact rows: `Статичні зображення → JPG, PNG, WebP, AVIF` and `Документи → PDF`, using existing format colors. These summarize output groups; the source-dependent selector remains authoritative for individual directions.
 3. **Converter:** `Перетягніть файл сюди`, `Вибрати файл`, `JPG, PNG або DOCX · до 20 МБ`, target selector, and `Конвертувати`. Eligible guests see `1 файл безкоштовно без реєстрації`.
 4. **Instructions:** `{ Як це працює }` with three open steps: choose a file, select a format and convert, download. The first conversion does not require sign-in.
 5. **Retention note and footer:** explain temporary availability; repeat useful navigation only.

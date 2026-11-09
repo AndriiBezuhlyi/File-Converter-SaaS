@@ -38,7 +38,16 @@ export type SubmissionOutcome =
   | { kind: 'accepted'; job: ConversionJob }
   | { kind: 'active'; jobId: string }
   | { kind: 'sign-in-required' }
-  | { kind: 'rejected'; reason: 'invalid-file' | 'rate-limit' | 'unavailable' }
+  | {
+      kind: 'rejected';
+      reason:
+        | 'invalid-file'
+        | 'animated-gif'
+        | 'animated-webp'
+        | 'animated-avif'
+        | 'rate-limit'
+        | 'unavailable';
+    }
   | { kind: 'unknown' };
 
 export class ConversionRequestError extends Error {

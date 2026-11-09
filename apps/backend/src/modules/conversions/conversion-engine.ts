@@ -7,6 +7,7 @@ import type { SourceFormat, TargetFormat } from './conversion-policy.js';
 import { isDocumentSource } from './document-input.js';
 
 export class EngineFailure extends Error {}
+export class AnimatedImageFailure extends EngineFailure {}
 export const ENGINE_TIMEOUT_MS = 60_000;
 export const MAX_RESULT_BYTES = 40_000_000;
 
@@ -114,7 +115,9 @@ export class ConversionEngine {
   async validateImage(input: string, source: SourceFormat): Promise<void> {
     const args = sandboxArguments(input, source, 'png');
     args.push('--validate-only');
-    if ((await this.run(args)).toString() !== 'valid') throw new EngineFailure('Invalid image.');
+    const result = (await this.run(args)).toString();
+    if (result === 'animated') throw new AnimatedImageFailure('Animated image.');
+    if (result !== 'valid') throw new EngineFailure('Invalid image.');
   }
   async check() {
     const args = sandboxArguments('/dev/null', 'jpg', 'png');

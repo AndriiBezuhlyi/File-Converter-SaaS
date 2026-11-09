@@ -151,7 +151,9 @@ export function CredentialsForm({
         </Button>
       </fieldset>
       {mode === 'register' ? (
-        <p className={styles.helper}>Без спаму. Писатимемо лише щодо вашого акаунту.</p>
+        <p className={styles.helper}>
+          Без спаму — лише листи, потрібні для вашого акаунта: підтвердження, вхід і безпека.
+        </p>
       ) : null}
       {action.error ? (
         <div className={styles.feedback}>

@@ -107,6 +107,7 @@ export function FileSelector({
 
   return (
     <Surface
+      className={styles.workspace}
       aria-labelledby={headingId}
       onPointerDownCapture={draft?.touch}
       onKeyDownCapture={draft?.touch}
@@ -259,13 +260,7 @@ export function FileSelector({
             {draft.message}
           </p>
         ) : null}
-        {draft ? (
-          <p className={styles.availability}>
-            Вибір зберігається в цій вкладці до 30 хв бездіяльності. Після входу або виходу виберіть
-            файл знову.
-          </p>
-        ) : null}
-        <p className={styles.availability} id={availabilityId}>
+        <p className={styles.availability} id={availabilityId} hidden={availability === ''}>
           {availability ?? 'Наразі доступний вибір файлу. Конвертація — незабаром.'}
         </p>
         {recovery}

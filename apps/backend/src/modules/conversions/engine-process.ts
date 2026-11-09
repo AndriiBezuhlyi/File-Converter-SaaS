@@ -2,7 +2,7 @@
 import { spawn } from 'node:child_process';
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { CONVERSION_DIRECTIONS, MAX_IMAGE_PIXELS, type SourceFormat } from './conversion-policy.js';
-import { validateImageInput } from './image-input.js';
+import { AnimatedImageError, validateImageInput } from './image-input.js';
 import {
   csvSpreadsheet,
   isDocumentSource,
@@ -103,7 +103,13 @@ class LibreOfficeDocumentConverter implements Converter {
 async function main() {
   const [source, target] = process.argv.slice(2);
   if (process.argv[4] === '--validate-only') {
-    await validateImageInput('/input', source!);
+    try {
+      await validateImageInput('/input', source!);
+    } catch (error) {
+      if (!(error instanceof AnimatedImageError)) throw error;
+      process.stdout.write('animated');
+      return;
+    }
     process.stdout.write('valid');
     return;
   }

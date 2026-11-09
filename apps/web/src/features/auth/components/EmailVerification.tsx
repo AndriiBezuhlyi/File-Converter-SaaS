@@ -78,6 +78,7 @@ export function EmailVerification({
         </p>
       ) : null}
       <EmailRequestForm purpose="verification" />
+      <Link to={authHref('/login', returnTo)}>До входу</Link>
     </div>
   );
 }
