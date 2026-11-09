@@ -675,7 +675,7 @@ export interface components {
             /** @enum {string} */
             status: "queued";
             /** @enum {string} */
-            sourceFormat: "jpg" | "png" | "webp" | "avif" | "gif" | "svg" | "docx";
+            sourceFormat: "jpg" | "png" | "webp" | "avif" | "gif" | "svg" | "docx" | "odt" | "xlsx" | "pptx" | "csv" | "txt";
             /** @enum {string} */
             targetFormat: "jpg" | "png" | "webp" | "avif" | "pdf";
             /** Format: date-time */
@@ -689,7 +689,7 @@ export interface components {
             /** @enum {string} */
             status: "queued" | "processing" | "completed" | "failed";
             /** @enum {string} */
-            sourceFormat: "jpg" | "png" | "webp" | "avif" | "gif" | "svg" | "docx";
+            sourceFormat: "jpg" | "png" | "webp" | "avif" | "gif" | "svg" | "docx" | "odt" | "xlsx" | "pptx" | "csv" | "txt";
             /** @enum {string} */
             targetFormat: "jpg" | "png" | "webp" | "avif" | "pdf";
             /** Format: date-time */
@@ -744,6 +744,11 @@ export interface components {
                 gif: ("jpg" | "png" | "webp" | "avif")[];
                 svg: ("jpg" | "png" | "webp" | "avif")[];
                 docx: "pdf"[];
+                odt: "pdf"[];
+                xlsx: "pdf"[];
+                pptx: "pdf"[];
+                csv: "pdf"[];
+                txt: "pdf"[];
             };
         };
         SavedFile: {

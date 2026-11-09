@@ -2,7 +2,8 @@ import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { ConversionEngine, EngineFailure } from './conversion-engine.js';
 import { AuthError } from '../auth/auth-error.js';
-import { validateDocx } from './docx-validation.js';
+import { readDocumentArchive } from './docx-validation.js';
+import { isDocumentSource, validateDocument } from './document-input.js';
 import {
   CONVERSION_DIRECTIONS,
   MAX_IMAGE_PIXELS,
@@ -43,15 +44,27 @@ export async function validateUpload(file: StagedUpload | undefined, body: unkno
   else if (bytes.toString('ascii', 0, 6) === 'GIF87a' || bytes.toString('ascii', 0, 6) === 'GIF89a')
     format = 'gif';
   else if (bytes.toString('ascii', 4, 8) === 'ftyp') format = 'avif';
+  else if (bytes.length >= 22 && bytes.readUInt32LE(0) === 0x04034b50) {
+    try {
+      const entries = readDocumentArchive(bytes);
+      if (entries.has('word/document.xml')) format = 'docx';
+      else if (entries.has('xl/workbook.xml')) format = 'xlsx';
+      else if (entries.has('ppt/presentation.xml')) format = 'pptx';
+      else if (entries.has('mimetype')) format = 'odt';
+      else throw new Error('Unknown archive.');
+    } catch {
+      throw new AuthError(422, 'INVALID_FILE', 'The document archive is malformed or unsupported.');
+    }
+  } else if (/\.(?:csv|txt)$/i.test(file.originalname))
+    format = /\.csv$/i.test(file.originalname) ? 'csv' : 'txt';
   else if (
     bytes.toString('utf8', 0, 256).trimStart().startsWith('<') ||
     bytes.subarray(0, 3).equals(Buffer.from([239, 187, 191]))
   )
     format = 'svg';
-  else if (bytes.length >= 22 && bytes.readUInt32LE(0) === 0x04034b50) format = 'docx';
   else throw new AuthError(415, 'UNSUPPORTED_FORMAT', 'Unsupported input format.');
   try {
-    if (format === 'docx') validateDocx(bytes);
+    if (isDocumentSource(format)) validateDocument(bytes, format);
     else if (format !== 'jpg' && format !== 'png') {
       if (validatingImage)
         throw new AuthError(

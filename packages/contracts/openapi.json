@@ -2819,7 +2819,20 @@
           },
           "sourceFormat": {
             "type": "string",
-            "enum": ["jpg", "png", "webp", "avif", "gif", "svg", "docx"]
+            "enum": [
+              "jpg",
+              "png",
+              "webp",
+              "avif",
+              "gif",
+              "svg",
+              "docx",
+              "odt",
+              "xlsx",
+              "pptx",
+              "csv",
+              "txt"
+            ]
           },
           "targetFormat": {
             "type": "string",
@@ -2861,7 +2874,20 @@
           },
           "sourceFormat": {
             "type": "string",
-            "enum": ["jpg", "png", "webp", "avif", "gif", "svg", "docx"]
+            "enum": [
+              "jpg",
+              "png",
+              "webp",
+              "avif",
+              "gif",
+              "svg",
+              "docx",
+              "odt",
+              "xlsx",
+              "pptx",
+              "csv",
+              "txt"
+            ]
           },
           "targetFormat": {
             "type": "string",
@@ -2986,7 +3012,20 @@
           "directions": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["jpg", "png", "webp", "avif", "gif", "svg", "docx"],
+            "required": [
+              "jpg",
+              "png",
+              "webp",
+              "avif",
+              "gif",
+              "svg",
+              "docx",
+              "odt",
+              "xlsx",
+              "pptx",
+              "csv",
+              "txt"
+            ],
             "properties": {
               "jpg": {
                 "type": "array",
@@ -3031,6 +3070,41 @@
                 }
               },
               "docx": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["pdf"]
+                }
+              },
+              "odt": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["pdf"]
+                }
+              },
+              "xlsx": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["pdf"]
+                }
+              },
+              "pptx": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["pdf"]
+                }
+              },
+              "csv": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["pdf"]
+                }
+              },
+              "txt": {
                 "type": "array",
                 "items": {
                   "type": "string",

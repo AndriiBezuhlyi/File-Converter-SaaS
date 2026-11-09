@@ -15,7 +15,7 @@ describe('file-selection boundaries', () => {
 
   it('rejects an empty file, extensionless file, and unsupported input formats', () => {
     expect(validateFileSelection([new File([], 'empty.jpg')]).ok).toBe(false);
-    for (const name of ['image', 'file.pdf', 'file.txt', 'image.png.exe']) {
+    for (const name of ['image', 'file.pdf', 'image.png.exe']) {
       expect(validateFileSelection([new File(['x'], name, { type: 'image/png' })]).ok).toBe(false);
     }
   });

@@ -4,10 +4,11 @@ import { MAX_ARCHIVE_BYTES, MAX_ARCHIVE_ENTRIES } from './conversion-policy.js';
 
 // Deliberately accept a constrained OPC ZIP subset. No ZIP64, encryption, nested archives,
 // macros, embedded programs or external relationships reach the document worker.
-export function validateDocx(bytes: Buffer): void {
+export function readDocumentArchive(bytes: Buffer): Map<string, Buffer> {
   const invalid = () => {
     throw new Error('Invalid document archive.');
   };
+  if (bytes.length < 22) invalid();
   let end = bytes.length - 22;
   const minimum = Math.max(0, end - 65_535);
   while (end >= minimum && bytes.readUInt32LE(end) !== 0x06054b50) end--;
@@ -27,7 +28,7 @@ export function validateDocx(bytes: Buffer): void {
   let expanded = 0;
   const names = new Set<string>();
   const ranges: [number, number][] = [];
-  const xml = new Map<string, string>();
+  const entries = new Map<string, Buffer>();
   for (let index = 0; index < count; index++) {
     if (cursor + 46 > end || bytes.readUInt32LE(cursor) !== 0x02014b50) invalid();
     const flags = bytes.readUInt16LE(cursor + 8);
@@ -104,19 +105,28 @@ export function validateDocx(bytes: Buffer): void {
         /\bTarget\s*=\s*["'][^"']*(?:&#|:\/\/|file:|\\\\)/i.test(text)
       )
         invalid();
-      xml.set(name, text);
     }
+    entries.set(name, data);
     cursor = next;
   }
+  if (cursor !== end) invalid();
+  return entries;
+}
+
+export function validateDocx(bytes: Buffer): void {
+  const entries = readDocumentArchive(bytes);
   if (
-    cursor !== end ||
-    !xml
+    !entries
       .get('[Content_Types].xml')
+      ?.toString('utf8')
       ?.includes(
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml',
       ) ||
-    !xml.get('_rels/.rels')?.includes('officeDocument') ||
-    !xml.get('word/document.xml')?.match(/<(?:\w+:)?document[\s>]/)
+    !entries.get('_rels/.rels')?.toString('utf8').includes('officeDocument') ||
+    !entries
+      .get('word/document.xml')
+      ?.toString('utf8')
+      .match(/<(?:\w+:)?document[\s>]/)
   )
-    invalid();
+    throw new Error('Invalid document archive.');
 }

@@ -10,7 +10,20 @@ import {
 
 const summary = z.object({
   id: z.string().uuid(),
-  sourceFormat: z.enum(['jpg', 'png', 'webp', 'avif', 'gif', 'svg', 'docx']),
+  sourceFormat: z.enum([
+    'jpg',
+    'png',
+    'webp',
+    'avif',
+    'gif',
+    'svg',
+    'docx',
+    'odt',
+    'xlsx',
+    'pptx',
+    'csv',
+    'txt',
+  ]),
   targetFormat: z.enum(['jpg', 'png', 'webp', 'avif', 'pdf']),
   createdAt: z.string(),
   saveResult: z.boolean(),

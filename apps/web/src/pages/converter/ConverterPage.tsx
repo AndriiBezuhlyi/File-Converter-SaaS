@@ -25,7 +25,9 @@ export function ConverterPage({ gateway }: { gateway?: ConversionGateway } = {})
           <h1 className={styles.heading}>Конвертуй файли без зайвих труднощів</h1>
           <p className={styles.intro}>Зображення та документи — у потрібному форматі.</p>
           <p className={styles.formats}>
-            <span className="sr-only">JPG у PNG та PNG у JPG; DOCX у PDF.</span>
+            <span className="sr-only">
+              Зображення у JPG, PNG, WebP, AVIF; DOCX, ODT, XLSX, PPTX, CSV, TXT у PDF.
+            </span>
             <span className={styles.jpg} aria-hidden="true">
               JPG
             </span>

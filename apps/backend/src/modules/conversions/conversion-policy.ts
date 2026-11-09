@@ -10,6 +10,11 @@ export const CONVERSION_DIRECTIONS = {
   gif: ['jpg', 'png', 'webp', 'avif'],
   svg: ['jpg', 'png', 'webp', 'avif'],
   docx: ['pdf'],
+  odt: ['pdf'],
+  xlsx: ['pdf'],
+  pptx: ['pdf'],
+  csv: ['pdf'],
+  txt: ['pdf'],
 } as const;
 export type SourceFormat = keyof typeof CONVERSION_DIRECTIONS;
 export type TargetFormat = 'jpg' | 'png' | 'webp' | 'avif' | 'pdf';
@@ -21,4 +26,9 @@ export const INPUT_MIME = {
   gif: 'image/gif',
   svg: 'image/svg+xml',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  odt: 'application/vnd.oasis.opendocument.text',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  csv: 'text/csv',
+  txt: 'text/plain',
 } as const;

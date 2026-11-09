@@ -1,9 +1,21 @@
-export type SourceFormat = 'jpg' | 'png' | 'webp' | 'avif' | 'gif' | 'svg' | 'docx';
+export type SourceFormat =
+  | 'jpg'
+  | 'png'
+  | 'webp'
+  | 'avif'
+  | 'gif'
+  | 'svg'
+  | 'docx'
+  | 'odt'
+  | 'xlsx'
+  | 'pptx'
+  | 'csv'
+  | 'txt';
 export type TargetFormat = 'jpg' | 'png' | 'webp' | 'avif' | 'pdf';
 
 // Local UX limit in decimal MB; the future server capabilities remain authoritative.
 export const MAX_FILE_SIZE_BYTES = 20_000_000;
-export const FILE_ACCEPT = '.jpg,.jpeg,.png,.webp,.avif,.gif,.svg,.docx';
+export const FILE_ACCEPT = '.jpg,.jpeg,.png,.webp,.avif,.gif,.svg,.docx,.odt,.xlsx,.pptx,.csv,.txt';
 
 const targets: Record<SourceFormat, readonly TargetFormat[]> = {
   jpg: ['png', 'webp', 'avif'],
@@ -13,6 +25,11 @@ const targets: Record<SourceFormat, readonly TargetFormat[]> = {
   gif: ['jpg', 'png', 'webp', 'avif'],
   svg: ['jpg', 'png', 'webp', 'avif'],
   docx: ['pdf'],
+  odt: ['pdf'],
+  xlsx: ['pdf'],
+  pptx: ['pdf'],
+  csv: ['pdf'],
+  txt: ['pdf'],
 };
 
 export interface FileSelection {
@@ -39,7 +56,8 @@ export function validateFileSelection(files: readonly File[]): SelectionResult {
   if (!file.name.includes('.') || !sourceFormat || !Object.hasOwn(targets, sourceFormat)) {
     return {
       ok: false,
-      error: 'Цей формат не підтримується. Виберіть JPG, PNG, WebP, AVIF, GIF, SVG або DOCX.',
+      error:
+        'Цей формат не підтримується. Виберіть JPG, PNG, WebP, AVIF, GIF, SVG, DOCX, ODT, XLSX, PPTX, CSV або TXT.',
     };
   }
   return {

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import type { SourceFormat, TargetFormat } from './conversion-policy.js';
+import { isDocumentSource } from './document-input.js';
 
 export class EngineFailure extends Error {}
 export const ENGINE_TIMEOUT_MS = 60_000;
@@ -76,14 +77,12 @@ export function sandboxArguments(input: string, source: SourceFormat, target: Ta
     '--ro-bind',
     fileURLToPath(new URL('./conversion-policy.js', import.meta.url)),
     '/app/conversion-policy.js',
-    ...['image-input.js', 'svg-validation.js'].flatMap((name) => [
-      '--ro-bind',
-      fileURLToPath(new URL(`./${name}`, import.meta.url)),
-      `/app/${name}`,
-    ]),
+    ...['image-input.js', 'svg-validation.js', 'document-input.js', 'docx-validation.js'].flatMap(
+      (name) => ['--ro-bind', fileURLToPath(new URL(`./${name}`, import.meta.url)), `/app/${name}`],
+    ),
     '--ro-bind',
     input,
-    source === 'docx' ? '/input.docx' : '/input',
+    isDocumentSource(source) ? `/input.${source}` : '/input',
     '--remount-ro',
     '/dev',
     '--remount-ro',
@@ -123,7 +122,7 @@ export class ConversionEngine {
       -3,
       3,
       '-e',
-      "require('node:fs').accessSync('/usr/lib/libreoffice/program/soffice.bin', 1); require('node:module').createRequire('/app/engine-process.js')('sharp'); process.stdout.write('ready')",
+      "const fs=require('node:fs');fs.accessSync('/usr/lib/libreoffice/program/soffice.bin',1);for(const name of ['writer','calc','impress'])fs.accessSync('/etc/libreoffice/registry/'+name+'.xcd');require('node:module').createRequire('/app/engine-process.js')('sharp');process.stdout.write('ready')",
     );
     if ((await this.run(args)).toString() !== 'ready') throw new Error('Sandbox unavailable.');
   }

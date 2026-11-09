@@ -45,7 +45,7 @@ export function FileSelector({
   const availabilityId = `${id}-availability`;
   const descriptions = [hintId, error ? errorId : ''].filter(Boolean).join(' ');
   const availableTargets = selection ? getTargetFormats(selection.sourceFormat) : [];
-  const FileIcon = selection?.sourceFormat === 'docx' ? FileText : FileImage;
+  const FileIcon = availableTargets.includes('pdf') ? FileText : FileImage;
 
   useEffect(() => {
     function preventFileNavigation(event: globalThis.DragEvent) {
@@ -188,8 +188,10 @@ export function FileSelector({
           </>
         )}
         <p className={styles.hint} id={hintId}>
-          JPG, PNG, WebP, AVIF, GIF, SVG або DOCX · до 20 МБ. Лише статичні зображення; SVG — прості
-          фігури без тексту, стилів і зовнішніх ресурсів.
+          JPG, PNG, WebP, AVIF, GIF, SVG, DOCX, ODT, XLSX, PPTX, CSV або TXT · до 20 МБ. Лише
+          статичні зображення; SVG — прості фігури без тексту, стилів і зовнішніх ресурсів.
+          Документи → PDF. CSV — UTF-8, коми, усі клітинки як текст; TXT — UTF-8. Зовнішні ресурси й
+          макроси заборонені.
         </p>
         <Button
           ref={picker}

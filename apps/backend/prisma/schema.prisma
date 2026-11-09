@@ -30,6 +30,11 @@ enum FileFormat {
   avif
   gif
   svg
+  odt
+  xlsx
+  pptx
+  csv
+  txt
 }
 
 enum FilePurpose {

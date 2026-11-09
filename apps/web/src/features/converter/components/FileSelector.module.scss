@@ -89,7 +89,12 @@
 .png {
   color: var(--color-format-png);
 }
-.docx {
+.docx,
+.odt,
+.xlsx,
+.pptx,
+.csv,
+.txt {
   color: var(--color-format-docx);
 }
 .target {
