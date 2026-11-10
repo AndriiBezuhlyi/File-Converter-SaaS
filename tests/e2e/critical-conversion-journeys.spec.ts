@@ -129,9 +129,11 @@ test('guest signs in after the free conversion and can submit another file', asy
   await expect(page.getByRole('heading', { name: 'Файл готовий' })).toBeVisible();
   await expect(page.getByText('Гостьовий результат не зберігається в акаунті.')).toBeVisible();
   await page.getByRole('button', { name: 'Конвертувати інший файл' }).click();
+  await expect(page.getByRole('button', { name: 'Вибрати файл', exact: true })).toBeEnabled();
+  await expect(page.getByLabel('Конвертувати у')).toBeDisabled();
   await expect(
-    page.getByText('Файл буде оброблено відповідно до налаштувань на момент прийняття.'),
-  ).toBeVisible();
+    page.getByText('1 файл безкоштовно без реєстрації', { exact: true }),
+  ).not.toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   await selectFile(page, { ...conversions[0], sourceName: 'account-source.jpg' });

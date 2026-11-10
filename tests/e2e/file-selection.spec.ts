@@ -46,7 +46,7 @@ test('keyboard picker selects, replaces, and removes a file without sending it t
   });
   await expect(page.getByText('sample.png', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Конвертувати у')).toHaveValue('jpg');
-  await expect(page.getByRole('option')).toHaveCount(1);
+  await expect(page.getByRole('option')).toHaveText(['JPG', 'WEBP', 'AVIF']);
   await page.getByLabel('Файл для конвертації').setInputFiles({
     name: 'report.docx',
     mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -54,7 +54,7 @@ test('keyboard picker selects, replaces, and removes a file without sending it t
   });
   await expect(page.getByLabel('Конвертувати у')).toHaveValue('pdf');
   await expect(page.getByText('sample.png', { exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Конвертувати', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Конвертувати', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Прибрати файл' }).click();
   await expect(page.getByRole('button', { name: 'Вибрати файл' })).toBeFocused();
   await expect(page.getByLabel('Конвертувати у')).toBeDisabled();

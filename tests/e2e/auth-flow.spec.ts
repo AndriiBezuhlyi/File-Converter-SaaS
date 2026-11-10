@@ -116,7 +116,9 @@ test('registration validates confirmation, verification is explicit, then sign-i
   await page.getByRole('button', { name: 'Підтвердити пошту' }).click();
   await expect(page.getByText(/Пошту підтверджено/)).toBeVisible();
   await counters(page, { verify: 1 });
-  await page.getByRole('link', { name: 'До входу', exact: true }).click();
+  const signIn = page.getByRole('main').getByRole('link', { name: 'Увійти', exact: true });
+  await expect(signIn).toHaveAttribute('href', '#/login');
+  await signIn.click();
   await fill(page);
   await page.getByRole('form', { name: 'Увійти', exact: true }).evaluate((element) => {
     const form = element as HTMLFormElement;

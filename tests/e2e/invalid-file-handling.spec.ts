@@ -49,7 +49,7 @@ test('unsupported format shows a clear error and accepts another file', async ({
   });
 
   await expect(page.getByRole('alert')).toContainText(
-    'Цей формат не підтримується. Виберіть JPG, PNG або DOCX.',
+    'Цей формат не підтримується. Виберіть JPG, PNG, WebP, AVIF, GIF, SVG, DOCX, ODT, XLSX, PPTX, CSV або TXT.',
   );
   await expect(page.getByLabel('Файл для конвертації')).toHaveAttribute('aria-invalid', 'true');
   await expect(page.getByRole('button', { name: 'Конвертувати', exact: true })).toBeDisabled();

@@ -73,7 +73,11 @@ test('registration reassurance is readable on mobile and new-password paste keep
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/test-fixtures/auth/#/register');
-  await expect(page.getByText('Без спаму. Писатимемо лише щодо вашого акаунту.')).toBeVisible();
+  await expect(
+    page.getByText(
+      'Без спаму — лише листи, потрібні для вашого акаунта: підтвердження, вхід і безпека.',
+    ),
+  ).toBeVisible();
   const password = page.getByLabel('Пароль', { exact: true });
   const confirmation = page.getByLabel('Повторіть пароль', { exact: true });
   await expect(password).toHaveAttribute('autocomplete', 'new-password');

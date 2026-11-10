@@ -100,6 +100,7 @@ async function server(context: BrowserContext) {
   return state;
 }
 async function select(page: Page) {
+  await expect(page.getByLabel('Файл для конвертації')).toBeEnabled();
   await page.getByLabel('Файл для конвертації').setInputFiles({
     name: 'owned-draft.jpg',
     mimeType: 'image/jpeg',
