@@ -2,10 +2,10 @@ import { render, screen, within } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import { ApiDocsPage } from './ApiDocsPage';
 
-it('identifies the pre-launch contract and documents all seven agreed public operations', () => {
+it('identifies the implemented contract and documents all seven agreed public operations', () => {
   render(<ApiDocsPage />);
   expect(screen.getByRole('note', { name: 'Доступність API' })).toHaveTextContent(
-    'API ще готується.',
+    'Контракт реалізованого API.',
   );
   const operations = screen
     .getAllByRole('heading', { level: 3 })
@@ -41,7 +41,7 @@ it('uses placeholder credentials, multipart fields, and the documented response/
   expect(create).not.toContain('Content-Type:');
   expect(
     JSON.parse(screen.getByRole('region', { name: 'Код: JSON · 202 Accepted' }).textContent),
-  ).toMatchObject({ status: 'queued', id: 'conversion_123' });
+  ).toMatchObject({ status: 'queued', id: '11111111-1111-4111-8111-111111111111' });
   expect(
     JSON.parse(screen.getByRole('region', { name: 'Код: JSON · Помилка запиту' }).textContent),
   ).toEqual({

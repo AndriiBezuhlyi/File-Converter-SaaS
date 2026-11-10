@@ -1,5 +1,5 @@
-// Planned documentation content from technical-task.md / architecture.md.
-// These examples are not generated client types or proof of implemented endpoints.
+// Documentation examples mirror the implemented OpenAPI contract.
+// Placeholder hosts and credentials do not establish deployment availability.
 export const sections = [
   { id: 'quick-start', title: 'Швидкий старт' },
   { id: 'authentication', title: 'Авторизація' },
@@ -18,36 +18,52 @@ export const examples = {
   ].join('\n'),
   accepted: JSON.stringify(
     {
-      id: 'conversion_123',
+      id: '11111111-1111-4111-8111-111111111111',
       status: 'queued',
       sourceFormat: 'jpg',
       targetFormat: 'png',
       createdAt: '2026-10-13T18:00:00Z',
+      saveResult: false,
     },
     null,
     2,
   ),
   status: [
-    "curl 'https://api.example.com/api/v1/conversions/conversion_123' \\",
+    "curl 'https://api.example.com/api/v1/conversions/11111111-1111-4111-8111-111111111111' \\",
     "  --header 'X-API-Key: YOUR_API_KEY'",
   ].join('\n'),
   completed: JSON.stringify(
     {
-      id: 'conversion_123',
+      id: '11111111-1111-4111-8111-111111111111',
       status: 'completed',
-      downloadUrl: '/api/v1/conversions/conversion_123/download',
-      expiresAt: '2026-10-13T19:00:00Z',
+      sourceFormat: 'jpg',
+      targetFormat: 'png',
+      createdAt: '2026-10-13T18:00:00Z',
+      saveResult: false,
+      completedAt: '2026-10-13T18:00:05Z',
+      error: null,
+      resultAvailability: 'available',
+      result: {
+        id: '22222222-2222-4222-8222-222222222222',
+        owner: 'account',
+        name: 'image.png',
+        format: 'png',
+        sizeBytes: 12345,
+        retention: 'temporary',
+        expiresAt: '2026-10-13T19:00:05Z',
+        availability: 'available',
+      },
     },
     null,
     2,
   ),
   download: [
-    "curl --fail 'https://api.example.com/api/v1/conversions/conversion_123/download' \\",
+    "curl --fail 'https://api.example.com/api/v1/conversions/11111111-1111-4111-8111-111111111111/download' \\",
     "  --header 'X-API-Key: YOUR_API_KEY' \\",
     "  --output './result.png'",
   ].join('\n'),
   files: [
-    "curl 'https://api.example.com/api/v1/files' \\",
+    "curl 'https://api.example.com/api/v1/files?format=png&sort=newest&limit=20' \\",
     "  --header 'X-API-Key: YOUR_API_KEY'",
   ].join('\n'),
   error: JSON.stringify(
@@ -95,7 +111,7 @@ export const errors = [
   {
     status: 409,
     title: 'Conflict',
-    description: 'Результат вашої задачі ще не готовий до завантаження.',
+    description: 'Гостьова конвертація вже виконується або операція конфліктує з поточним станом.',
   },
   { status: 410, title: 'Gone', description: 'Ваш результат прострочений або видалений.' },
   { status: 413, title: 'Payload Too Large', description: 'Файл перевищує дозволений розмір.' },

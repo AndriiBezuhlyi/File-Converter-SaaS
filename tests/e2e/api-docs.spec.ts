@@ -17,7 +17,7 @@ test('API documentation has native deep links, seven operations, and only sessio
   await expect(page).toHaveTitle('Документація API — Flux Converter');
   await expect(page.getByRole('heading', { level: 1, name: 'Документація API' })).toBeVisible();
   await expect(page.getByRole('note', { name: 'Доступність API' })).toContainText(
-    'API ще готується.',
+    'Контракт реалізованого API.',
   );
   await expect(page.getByRole('heading', { level: 3 })).toHaveCount(7);
   await page

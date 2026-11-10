@@ -33,11 +33,11 @@ This is the primary technology inventory for the project. Product requirements r
 
 ## File Conversion
 
-- Sharp — JPG ↔ PNG.
-- LibreOffice у headless-режимі — DOCX → PDF.
+- Sharp: static JPG/PNG/WebP/AVIF cross-conversion; static GIF and restricted SVG input to those raster outputs.
+- LibreOffice headless Writer/Calc/Impress: DOCX/ODT/XLSX/PPTX/CSV/TXT to PDF; CSV uses string-only Flat ODF.
 - Окремий conversion worker для виконання задач.
 - Конвертація документів в ізольованому середовищі з обмеженням CPU, RAM, часу виконання, файлової системи та мережевого доступу.
-- LibreOffice and fonts are system packages in the worker image, not npm dependencies. The sandbox boundary must be implemented before processing untrusted files.
+- LibreOffice and fonts are system packages in the worker image, not npm dependencies. The implemented Bubblewrap/prlimit/cgroup boundary is required at startup; the Linux API also sandboxes new-image validation.
 
 ## Storage
 
@@ -50,7 +50,7 @@ This is the primary technology inventory for the project. Product requirements r
 
 ## Infrastructure
 
-- Redis + BullMQ — explicit Nest infrastructure modules and a separate worker-only notification queue/consumer with task-ID payloads and PostgreSQL outbox retries. BullMQ 6 uses dedicated node-redis connections; session/rate-limit keys use separate prefixes and a separate shared client. Conversion consumers remain future work.
+- Redis + BullMQ — explicit Nest infrastructure modules and a separate worker-only notification queue/consumer with task-ID payloads and PostgreSQL outbox retries. BullMQ 6 uses dedicated node-redis connections; session/rate-limit keys use separate prefixes and a separate shared client. Worker-only conversion dispatch, processing/recovery and leased cleanup are also implemented.
 - Docker Compose — локальна інфраструктура and a separate production deployment definition.
 - Nginx — production static frontend and API reverse proxy.
 - Mailpit — local SMTP sink for email development.
@@ -96,4 +96,4 @@ Run `npm run test:conversions` with the same dedicated loopback test services an
 - Prisma 7 is the stable selected line; CLI, client, and PostgreSQL adapter share the same version. Do not select a release candidate via a moving registry tag.
 - jsdom 27 supports the installed Node.js baseline; the newest jsdom line requires a newer Node.js minor.
 - Runtime libraries belong to their consuming workspace's `dependencies`; compilers, Sass, test runners, CLI tools, linters, and type definitions belong to `devDependencies`.
-- Domain schema, infrastructure adapters, first-party authentication/profile/settings transactions, hashed API-key management, guest credentials/trial helpers and notification consumers are implemented. Typed frontend gateways connect auth/profile/settings/keys. Validated upload, capability and conversion-status endpoints are implemented. Guest/conversion/file frontend integration, file/download endpoints and conversion consumers remain future work; auth/guest/account tests do not establish conversion-engine functionality.
+- Domain schema, infrastructure adapters, first-party authentication/profile/settings transactions, hashed API-key management, guest credentials/trial helpers and notification consumers are implemented. Typed frontend gateways connect auth/profile/settings/keys. Validated upload, capability and conversion-status endpoints are implemented. LiveApp connects guest/conversion/file gateways; protected file/download endpoints and conversion consumers are implemented. Auth/guest/account tests alone do not establish conversion-engine functionality.
