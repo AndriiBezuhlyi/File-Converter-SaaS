@@ -34,6 +34,13 @@ export function ConversionResultPanel({
   const result = job.result;
   const [now, setNow] = useState(Date.now);
   const downloading = useRef(false);
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const deadline = result.retention.kind === 'temporary' ? result.retention.expiresAt : null;
   useEffect(() => {
     if (!deadline) return;
@@ -51,6 +58,8 @@ export function ConversionResultPanel({
     mutationFn: async () => {
       if (isResultExpired(result, Date.now())) throw new ConversionRequestError('expired');
       const file = await gateway.download(job.id);
+      // A response from the previous identity must never start a browser download.
+      if (!mounted.current) return;
       if (isResultExpired(result, Date.now())) throw new ConversionRequestError('expired');
       saveDownload(file.blob, file.name);
     },

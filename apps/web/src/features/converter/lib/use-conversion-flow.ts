@@ -142,6 +142,7 @@ export function useConversionFlow(
           },
           uploadController.current?.signal,
         );
+        if (!mounted.current) return { kind: 'unknown' };
         if (result.kind === 'accepted' && !isJobId(result.job.id)) return { kind: 'unknown' };
         if (result.kind === 'accepted') {
           bindJob?.(selection, result.job.id);
@@ -154,10 +155,11 @@ export function useConversionFlow(
       }
     },
     onSuccess: (result) => {
+      // Hook-level mutation callbacks can outlive an identity remount.
+      if (!mounted.current) return;
       if (result.kind === 'accepted') {
         client.setQueryData(['converter', gateway.scope, 'job', result.job.id], result.job);
       }
-      if (!mounted.current) return;
       setOutcome(result);
       if (result.kind === 'accepted') onJobId(result.job.id);
       if (result.kind === 'active' && isJobId(result.jobId)) onJobId(result.jobId);

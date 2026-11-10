@@ -4,6 +4,22 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-10 - IMP-07.01 concurrency and interrupted workflows
+
+### Changes
+
+- Prevented late conversion acceptance from repopulating an old identity's query/mutation data after unmount. Discarded delayed download responses after the result view unmounts, including logout/account changes. Kept server admission, quota, ownership, retention, HTTP contracts and recovery policy unchanged.
+- Added two focused frontend regressions for late acceptance and the 1.5-second/30-second polling schedule, seven production-UI Chromium scenarios with controlled HTTP interruptions/principal changes, and a separate real API/PostgreSQL/Redis account-admission race. The latter joins the existing conversion suite and forces two uploads to compete for the fifth active slot: one acceptance, one capacity rejection, five input objects/jobs/dispatch intents.
+- Reused existing guest recovery/account/auth/admission/processing/files coverage, including Phase 1's first-bootstrap limitation and lost-COMMIT/response tests. Existing test files and improvement-plan.md remain unchanged; IMP-07.02/07.03 were not started. No additional dependencies or schema/API changes.
+
+### Verification and limitations
+
+- Passed backend unit tests (89), integration tests (16), auth (10), guest (11), account (6), conversion admission (9 existing plus 1 new), processing (6), files (9), and existing guest recovery (7). Live suites use a newly created loopback PostgreSQL/Redis environment, random namespaces, owned synthetic data and existing private-storage/SMTP fixtures; engine boundaries remain controlled. The disposable database was changed from its Windows-inherited Europe/Paris timezone to UTC after timestamp-sensitive guest/admission tests exposed the mismatch; unchanged reruns passed. This does not verify non-UTC deployments.
+- Passed the final sequential frontend regression (42 files / 209 tests, including the two new cases), all seven new Chromium scenarios, zero-warning lint including six lint-configuration checks, workspace typecheck, changed-file formatting and production API/worker/web/contracts builds. Earlier overlapping frontend runs hit load-sensitive timeouts, including the anonymous-account gate; the unchanged sequential run passed. Build retains the existing chunk-size advisory. Initial sandbox subprocess EPERM was resolved by approved local execution outside that sandbox.
+- Full Chromium regression: 60 passed, 5 failed, 1 opt-in live test skipped. Preserved failures expect outdated verification-link text, account-upload guidance, PNG target count, supported-format error copy and anti-spam copy. These expectations differ from existing Phase 4/5/6 behavior; no unrelated copy rollback or existing-test edit was made. Overall IMP-07.01 acceptance remains blocked by unresolved E2E regression gates and the unprovisioned full Linux-worker live E2E.
+- Chrome DevTools confirmed fixture page identity, meaningful DOM, known-ID reload recovery, zero POSTs after reload and a clean console. Browser plugin is absent; existing Playwright exercises the network/multi-tab flows. Context7 confirmed mutation callbacks can outlive unmount; project database-review rules guided the admission-lock review. This is Chromium/local fixture evidence, not production-provider or full real-engine acceptance.
+- Stopped the task's PostgreSQL/Redis and frontend processes. Retained task artifacts under `.cache/tasks/imp-07-01/` and sibling `Converter-artifacts/imp-07-01/`; no extra branches/worktrees or unintegrated subagent work.
+
 ## 2026-11-09 - Larger Hero format names
 
 ### Changes
