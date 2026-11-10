@@ -9,13 +9,14 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
-      command: 'npm run preview --workspace=@converter/web',
+      command: 'npm run preview --workspace=@converter/web -- --config ../../vite.e2e.config.ts',
       url: 'http://127.0.0.1:4173',
       reuseExistingServer: false,
       timeout: 30_000,
     },
     {
-      command: 'npm run dev --workspace=@converter/web -- --port 4174',
+      command:
+        'npm run dev --workspace=@converter/web -- --config ../../vite.e2e.config.ts --port 4174',
       url: 'http://127.0.0.1:4174/test-fixtures/converter/',
       reuseExistingServer: false,
       timeout: 30_000,

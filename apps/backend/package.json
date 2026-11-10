@@ -17,6 +17,7 @@
     "test": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.cjs",
     "test:integration": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.integration.config.cjs --runInBand",
     "test:infrastructure": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.infrastructure.config.cjs --runInBand",
+    "test:reliability": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.worker-failures.config.cjs --runInBand",
     "test:auth": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.auth.config.cjs --runInBand",
     "test:guest": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.guest.config.cjs --runInBand",
     "test:guest:recovery": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.guest-recovery.config.cjs --runInBand",
