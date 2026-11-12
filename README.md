@@ -10,12 +10,19 @@ The React frontend includes live email authentication, profile/password changes,
 - [Technology inventory and compatibility notes](docs/TECH-STACK.md)
 - [Database schema and migration workflow](docs/db-schema.md)
 
-Use Node.js 24 LTS (minimum 24.11.1), npm 11, and Docker with Compose v2 for infrastructure. Install from the repository root; one root lockfile covers all workspaces.
+Use Node.js 24 LTS (minimum 24.11.1), npm 11.21.1 (the `packageManager` pin), and Docker with Compose v2 for infrastructure. This npm version correctly applies scoped security overrides across workspace links. Install from the repository root; one root lockfile covers all workspaces. CI and Docker invoke a local copy of the pinned npm without replacing the system installation.
 
 ## Setup
 
 ```sh
 npm ci
+```
+
+If the system npm differs from the pin, use a local CLI without changing global tools:
+
+```sh
+npm install --prefix .cache/tools/npm --no-save --ignore-scripts --no-audit --no-fund npm@11.21.1
+node .cache/tools/npm/node_modules/npm/bin/npm-cli.js ci
 ```
 
 Copy `.env.example` to `.env` (`Copy-Item .env.example .env` in PowerShell, or `cp .env.example .env` on Linux/macOS). Its credentials are development-only defaults. Environment files and caches are ignored by Git.

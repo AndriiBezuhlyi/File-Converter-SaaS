@@ -5,11 +5,12 @@ COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/backend/package.json ./apps/backend/package.json
 COPY packages/contracts/package.json ./packages/contracts/package.json
-RUN npm ci --no-audit --no-fund
+RUN npm install --prefix /opt/flux-npm --no-save --ignore-scripts --no-audit --no-fund "$(node -p 'require("./package.json").packageManager')"
+RUN node /opt/flux-npm/node_modules/npm/bin/npm-cli.js ci --no-audit --no-fund
 COPY tsconfig.base.json ./
 COPY apps/web ./apps/web
 COPY packages/contracts ./packages/contracts
-RUN npm run build --workspace=@converter/web
+RUN node /opt/flux-npm/node_modules/npm/bin/npm-cli.js run build --workspace=@converter/web
 
 FROM nginxinc/nginx-unprivileged:stable-alpine
 COPY infra/proxy/default.conf /etc/nginx/conf.d/default.conf

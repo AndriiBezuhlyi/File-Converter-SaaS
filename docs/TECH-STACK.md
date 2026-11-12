@@ -91,7 +91,7 @@ Run `npm run test:conversions` with the same dedicated loopback test services an
 
 ## Compatibility baseline
 
-- Node.js 24 LTS (24.11.1 or newer within major 24) and npm 11.
+- Node.js 24 LTS (24.11.1 or newer within major 24) and npm 11.21.1, pinned for correct workspace security overrides.
 - TypeScript 5.9 is retained because the selected OpenAPI generator and other tooling do not all support the newest TypeScript major.
 - Prisma 7 is the stable selected line; CLI, client, and PostgreSQL adapter share the same version. Do not select a release candidate via a moving registry tag.
 - jsdom 27 supports the installed Node.js baseline; the newest jsdom line requires a newer Node.js minor.
