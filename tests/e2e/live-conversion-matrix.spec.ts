@@ -79,7 +79,14 @@ test('authenticated live conversion matrix, real polling and saved downloads', a
   );
   test.setTimeout(10 * 60_000);
   const origin = 'http://127.0.0.1:5173';
-  const mail = 'http://127.0.0.1:58025';
+  const mail = process.env.CONVERTER_LIVE_MAIL_ORIGIN ?? 'http://127.0.0.1:58025';
+  const mailUrl = new URL(mail);
+  expect(mailUrl.protocol).toBe('http:');
+  expect(mailUrl.hostname).toBe('127.0.0.1');
+  expect(mailUrl.origin).toBe(mail);
+  expect(mailUrl.username).toBe('');
+  expect(mailUrl.password).toBe('');
+  expect(mailUrl.pathname).toBe('/');
   const email = `item17-${randomUUID()}@example.test`;
   const password = randomUUID() + randomUUID();
   const runtimeErrors: string[] = [];
@@ -166,9 +173,9 @@ test('authenticated live conversion matrix, real polling and saved downloads', a
           buffer: fixtures[source],
         });
         await page.getByLabel('Конвертувати у').selectOption(target);
-        // Respect the real 10 uploads/minute principal limit without changing server policy.
+        // POST conversion and DELETE file share the 10 mutations/minute principal limit.
         await delay(Math.max(0, nextAdmissionAt - performance.now()));
-        nextAdmissionAt = performance.now() + 6_100;
+        nextAdmissionAt = performance.now() + 12_100;
         const acceptedResponse = page.waitForResponse(
           (response) =>
             new URL(response.url()).pathname === '/api/v1/conversions' &&
