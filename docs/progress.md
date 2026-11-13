@@ -4,6 +4,19 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 - Diagnose hosted Linux sandbox mount failure
+
+### Changes
+
+- Added a fail-closed minimal bubblewrap preflight sharing the worker smoke tests' exact Docker invocation. Report only the AppArmor label, capability masks and seccomp/no-new-privileges state; on failure, request read-only kernel denial diagnostics. Existing tests, assertions, production code, Dockerfile, seccomp, capabilities and resource/network limits are unchanged.
+- Selected `ubuntu-latest` for image jobs to test the standard hosted alternative before proposing new infrastructure. README explains the AppArmor prerequisite and forbids security bypasses. This diagnostic change is not a sandbox-policy fix.
+
+### Verification and limitations
+
+- Hosted run 43519896030 on commit 98a7000: all automatic jobs except `images (worker)` passed; the manual live matrix was skipped. The downloaded worker log confirms four failures and `bwrap: Failed to make / slave: Permission denied` before conversion. The checked-in seccomp permits mount; Docker's upstream default AppArmor profile denies it. A hosted kernel denial is still required to conclusively attribute the active host policy.
+- Local Docker Desktop reports no AppArmor security option; WSL reports AppArmor disabled. All four unchanged Linux smoke tests passed again (zero skips), including the 60-second deadline. Local success cannot validate an AppArmor policy. Actionlint, formatting and whitespace checks passed. Diagnostic evidence is retained in ignored `.cache/tasks/ci-linux-sandbox/`.
+- User approved only a diagnostic push to `ci/complete-actions-pipeline` and requires actual hosted results before any policy/infrastructure decision. No host security configuration, permanent runner registration or merge is authorized by this entry.
+
 ## 2026-11-13 - Complete isolated GitHub Actions CI
 
 ### Changes

@@ -114,7 +114,7 @@ jobs:
       - name: Playwright E2E with isolated HTTP fixtures
         run: node scripts/playwright.mjs test --config playwright.ci.config.ts --workers=2
   images:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -137,13 +137,31 @@ jobs:
       - name: Real conversion, isolation, deadline and crash smoke tests
         if: matrix.target == 'worker'
         run: |
-          docker run --rm --init --read-only --network none \
-            --cpus 1 --memory 1g --pids-limit 128 \
-            --cap-drop ALL --security-opt no-new-privileges:true \
-            --security-opt seccomp=infra/security/worker-seccomp.json \
-            --tmpfs /tmp:rw,nosuid,nodev,size=256m,mode=1777 \
-            --mount "type=bind,source=$PWD/apps/backend/test,target=/app/apps/backend/test,readonly" \
-            flux-ci-worker:local node --test --test-concurrency=1 \
+          run_worker() {
+            docker run --rm --init --read-only --network none \
+              --cpus 1 --memory 1g --pids-limit 128 \
+              --cap-drop ALL --security-opt no-new-privileges:true \
+              --security-opt seccomp=infra/security/worker-seccomp.json \
+              --tmpfs /tmp:rw,nosuid,nodev,size=256m,mode=1777 \
+              --mount "type=bind,source=$PWD/apps/backend/test,target=/app/apps/backend/test,readonly" \
+              flux-ci-worker:local "$@"
+          }
+          docker info --format '{{json .SecurityOptions}}'
+          if ! run_worker sh -ec '
+            printf "AppArmor label: "
+            cat /proc/self/attr/current
+            printf "\nContainer security status:\n"
+            grep -E "^(Cap(Inh|Prm|Eff|Bnd|Amb)|NoNewPrivs|Seccomp):" /proc/self/status
+            bwrap --unshare-all --die-with-parent --new-session --cap-drop ALL \
+              --ro-bind / / /bin/true
+          '; then
+            echo '::error::Minimal bubblewrap namespace/mount probe failed. Sandbox tests are blocked, not passed. No security fallback is permitted.'
+            # Best-effort read-only diagnostics; the probe failure remains fatal.
+            sudo -n journalctl -k --since '-2 minutes' --no-pager \
+              | grep -E 'apparmor="DENIED"|audit.*(bwrap|mount)' || true
+            exit 1
+          fi
+          run_worker node --test --test-concurrency=1 \
               test/conversion-engine.linux.mjs test/engine-crash.linux.mjs
   live-matrix:
     if: github.event_name == 'workflow_dispatch' && inputs.live_matrix

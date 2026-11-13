@@ -203,6 +203,8 @@ The existing `.github/workflows/ci.yml` runs on every branch push and pull reque
 
 All Node jobs use `.nvmrc` and the exact `packageManager` npm pin for both `npm ci` and later commands. No repository secrets or production services are required. Failures propagate; there is no `continue-on-error`. Independent jobs remain visible if another job fails.
 
+The worker smoke step first runs a minimal `bwrap --unshare-all` mount probe under the **same** Docker security/resource options as the unchanged tests. It prints the active AppArmor label, capability masks and seccomp/no-new-privileges status. A failure blocks the tests and fails CI; read-only kernel audit diagnostics are best effort. Docker's `docker-default` AppArmor profile denies mount operations even when the checked-in seccomp profile permits them. Docker Desktop without AppArmor is not evidence that this host policy works. The image jobs use `ubuntu-latest` to verify the standard hosted-runner alternative; changing the label alone is not a security-policy fix. Do not use privileged mode, extra host capabilities, unconfined AppArmor/seccomp or host sysctl changes to bypass this failure. The same prerequisite applies to the manual live stack.
+
 For the complete **26-direction live browser/API/worker matrix**, choose **Actions → CI → Run workflow**, select the review branch and enable `live_matrix`, or run:
 
 ```sh
