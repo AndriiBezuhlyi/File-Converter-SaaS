@@ -183,6 +183,7 @@ function ConnectedWorkspace({
             onConvert={canStart ? flow.submit : undefined}
             locked={waiting || sessionStatus === 'pending'}
             submissionError={rejected}
+            onSelectionChange={flow.selectionChanged}
             recovery={flow.access.isError ? accessRecovery : null}
             availability={
               flow.access.isError

@@ -1,9 +1,11 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
   HttpCode,
   Param,
+  Patch,
   Query,
   Req,
   Res,
@@ -17,6 +19,7 @@ import {
 } from '../conversions/conversion-boundary.js';
 import { AuthError } from '../auth/auth-error.js';
 import { FilesService } from './files.service.js';
+import { downloadDisposition } from '../../common/download-disposition.js';
 
 @Controller('files')
 @UseGuards(ConversionBoundaryGuard)
@@ -46,8 +49,12 @@ export class FilesController {
     return new StreamableFile(file.body, {
       type: file.mime,
       length: file.size,
-      disposition: `attachment; filename="conversion.${file.name.split('.').pop()}"; filename*=UTF-8''${encodeURIComponent(file.name).replace(/['()*]/g, (character) => `%${character.charCodeAt(0).toString(16)}`)}`,
+      disposition: downloadDisposition(file.name),
     });
+  }
+  @Patch(':id')
+  rename(@Req() request: ConversionRequest, @Param('id') id: string, @Body() body: unknown) {
+    return this.files.rename(this.user(request), id, body);
   }
   @Delete(':id')
   @HttpCode(204)

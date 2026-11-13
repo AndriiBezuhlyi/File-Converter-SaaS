@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
+import { toUSVString } from 'node:util';
 import { DatabaseService } from '../../infrastructure/database/database.service.js';
 import { StorageService } from '../../infrastructure/storage/storage.service.js';
 import type { File, Prisma } from '../../generated/prisma/client.js';
@@ -10,7 +11,7 @@ const querySchema = z
     search: z.string().trim().max(200).default(''),
     format: z.enum(['jpg', 'png', 'webp', 'avif', 'pdf']).optional(),
     sort: z.enum(['newest', 'oldest']).default('newest'),
-    limit: z.coerce.number().int().min(1).max(100).default(20),
+    limit: z.coerce.number().int().min(1).max(100).default(10),
     cursor: z.string().max(2048).optional(),
   })
   .strict();
@@ -131,6 +132,51 @@ export class FilesService {
   }
   async details(userId: string, id: string) {
     return describeFile(await this.owned(userId, id));
+  }
+  async rename(userId: string, id: string, raw: unknown) {
+    const body = z
+      .object({
+        name: z
+          .string()
+          .trim()
+          .min(1)
+          .max(200)
+          .refine((name) => toUSVString(name) === name && !/[\p{Cc}\p{Cf}<>:"/\\|?*]/u.test(name)),
+      })
+      .strict()
+      .safeParse(raw);
+    if (!body.success)
+      throw new AuthError(
+        400,
+        'VALIDATION_FAILED',
+        'Provide a safe filename of up to 200 characters.',
+      );
+    const file = await this.owned(userId, id);
+    const extension = file.originalName.slice(file.originalName.lastIndexOf('.'));
+    const name = body.data.name;
+    const base = name.slice(0, -extension.length);
+    if (!name.endsWith(extension) || !base.trim() || /^[. ]+$/.test(base) || /[. ]$/.test(base))
+      throw new AuthError(
+        400,
+        'VALIDATION_FAILED',
+        'Keep the existing file extension and provide a name.',
+      );
+    // Recheck ownership/lifecycle atomically with the metadata-only write.
+    const updated = await this.database.client.file.updateMany({
+      where: {
+        id,
+        ...visible(userId),
+        deletedAt: null,
+        storageDeletionState: 'present',
+        expiresAt: null,
+      },
+      data: { originalName: name },
+    });
+    if (!updated.count) {
+      await this.owned(userId, id);
+      throw missing();
+    }
+    return describeFile({ ...file, originalName: name });
   }
   async download(userId: string, id: string) {
     const file = await this.owned(userId, id);

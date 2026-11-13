@@ -8,6 +8,7 @@ import { DataAccessError, dataErrorMessage } from '../../../shared/lib/data-acce
 import { saveDownload } from '../../../shared/lib/save-download';
 import type { FilesFilter, FilesGateway, FilesPageResult, SavedFile } from '../lib/files-gateway';
 import styles from './Files.module.scss';
+import { RenameFileDialog } from './RenameFileDialog';
 
 function fileDate(value: string) {
   return new Date(value).toLocaleString('uk-UA');
@@ -24,6 +25,7 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
   const [format, setFormat] = useState<FilesFilter['format']>('all');
   const [order, setOrder] = useState<FilesFilter['order']>('newest');
   const [modal, setModal] = useState<{ kind: 'details' | 'delete'; file: SavedFile } | null>(null);
+  const [renaming, setRenaming] = useState<{ file: SavedFile; scope: string } | null>(null);
   const [notice, setNotice] = useState<{
     message: string;
     transient: boolean;
@@ -191,6 +193,7 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
               key={file.id}
               file={file}
               gateway={gateway}
+              onRename={() => setRenaming({ file, scope: gateway.scope })}
               onDetails={() => {
                 action.clearError();
                 setModal({ kind: 'details', file });
@@ -223,6 +226,14 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
         >
           {query.isFetchingNextPage ? 'Завантажуємо…' : 'Показати ще'}
         </Button>
+      ) : null}
+      {renaming?.scope === gateway.scope ? (
+        <RenameFileDialog
+          key={`${gateway.scope}:${renaming.file.id}`}
+          file={renaming.file}
+          gateway={gateway}
+          onClose={() => setRenaming(null)}
+        />
       ) : null}
       {modal ? (
         <Dialog
@@ -298,12 +309,14 @@ function FileRow({
   gateway,
   onDetails,
   onDelete,
+  onRename,
   onDenied,
 }: {
   file: SavedFile;
   gateway: FilesGateway;
   onDetails: () => void;
   onDelete: () => void;
+  onRename: () => void;
   onDenied: () => void;
 }) {
   const action = useRequestAction(dataErrorMessage);
@@ -358,6 +371,11 @@ function FileRow({
           <Button variant="danger" onClick={onDelete}>
             Видалити
           </Button>
+          {gateway.rename ? (
+            <Button variant="secondary" onClick={onRename}>
+              Перейменувати
+            </Button>
+          ) : null}
         </div>
         {action.error ? (
           <p role="alert" className={styles.error}>

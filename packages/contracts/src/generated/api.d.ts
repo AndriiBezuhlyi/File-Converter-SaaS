@@ -472,7 +472,11 @@ export interface paths {
         delete: operations["fileDelete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Rename an owned saved output without changing its extension
+         * @description Updates only originalName metadata; object keys and bytes remain unchanged. Exact existing extension is required. Names are trimmed, 1–200 characters, valid Unicode, without controls, formatting controls or <>:"/\|?*. Guests are rejected; invalid explicit API keys never fall back to cookies. Cookie requests require exact Origin and X-CSRF-Token. Ownership and availability are checked atomically with the update. Responses are no-store.
+         */
+        patch: operations["fileRename"];
         trace?: never;
     };
     "/api/v1/files/{id}/download": {
@@ -789,6 +793,10 @@ export interface components {
         RegistrationStatus: {
             /** @enum {string} */
             status: "pending" | "verified" | "expired";
+        };
+        FileRename: {
+            /** @description Full display filename including the unchanged existing extension. */
+            name: string;
         };
     };
     responses: {
@@ -2018,6 +2026,95 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request rejected */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request rejected */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request rejected */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request rejected */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Owned file is deleted or unavailable */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request rejected */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request rejected */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    fileRename: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FileRename"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedFile"];
+                };
             };
             /** @description Request rejected */
             400: {

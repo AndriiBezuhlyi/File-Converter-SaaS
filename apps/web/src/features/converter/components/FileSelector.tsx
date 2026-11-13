@@ -17,6 +17,7 @@ interface FileSelectorProps {
   locked?: boolean;
   availability?: string | undefined;
   submissionError?: string | undefined;
+  onSelectionChange?: (() => void) | undefined;
   recovery?: ReactNode;
 }
 
@@ -25,6 +26,7 @@ export function FileSelector({
   locked = false,
   availability,
   submissionError,
+  onSelectionChange,
   recovery,
 }: FileSelectorProps) {
   const id = useId();
@@ -72,6 +74,7 @@ export function FileSelector({
       return;
     }
     setSelection(result.selection);
+    onSelectionChange?.();
     setError('');
     setAnnouncement(
       `Вибрано файл ${result.selection.file.name}. Вихідний формат — ${result.selection.targetFormat.toUpperCase()}.`,
@@ -99,6 +102,7 @@ export function FileSelector({
 
   function removeFile() {
     setSelection(null);
+    onSelectionChange?.();
     setError('');
     setAnnouncement('Файл прибрано. Виберіть інший файл.');
     if (input.current) input.current.value = '';
@@ -230,7 +234,11 @@ export function FileSelector({
           value={selection?.targetFormat ?? ''}
           onChange={(event) => {
             const target = availableTargets.find((format) => format === event.currentTarget.value);
-            if (selection && target) setSelection({ ...selection, targetFormat: target });
+            if (selection && target) {
+              setSelection({ ...selection, targetFormat: target });
+              setError('');
+              onSelectionChange?.();
+            }
           }}
         >
           {!selection ? (

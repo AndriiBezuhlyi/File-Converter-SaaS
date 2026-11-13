@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { toUSVString } from 'node:util';
 import sharp from 'sharp';
 import { AnimatedImageFailure, ConversionEngine, EngineFailure } from './conversion-engine.js';
 import { AuthError } from '../auth/auth-error.js';
@@ -122,16 +123,9 @@ export async function validateUpload(file: StagedUpload | undefined, body: unkno
       'This conversion direction is not supported.',
     );
   const name =
-    Array.from(file.originalname, (character) =>
-      character.charCodeAt(0) < 32 ||
-      character.charCodeAt(0) === 127 ||
-      character === '/' ||
-      character === '\\'
-        ? '_'
-        : character,
-    )
-      .join('')
+    Array.from(toUSVString(file.originalname).replace(/[\p{Cc}\p{Cf}\\/]/gu, '_'))
       .slice(0, 200)
+      .join('')
       .trim() || `input.${format}`;
   return { format, target, name, sizeBytes: bytes.length };
 }

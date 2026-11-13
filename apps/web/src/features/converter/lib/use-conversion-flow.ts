@@ -212,6 +212,14 @@ export function useConversionFlow(
   }
 
   return {
+    selectionChanged: () => {
+      // Only admission errors tied to the selected bytes/target become stale.
+      if (
+        outcome?.kind === 'rejected' &&
+        ['invalid-file', 'animated-gif', 'animated-webp', 'animated-avif'].includes(outcome.reason)
+      )
+        setOutcome(null);
+    },
     access,
     job,
     jobId,

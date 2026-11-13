@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
 import { Menu, X } from 'lucide-react';
 import { ActionLink } from '../../shared/ui/ActionLink';
@@ -9,10 +9,24 @@ import styles from './AppLayout.module.scss';
 import { Brand } from './Brand';
 
 export function AppHeader() {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const { status, session } = useAuth();
   const [open, setOpen] = useState(false);
+  const [menuLocation, setMenuLocation] = useState(location.key);
+  if (menuLocation !== location.key) {
+    setMenuLocation(location.key);
+    setOpen(false);
+  }
   const menuButton = useRef<HTMLButtonElement>(null);
+  const header = useRef<HTMLElement>(null);
+  useEffect(() => {
+    function dismiss(event: PointerEvent) {
+      if (event.target instanceof Node && !header.current?.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener('pointerdown', dismiss);
+    return () => document.removeEventListener('pointerdown', dismiss);
+  }, []);
 
   function closeMenu() {
     setOpen(false);
@@ -21,6 +35,7 @@ export function AppHeader() {
 
   return (
     <header
+      ref={header}
       className={`container ${styles.header}`}
       onKeyDown={(event) => {
         if (event.key === 'Escape' && open) {
@@ -52,6 +67,17 @@ export function AppHeader() {
         aria-label="Основна навігація"
         className={styles.nav}
         data-open={open}
+        onClick={(event) => {
+          if (event.target instanceof Element && event.target.closest('a[href]')) setOpen(false);
+        }}
+        onBlur={(event) => {
+          if (
+            event.relatedTarget instanceof Node &&
+            !event.currentTarget.contains(event.relatedTarget) &&
+            !menuButton.current?.contains(event.relatedTarget)
+          )
+            setOpen(false);
+        }}
       >
         <NavLink to="/" end className={styles.navLink ?? ''}>
           Конвертер
