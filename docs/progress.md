@@ -4,6 +4,16 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-13 - Saved-file action placement follow-up
+
+### Changes
+
+- Moved Rename from the action group to an accessible pencil icon beside the filename, retaining its Ukrainian accessible name, tooltip, existing dialog and 44 px target. Delete is now the last action on the right. No API or persistence changes.
+
+### Verification and limitations
+
+- PASSED the ten existing files/rename frontend tests, web typecheck, focused ESLint, changed-file formatting and web build. Chrome at 1366/390 px with controlled synthetic HTTP responses verified icon placement, action order, no horizontal overflow, dialog initial focus and Escape focus restoration; no runtime errors. The ordinary Chrome DevTools session was anonymous, so populated-row verification used the existing Playwright tooling with isolated synthetic responses. Screenshots retained in sibling `Converter-artifacts/manual-qa/rename-layout-{1366,390}.png`; disposable harness retained in `.cache/tasks/run-project/rename-layout.mjs`. No existing tests or acceptance/plan statuses changed.
+
 ## 2026-11-13 - Owner manual QA fixes and UX improvements
 
 ### Changes

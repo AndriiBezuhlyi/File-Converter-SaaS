@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react';
+import { Pencil } from 'lucide-react';
 import { useInfiniteQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { Field } from '../../../shared/ui/Field';
 import { Button } from '../../../shared/ui/Button';
@@ -324,7 +325,20 @@ function FileRow({
   return (
     <li className={styles.row}>
       <article aria-label={file.name}>
-        <h2 className={styles.fileName}>{file.name}</h2>
+        <div className={styles.nameCell}>
+          <h2 className={styles.fileName}>{file.name}</h2>
+          {gateway.rename ? (
+            <Button
+              variant="secondary"
+              className={styles.rename}
+              aria-label="Перейменувати"
+              title="Перейменувати"
+              onClick={onRename}
+            >
+              <Pencil size={18} strokeWidth={1.75} aria-hidden="true" />
+            </Button>
+          ) : null}
+        </div>
         <dl className={styles.metadata}>
           <div>
             <dt>Тип</dt>
@@ -371,11 +385,6 @@ function FileRow({
           <Button variant="danger" onClick={onDelete}>
             Видалити
           </Button>
-          {gateway.rename ? (
-            <Button variant="secondary" onClick={onRename}>
-              Перейменувати
-            </Button>
-          ) : null}
         </div>
         {action.error ? (
           <p role="alert" className={styles.error}>
