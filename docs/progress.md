@@ -4,6 +4,16 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-13 - Converter requirements disclosure height
+
+### Changes
+
+- Reproduced the empty converter staying at 751.28 px after opening/closing requirements instead of returning to 617.28 px at 390 px viewport. The conversion shell's maximum-height stabilization retained the disclosure expansion. Track the closed height separately and restore it on the native details toggle, retaining existing upload/result/retry height stabilization and responsive remeasurement. Capture the non-bubbling toggle event and remove its listener during cleanup.
+
+### Verification and limitations
+
+- PASSED eight Chromium E2E tests: three new disclosure regressions at 320/768/1366 px (repeated mouse opening/keyboard closing, empty and selected-file states) and all five existing phase-5 converter navigation/retry/result/reset/focus tests, unchanged. An initial reset-to-natural-height implementation exposed a 12.19 px selected-state shrink in the new tests; restoring the pre-disclosure baseline corrected it without weakening assertions. Chrome DevTools independently confirmed 617.28 → 751.28 → 617.28 px and no console warnings/errors. Web build/typecheck, root test TypeScript, focused ESLint, formatting and whitespace checks passed. The existing non-fatal bundle-size warning remains. No API, data, plan or acceptance-status changes.
+
 ## 2026-11-13 - Saved-file action placement follow-up
 
 ### Changes

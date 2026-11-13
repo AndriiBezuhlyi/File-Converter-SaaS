@@ -58,26 +58,40 @@ function ConnectedWorkspace({
     if (!root || typeof ResizeObserver === 'undefined') return;
     let width = 0;
     let height = 0;
+    let closedHeight = 0;
     let frame = 0;
     const stabilize = () => {
       const bounds = root.getBoundingClientRect();
       if (Math.abs(bounds.width - width) > 1) {
         width = bounds.width;
         height = 0;
+        closedHeight = 0;
         root.style.removeProperty('min-block-size');
       }
       // Retain measured space through state changes; allow natural growth and responsive reflow.
       height = Math.max(height, root.getBoundingClientRect().height);
       root.style.minBlockSize = `${height}px`;
+      if (!root.querySelector('details[open]')) closedHeight = height;
     };
     stabilize();
     const observer = new ResizeObserver(() => {
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(stabilize);
     });
+    const resizeDisclosure = (event: Event) => {
+      if (!(event.target instanceof HTMLDetailsElement)) return;
+      // Disclosure changes are intentional resizing, not conversion-state transitions.
+      if (!event.target.open) {
+        height = closedHeight;
+        root.style.minBlockSize = `${closedHeight}px`;
+      }
+      stabilize();
+    };
+    root.addEventListener('toggle', resizeDisclosure, true);
     observer.observe(root);
     return () => {
       observer.disconnect();
+      root.removeEventListener('toggle', resizeDisclosure, true);
       window.cancelAnimationFrame(frame);
     };
   }, []);
