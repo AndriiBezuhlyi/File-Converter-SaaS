@@ -191,6 +191,30 @@ npm run test:e2e
 
 `check` runs formatting, ESLint, all workspace typechecks, `test:all`, Prisma schema validation, generated-contract drift checks, and production builds. Playwright additionally verifies keyboard navigation, direct-route reloads, 404 recovery, mobile navigation, and responsive overflow. These checks alone do not establish real-engine or production-provider functionality.
 
+### GitHub Actions CI
+
+The existing `.github/workflows/ci.yml` runs on every branch push and pull request. Independent jobs cover:
+
+- `checks`: formatting, ESLint and lint-config regressions, typechecks, Prisma validation, OpenAPI-to-TypeScript contract drift, production builds and Compose validation.
+- `tests`: frontend/backend unit tests, backend integration tests and security regressions.
+- `database`: disposable PostgreSQL 18/Redis 8 services, migration/constraint tests, infrastructure, auth, guests, accounts, conversions, files, processing, dependency/worker recovery and browser-based guest recovery. Storage/SMTP and conversion-engine replacements in these suites are controlled fixtures, not real-provider/engine acceptance.
+- `e2e`: Chromium UI/HTTP-fixture tests through `playwright.ci.config.ts`; its web servers cannot proxy missing fixtures to an ordinary API.
+- `images`: API/worker/proxy/MinIO builds with per-image BuildKit caches. The worker additionally runs existing real JPG/PNG/DOCX conversion, malformed-input, sandbox isolation, deadline and crash tests with the production CPU/RAM/PID/seccomp boundaries and no network.
+
+All Node jobs use `.nvmrc` and the exact `packageManager` npm pin for both `npm ci` and later commands. No repository secrets or production services are required. Failures propagate; there is no `continue-on-error`. Independent jobs remain visible if another job fails.
+
+For the complete **26-direction live browser/API/worker matrix**, choose **Actions → CI → Run workflow**, select the review branch and enable `live_matrix`, or run:
+
+```sh
+gh workflow run ci.yml --ref <review-branch> -f live_matrix=true
+```
+
+`workflow_dispatch` must first be available on the default branch for the GitHub UI/API to expose it. Until an approved merge adds it there, review the configuration and verify push/PR jobs; a missing dispatch button is not a successful matrix run.
+
+The opt-in job installs Chrome and builds the three runtime images. `scripts/ci-live-matrix.mjs` provisions a random Compose project from `infra/compose.ci.yaml`, migrates only its empty `converter_test_ci` database, starts a private bucket, Mailpit, API and bounded Linux worker, and runs the existing `playwright.live.config.ts` matrix. It preserves the test's admission pacing and uses real polling/downloads, without route mocks. The harness refuses an existing `.env` or occupied ports 3000/5173/55432/58025, generates ephemeral session/outbox keys and removes only its own disposable stack in `finally`. Runner disposal is the final cleanup boundary on cancellation. Credential-bearing browser traces/screenshots/videos stay disabled.
+
+Live acceptance files are explicitly excluded from the fixture-only E2E job. The 26-direction matrix is an intentional manual gate rather than an every-push claim. The separate manual-QA and cross-browser configurations remain opt-in and are not claimed by this pipeline. Full live runs require an Ubuntu Linux Docker/Compose v2 runner with cgroup v2 and unprivileged user namespaces usable through the checked-in seccomp profile; a sandbox failure must fail the job, not enable privileged mode. Internet access is needed for public npm/browser/image downloads. First hosted success must be checked separately from local YAML/command validation. Nothing in CI deploys, publishes images or merges branches.
+
 ### Lint safeguards
 
 `npm run lint` generates Prisma Client before typed analysis, checks the repository with zero warnings and runs the configuration regression tests (`npm run lint:config`). This also prepares the ignored client types for `npm run check` on clean checkouts. It uses the existing ESLint/typescript-eslint packages; no additional plugins are required.

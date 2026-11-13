@@ -4,6 +4,21 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-13 - Complete isolated GitHub Actions CI
+
+### Changes
+
+- Extended the existing CI workflow, preserving unfiltered push/pull-request triggers and read-only repository permissions. Split quality, unit/integration/security, real-service database tests, Chromium E2E and four image builds into independent jobs. A shared setup action selects `.nvmrc`, verifies the `packageManager` npm pin, exports its private bin directory and uses locked `npm ci`; npm and per-image BuildKit caches remain separate from test state.
+- Added processing/reliability and browser guest-recovery coverage. The worker-image job runs the existing real conversion, sandbox, deadline and crash smoke tests with production resource/security bounds and no network. Existing tests and application code are unchanged.
+- Added a documented `workflow_dispatch` input for the existing full 26-direction live browser matrix, with a random disposable Compose project, private storage, Mailpit, generated ephemeral session/outbox keys, bounded API/worker, isolated migrations and scoped cleanup. Fixture-only E2E explicitly excludes live acceptance files. No production endpoints, secrets, external volumes, image publication or automatic merge are used. README documents runner requirements and the default-branch requirement for manual dispatch.
+
+### Verification and limitations
+
+- PASSED `actionlint` 1.7.12 (official checksum verified), YAML/script/command-reference validation, formatting, ESLint and whitespace checks. The full existing `npm run check` passed: lint-config/security, typechecks, workspace unit/integration tests, Prisma validation, generated contracts and production builds. The pre-existing web bundle-size warning remains.
+- PASSED all nine database/service categories on newly created PostgreSQL/Redis containers (71 tests), plus seven guest-recovery browser tests with disposable services and an isolated Nest fixture. Guest recovery used the existing local frontend asset server; its API traffic was routed only to the owned fixture. PASSED all 77 unchanged fixture-only Chromium E2E tests using the new CI config, and the static live-test assertion covering all 26 OpenAPI directions. Initial Windows npm-launcher failures were confined to task-local verification tooling and corrected without test changes.
+- PASSED all four Dockerfile builds and four real Linux worker smoke tests, including the 60-second process-tree deadline. PASSED private npm PATH selection on Linux, readiness-helper retry/rejection behavior, Compose configuration and actual disposable stack startup with fresh CI images: migrations, API readiness, worker probe and anonymous bucket denial (403). The local startup probe substituted random host ports to preserve existing services. Runtime verification caught and corrected an internal-network port-publication issue before committing. Only task-created containers/networks were removed.
+- Hosted GitHub Actions, hosted cache integration and the complete live browser matrix have NOT run in this task. Manual dispatch becomes available when its trigger exists on the default branch after an approved merge. Cross-browser and separate manual-QA acceptance remain opt-in, not claimed CI coverage. No push, merge, plan edits or retained task worktrees. Local verification harnesses/logs and the checksum-verified validator remain in ignored `.cache/tasks/ci-pipeline/`; fresh `flux-ci-*` images remain local.
+
 ## 2026-11-13 - Converter requirements disclosure height
 
 ### Changes

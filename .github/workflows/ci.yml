@@ -2,40 +2,67 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      live_matrix:
+        description: Run the complete 26-direction browser/API/Linux-worker matrix
+        type: boolean
+        default: false
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  CI: 'true'
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: npm
-      - name: Install pinned npm locally
-        run: npm install --prefix "$RUNNER_TEMP/flux-npm" --no-save --ignore-scripts --no-audit --no-fund "$(node -p 'require("./package.json").packageManager')"
-      - run: node "$RUNNER_TEMP/flux-npm/node_modules/npm/bin/npm-cli.js" ci
-      - run: npm run check
-      - run: node scripts/playwright.mjs install --with-deps chromium
-      - run: npm run test:e2e
+      - uses: ./.github/actions/setup
+      - run: npm run format:check
+      - name: ESLint and lint-configuration checks
+        run: npm run lint
+      - run: npm run typecheck
+      - run: npm run db:validate
+      - run: npm run contracts:check
+      - run: npm run build
       - run: npm run infra:config
+      - name: Validate disposable live-stack configuration
+        run: docker compose --env-file /dev/null -f infra/compose.ci.yaml config --quiet
+        env:
+          CI_SESSION_SECRET: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          CI_NOTIFICATION_KEY: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Frontend and backend unit tests
+        run: npm test
+      - name: Backend integration tests with controlled protocol fixtures
+        run: npm run test:integration
+      - run: npm run test:security
   database:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:18-alpine
         env:
           POSTGRES_USER: converter_test
           POSTGRES_PASSWORD: local-test-only
-          POSTGRES_DB: converter_test
+          POSTGRES_DB: converter_test_ci
         ports: ['5432:5432']
         options: >-
-          --health-cmd="pg_isready -U converter_test -d converter_test"
+          --health-cmd="pg_isready -U converter_test -d converter_test_ci"
           --health-interval=5s --health-timeout=3s --health-retries=20
       redis:
         image: redis:8-alpine
@@ -44,19 +71,15 @@ jobs:
           --health-cmd="redis-cli ping"
           --health-interval=5s --health-timeout=3s --health-retries=20
     env:
-      TEST_DATABASE_URL: postgresql://converter_test:local-test-only@127.0.0.1:5432/converter_test
+      TEST_DATABASE_URL: postgresql://converter_test:local-test-only@127.0.0.1:5432/converter_test_ci
       TEST_REDIS_URL: redis://127.0.0.1:6379
+      TEST_WEB_ORIGIN: http://127.0.0.1:5173
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/ms-playwright
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: npm
-      - name: Install pinned npm locally
-        run: npm install --prefix "$RUNNER_TEMP/flux-npm" --no-save --ignore-scripts --no-audit --no-fund "$(node -p 'require("./package.json").packageManager')"
-      - run: node "$RUNNER_TEMP/flux-npm/node_modules/npm/bin/npm-cli.js" ci
+      - uses: ./.github/actions/setup
       - run: npm run db:migrate:deploy --workspace=@converter/backend
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
@@ -67,8 +90,31 @@ jobs:
       - run: npm run test:account
       - run: npm run test:conversions
       - run: npm run test:files
+      - name: Processing lifecycle with controlled conversion engine
+        run: npm run test:processing
+      - name: Worker and dependency failure recovery
+        run: npm run test:reliability
+      - run: node scripts/playwright.mjs install --with-deps chromium
+      - name: Serve isolated frontend for guest recovery
+        run: |
+          npm run dev --workspace=@converter/web -- --config ../../vite.e2e.config.ts > "$RUNNER_TEMP/guest-recovery-web.log" 2>&1 &
+          node scripts/ci-wait-http.mjs http://127.0.0.1:5173/
+      - name: Real database and browser guest-recovery tests
+        run: npm run test:guest:recovery
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: npm run build --workspace=@converter/web
+      - run: node scripts/playwright.mjs install --with-deps chromium
+      - name: Playwright E2E with isolated HTTP fixtures
+        run: node scripts/playwright.mjs test --config playwright.ci.config.ts --workers=2
   images:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -78,4 +124,68 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - run: docker build -f infra/docker/${{ matrix.target }}.Dockerfile .
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: infra/docker/${{ matrix.target }}.Dockerfile
+          tags: flux-ci-${{ matrix.target }}:local
+          load: true
+          push: false
+          cache-from: type=gha,scope=flux-${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=flux-${{ matrix.target }}
+      - name: Real conversion, isolation, deadline and crash smoke tests
+        if: matrix.target == 'worker'
+        run: |
+          docker run --rm --init --read-only --network none \
+            --cpus 1 --memory 1g --pids-limit 128 \
+            --cap-drop ALL --security-opt no-new-privileges:true \
+            --security-opt seccomp=infra/security/worker-seccomp.json \
+            --tmpfs /tmp:rw,nosuid,nodev,size=256m,mode=1777 \
+            --mount "type=bind,source=$PWD/apps/backend/test,target=/app/apps/backend/test,readonly" \
+            flux-ci-worker:local node --test --test-concurrency=1 \
+              test/conversion-engine.linux.mjs test/engine-crash.linux.mjs
+  live-matrix:
+    if: github.event_name == 'workflow_dispatch' && inputs.live_matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: npm run build --workspace=@converter/web
+      - run: node scripts/playwright.mjs install --with-deps chrome
+      - uses: docker/setup-buildx-action@v4
+      - name: Build API
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: infra/docker/api.Dockerfile
+          tags: flux-ci-api:local
+          load: true
+          push: false
+          cache-from: type=gha,scope=flux-api
+          cache-to: type=gha,mode=max,scope=flux-api
+      - name: Build worker
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: infra/docker/worker.Dockerfile
+          tags: flux-ci-worker:local
+          load: true
+          push: false
+          cache-from: type=gha,scope=flux-worker
+          cache-to: type=gha,mode=max,scope=flux-worker
+      - name: Build private test storage
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: infra/docker/minio.Dockerfile
+          tags: flux-ci-minio:local
+          load: true
+          push: false
+          cache-from: type=gha,scope=flux-minio
+          cache-to: type=gha,mode=max,scope=flux-minio
+      - name: Complete 26-direction live matrix on disposable services
+        run: node scripts/ci-live-matrix.mjs
