@@ -158,7 +158,7 @@ jobs:
             echo '::error::Minimal bubblewrap namespace/mount probe failed. Sandbox tests are blocked, not passed. No security fallback is permitted.'
             # Best-effort read-only diagnostics; the probe failure remains fatal.
             sudo -n journalctl -k --since '-2 minutes' --no-pager \
-              | grep -E 'apparmor="DENIED"|audit.*(bwrap|mount)' || true
+              | grep -E 'apparmor="DENIED".*profile="docker-default"|audit.*comm="bwrap"' || true
             exit 1
           fi
           run_worker node --test --test-concurrency=1 \

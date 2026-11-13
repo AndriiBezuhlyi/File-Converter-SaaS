@@ -1,0 +1,51 @@
+# REVIEW ONLY. Never loaded automatically. Not runtime-validated.
+# Docker-default-style base restrictions; scoped additions marked A1-A5.
+# Sources: Docker AppArmor documentation and bubblewrap 0.8.0 source.
+#include <tunables/global>
+
+profile flux-ci-bwrap-review flags=(attach_disconnected,mediate_deleted) {
+  # Baseline permissions do not grant Linux capabilities: Docker drops ALL.
+  # Narrower than docker-default: IPC and bwrap loopback setup only.
+  network unix,
+  network netlink,
+  capability,
+  file,
+  umount,
+  signal (receive) peer=unconfined,
+  signal (receive) peer=runc,
+  signal (send,receive) peer=flux-ci-bwrap-review,
+  ptrace (trace,tracedby,read,readby) peer=flux-ci-bwrap-review,
+
+  deny /proc/* w,
+  deny /proc/{[^1-9/],[^1-9/][^0-9/],[^1-9s/][^0-9y/][^0-9s/],[^1-9/][^0-9/][^0-9/]*}/** w,
+  deny /proc/sys/[^k]** w,
+  deny /proc/sys/kernel/{?,??,[^s][^h][^m]**} w,
+  deny /proc/sysrq-trigger rwklx,
+  deny /proc/kcore rwklx,
+  deny /sys/[^f]*/** wklx,
+  deny /sys/f[^s]*/** wklx,
+  deny /sys/fs/[^c]*/** wklx,
+  deny /sys/fs/c[^g]*/** wklx,
+  deny /sys/fs/cg[^r]*/** wklx,
+  deny /sys/firmware/** rwklx,
+  deny /sys/devices/virtual/powercap/** rwklx,
+  deny /sys/kernel/security/** rwklx,
+
+  # A1: Permit bwrap's nested user namespace; no host sysctl change.
+  userns,
+  # A2: One-way propagation before the two root pivots.
+  mount options=(rw,rslave,silent) -> /,
+  # A3: Anonymous filesystems only at bwrap's staging/isolated paths.
+  mount fstype=tmpfs -> /tmp/,
+  mount fstype=tmpfs -> /newroot/{dev,work}/,
+  mount fstype=proc -> /newroot/proc/,
+  mount fstype=devpts -> /newroot/dev/pts/,
+  # A4: Staging-root recursive bind and sandbox mounts. No bare mount rule.
+  mount options=(rw,rbind,silent) /tmp/newroot/ -> /tmp/newroot/,
+  mount options=(rw,rbind) /oldroot/{usr,usr/**,lib,lib/**,lib64,lib64/**,etc/fonts,etc/fonts/**,etc/ld.so.cache,etc/libreoffice,etc/libreoffice/**,app/node_modules,app/node_modules/**,app/apps/backend/dist/worker/modules/conversions/*.js,tmp/**,dev/null,dev/zero,dev/full,dev/random,dev/urandom,dev/tty} -> /newroot/**,
+  mount options=(ro,remount,bind,nosuid,nodev) -> /newroot/**,
+  mount options=(ro,remount,bind,nosuid,nodev,noexec) -> /newroot/**,
+  # A5: Only bwrap's two staging pivots; retain this profile after pivot.
+  pivot_root oldroot=/tmp/oldroot/ /tmp/,
+  pivot_root oldroot=/newroot/ /newroot/,
+}
