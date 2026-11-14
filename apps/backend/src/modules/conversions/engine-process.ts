@@ -42,7 +42,7 @@ class SharpImageConverter implements Converter {
         : target === 'webp'
           ? image.webp({ quality: 80, effort: 4 })
           : target === 'avif'
-            ? image.avif({ quality: 50, effort: 4, bitdepth: 8 })
+            ? image.avif({ quality: 50, effort: 2, bitdepth: 8 })
             : image.png()
     ).toFile(outputPath);
   }
