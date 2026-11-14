@@ -65,6 +65,7 @@ export function AppLayout() {
     }
     let active = true;
     let frame: number | undefined;
+    let observer: MutationObserver | undefined;
     const cancel = () => {
       active = false;
       initial.current = false;
@@ -84,12 +85,28 @@ export function AppLayout() {
           return;
         }
         const target = document.getElementById(id);
-        target?.scrollIntoView({ block: 'start', behavior: 'instant' });
-        target?.focus({ preventScroll: true });
+        const restoreTarget = () => {
+          if (!active) return;
+          const anchor = document.getElementById(id);
+          if (!anchor) return;
+          observer?.disconnect();
+          anchor.scrollIntoView({ block: 'start', behavior: 'instant' });
+          anchor.focus({ preventScroll: true });
+        };
+        if (target) restoreTarget();
+        else {
+          // A lazy route may still be showing its loading state.
+          observer = new MutationObserver(restoreTarget);
+          observer.observe(document.getElementById('main-content') ?? document.body, {
+            childList: true,
+            subtree: true,
+          });
+        }
       });
     });
     return () => {
       active = false;
+      observer?.disconnect();
       if (frame !== undefined) window.cancelAnimationFrame(frame);
       window.removeEventListener('wheel', cancel);
       window.removeEventListener('pointerdown', cancel);

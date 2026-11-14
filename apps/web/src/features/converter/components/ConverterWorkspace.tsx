@@ -59,23 +59,35 @@ function ConnectedWorkspace({
     let width = 0;
     let height = 0;
     let frame = 0;
-    const stabilize = () => {
-      const bounds = root.getBoundingClientRect();
-      if (Math.abs(bounds.width - width) > 1) {
-        width = bounds.width;
+    const stabilize = (inlineSize: number, blockSize: number) => {
+      if (Math.abs(inlineSize - width) > 1) {
+        width = inlineSize;
         height = 0;
-        root.style.removeProperty('min-block-size');
+        if (root.style.minBlockSize) {
+          root.style.removeProperty('min-block-size');
+          // Measure after reflow, never immediately after clearing the old minimum.
+          frame = window.requestAnimationFrame(() => {
+            const bounds = root.getBoundingClientRect();
+            stabilize(bounds.width, bounds.height);
+          });
+          return;
+        }
       }
       // Retain measured space through state changes; allow natural growth and responsive reflow.
-      height = Math.max(height, root.getBoundingClientRect().height);
-      root.style.minBlockSize = `${height}px`;
+      height = Math.max(height, blockSize);
+      const minimum = `${height}px`;
+      if (root.style.minBlockSize !== minimum) root.style.minBlockSize = minimum;
     };
-    stabilize();
-    const observer = new ResizeObserver(() => {
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries.find((entry) => entry.target === root);
+      if (!entry) return;
+      const size = entry.borderBoxSize[0];
+      const inlineSize = size?.inlineSize ?? entry.contentRect.width;
+      const blockSize = size?.blockSize ?? entry.contentRect.height;
       window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(stabilize);
+      frame = window.requestAnimationFrame(() => stabilize(inlineSize, blockSize));
     });
-    observer.observe(root);
+    observer.observe(root, { box: 'border-box' });
     return () => {
       observer.disconnect();
       window.cancelAnimationFrame(frame);
