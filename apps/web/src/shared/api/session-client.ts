@@ -22,7 +22,12 @@ const csrfSchema: z.ZodType<components['schemas']['Csrf']> = z.object({
 export function createSessionClient(http: HttpClient) {
   // Share only an in-flight read, never a settled identity or a cross-tab cache.
   let sessionRead:
-    { controller: AbortController; promise: Promise<components['schemas']['Session']> } | undefined;
+    | {
+        controller: AbortController;
+        promise: Promise<components['schemas']['Session']>;
+        readers: number;
+      }
+    | undefined;
   return {
     http,
     async readSession(signal: AbortSignal) {
@@ -31,6 +36,7 @@ export function createSessionClient(http: HttpClient) {
         const controller = new AbortController();
         const read = {
           controller,
+          readers: 0,
           promise: http.json({
             path: 'auth/session',
             signal: controller.signal,
@@ -44,17 +50,33 @@ export function createSessionClient(http: HttpClient) {
         };
         void read.promise.then(clear, clear);
       }
-      const pending = sessionRead.promise;
+      const read = sessionRead;
+      read.readers++;
       return new Promise<components['schemas']['Session']>((resolve, reject) => {
-        const abort = () => reject(new ApiRequestError('cancelled'));
+        let released = false;
+        const release = () => {
+          if (released) return;
+          released = true;
+          signal.removeEventListener('abort', abort);
+          read.readers--;
+          // A cancelled query must not lend its old identity snapshot to a fresh query.
+          if (!read.readers && sessionRead === read) {
+            sessionRead = undefined;
+            read.controller.abort();
+          }
+        };
+        const abort = () => {
+          release();
+          reject(new ApiRequestError('cancelled'));
+        };
         signal.addEventListener('abort', abort, { once: true });
-        void pending.then(
+        void read.promise.then(
           (value) => {
-            signal.removeEventListener('abort', abort);
+            release();
             if (!signal.aborted) resolve(value);
           },
           (error: unknown) => {
-            signal.removeEventListener('abort', abort);
+            release();
             reject(error instanceof Error ? error : new ApiRequestError('network'));
           },
         );
