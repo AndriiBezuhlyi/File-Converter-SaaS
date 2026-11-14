@@ -4,6 +4,41 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 - F02 public static network compression
+
+### Changes
+
+- Started `feat/f02-network-compression` in isolated `../Converter-f02` from freshly fetched `origin/main` at `4c1626a` (includes F03/F05 and F04). Reviewed the 2026-11-13 audit artifacts and current Docker/proxy architecture. Confirmed gzip was disabled both in the repository configuration and the local Nginx 1.30.6 runtime image; requests accepting gzip received uncompressed HTML/CSS/JS. The existing proxy serves the Vite build and forwards `/api/`; no CDN/compression ingress configuration exists in this repository. External hosting behavior remains unverified.
+- Enabled gzip only in public static locations, level 5 and 1024-byte minimum, with an explicit text MIME allowlist. API/auth/protected downloads explicitly remain outside proxy compression. Preserved MIME types, cache policies, routing, upstream encodings and security settings. Explicit static `Vary: Accept-Encoding` covers identity, gzip and 304 responses; the native gzip filter alone omitted Vary on 304 during testing. Binary formats remain excluded. No dependencies, application/UI code, contracts, models, Compose definitions, Dockerfiles, implementation/improvement plans or sandbox release gate changed.
+- Added four focused raw-HTTP regression tests and a disposable Docker runner with a synthetic upstream; documented the strategy, repeatable test command and future ingress/CDN ownership requirements in README. Level 5 trades measurable per-request CPU for substantially smaller transfers; no production rollout is authorized.
+
+### Verification and limitations
+
+- Equivalent before/after runtime: the same existing `flux-ci-proxy:local` image (Nginx 1.30.6), exact same freshly built static bytes mounted read-only, baseline configuration saved from `4c1626a`, separate isolated loopback ports and a synthetic anonymous API. Windows Node `v24.11.1`, npm `11.6.2` (below declared npm range; no tooling changes). Production web TypeScript/Vite build passed. Reused existing dependency/browser installations through local junctions; no lockfile changes. A complete multi-stage production Docker image rebuild was not performed.
+- Chromium `156.0.8078.4`, 390x844/DPR 1, CPU x4, 150 ms latency, 200000 B/s download, 93750 B/s upload, fresh context and disabled HTTP cache for every navigation. Eight counterbalanced pairs, first pair excluded as warmup, seven measured pairs; no parallel test/benchmark workloads during the final series. All seven pairs improved. Medians (ranges):
+
+| Metric                                                                                    | Before                    | After                     |
+| ----------------------------------------------------------------------------------------- | ------------------------- | ------------------------- |
+| Mobile LCP / FCP                                                                          | 4096 ms (4060-4444)       | 2272 ms (2236-2364)       |
+| Navigation loadEventEnd                                                                   | 3449.5 ms (3406.7-3594.2) | 1608.2 ms (1597.6-1626.7) |
+| Main JS resource duration, including request latency                                      | 2826.5 ms (2808.6-2847.8) | 1029.7 ms (1023.5-1053.6) |
+| Total initial browser transfer, including document/resources and Resource Timing overhead | 614085 bytes              | 258111 bytes              |
+
+- Actual initial HTML/CSS/JS response body bytes below exclude HTTP headers/chunk framing. Small shared CSS remains uncompressed because it is below the threshold. Initial text total: 519156 -> 163182 bytes, 68.6% smaller. All build CSS: 34435 -> 10540 bytes; all build JS: 602968 -> 194173 bytes (lazy routes are not included in initial totals).
+
+| Initial resource type | Before       | After        | Original / encoded ratio |
+| --------------------- | ------------ | ------------ | ------------------------ |
+| HTML                  | 1120 bytes   | 582 bytes    | 1.92x                    |
+| CSS                   | 20511 bytes  | 5367 bytes   | 3.82x                    |
+| JavaScript            | 497525 bytes | 157233 bytes | 3.16x                    |
+
+- CPU microbenchmark: six counterbalanced pairs, ten warmup requests then 200 sequential requests per sample to the 485326-byte main JS file; container cgroup v2 `cpu.stat` usage deltas. Median CPU/request 3.207 -> 19.326 ms (ranges 3.073-3.365 / 18.442-20.153), approximately +16.12 ms. Final CPU series ran without parallel test workloads; an earlier contended series is retained separately and excluded. Docker Desktop bind mounts, container scheduling and the unthrottled loopback workload limit generalization; this is not a production capacity estimate. Higher traffic may justify an explicitly approved CDN/precompression strategy later.
+- Passed: 4/4 new HTTP tests, including every build CSS/JS file, decoded byte equality, correct MIME/cache headers, identity/absent/gzip/q=0/unsupported negotiation, ingress Via, Vary on 200/304, conditional revalidation, missing assets, SPA deep links, all WOFF2 bytes, API/auth/binary fixtures and unchanged pre-encoded upstream responses (single gunzip restores JSON). Docker runner passed with `F02_PROXY_IMAGE=flux-ci-proxy:local F02_API_IMAGE=flux-ci-api:local node tests/proxy/run-compression.mjs` and removed its own containers/network. Both baseline/final `nginx -t` passed; local/production Compose `config --quiet` passed using process-local synthetic values for intentionally empty required example settings, without starting services or reading real credentials.
+- Passed unchanged: all 209 frontend unit tests and 21 Chromium E2E tests from `navigation`, `auth-flow`, `conversion-flow`, `files-flow` (login/registration/recovery, routing/refresh, conversion state/retry, actual fixture PNG/JPG/PDF Blob downloads and ownership/error UI). These E2E suites use the existing development/preview fixture servers, not the production proxy or a real conversion engine. Separate browser checks through both Nginx variants verified initial rendering, lazy API-docs navigation/refresh and direct login; no page runtime errors were recorded. New scripts pass scoped ESLint/Prettier; final diff/format checks are recorded at handoff.
+- Context7 supplied the official Nginx gzip documentation. Chrome DevTools MCP failed because its browser profile was already in use; no session was restarted. Existing Playwright/Chromium supplied runtime and Resource Timing waterfall evidence. Retained unique evidence/scripts under `../Converter-f02/.cache/tasks/f02/`: `before.conf`, `api.mjs`, `measure.mjs`, `browser-results.json`, `http-cpu.mjs`, `http-cpu.json`, `summarize.mjs`, `summary.json`; preliminary/contended series have separate names. Raw browser records include per-resource starts/ends/encoded/decoded/transfer sizes, paints and navigation timings. The worktree and ignored evidence are retained for review.
+- Final hygiene: changed-file Prettier, scoped ESLint and `git diff --check` passed. Stopped and removed only the three temporary `flux-f02-*` lab containers and their private network after saving evidence; `.cache/tasks/f02/setup.ps1` recreates the lab from the retained worktree/build and existing images. The standalone test runner independently cleans its own unique containers/network.
+- These are cold-cache synthetic-API laboratory results, not the audit's older 3.80 -> 1.66 s population or production/field measurements. Actual HTTPS ingress/CDN negotiation, production CPU/capacity, real authentication/storage/conversion engines, Firefox/WebKit and warm-cache performance were not revalidated. No push, PR creation, merge or deployment; release-gate worktrees/configuration remain untouched.
+
 ## 2026-11-14 - F04 document admission archive reuse
 
 ### Changes
