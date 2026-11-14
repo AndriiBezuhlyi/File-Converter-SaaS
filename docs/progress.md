@@ -4,6 +4,19 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 - Prepare approval-gated hosted sandbox experiment
+
+### Changes
+
+- Prepared a separate `workflow_dispatch`-only Ubuntu 24.04 experiment with a 30-minute timeout, public-repository/owner checks, exact reviewed dispatch SHA, explicit profile SHA-256 and separate kernel-load approval input. Root-owned profile snapshot, add-only loading, unchanged default-profile controls and `always()` cleanup are explicit. Existing automatic CI, production code/configuration and all four original Linux tests remain unchanged.
+- Narrowed the candidate AppArmor profile: removed global file/capability/unmount grants and arbitrary bind destinations; specified runtime read/map/exec, scratch writes, six named namespace-local capabilities, exact bind pairs, synthetic input prefixes, strict remount flags and staging pivots. Prepared additional positive/negative probes and strict four-pass/zero-skip TAP verification. No fallback or automatic policy widening exists.
+- Updated the review specification and permission rationale for the selected $0 GitHub-hosted VM. Identified the dispatch blocker: the new workflow must be present on the default branch; no merge/default-branch change or alternative trigger is authorized.
+
+### Verification and limitations
+
+- PASSED actionlint for both workflows, Prettier, JavaScript syntax/ESLint, compilation of all three generated inner-probe programs, capability-regex behavior, manual-trigger/deadline inspection, shell `bash -n`, whitespace and offline AppArmor compilation with `--skip-kernel-load --skip-read-cache`. The parser reports the absent local kernel cache interface; no policy was loaded. These checks cannot establish runtime sufficiency or minimum permissions. Docker build-record artifact upload is explicitly disabled to preserve the $0 experiment scope. Exact approval hashes are supplied at handoff. No hosted dispatch, push, VM provisioning, new runner registration or project startup was performed.
+- Runtime probes and the four original tests remain unexecuted for this candidate, pending separate profile approval and an authorized solution to default-branch workflow availability. Cleanup on timeout ultimately relies on GitHub VM disposal. Task-local evidence remains under ignored `.cache/tasks/ci-linux-sandbox/`; no new task worktree was created.
+
 ## 2026-11-13 - Diagnose hosted Linux sandbox mount failure
 
 ### Changes

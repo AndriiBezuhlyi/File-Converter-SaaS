@@ -1,36 +1,35 @@
-# Review specification only: not cloud-init, Terraform or an active workflow.
+# Review specification; the separate manual workflow remains approval-gated.
 review_only: true
 provisioning_approved: false
 machine:
+  provider: GitHub_hosted_standard_public_repository_runner
   os: Ubuntu Server 24.04 LTS amd64
-  image: UNSELECTED_REQUIRE_IMMUTABLE_PROVIDER_IMAGE_ID
-  vcpus: 2
-  memory_gib: 8
-  disposable_disk_gib: 30
+  image: ubuntu-24.04_record_actual_runner_image_version
+  vcpus: 4
+  memory_gib: 16
+  disposable_disk_gib: 14
   maximum_lifetime_minutes: 30
-  automatic_shutdown_minutes: 25
-  public_inbound: none
-  management: provider_private_management_channel
-  credentials: no_instance_role_no_repository_token_no_production_secrets
+  management: GitHub_job_lifecycle_no_self_hosted_registration
+  credentials: read_only_GITHUB_TOKEN_on_controller_never_passed_to_worker
   kernel:
     cgroup: v2
     apparmor: enforcing
     unprivileged_userns: required_without_sysctl_changes
   tools:
-    docker: rootful_engine_version_pinned_after_provider_selection
+    docker: hosted_engine_record_actual_version
     apparmor_parser: distribution_package
 registration:
-  github_runner: false
+  github_runner: platform_managed
   persistent_runner: false
 dispatch:
   controller: GitHub-hosted
-  trigger: manual_only_with_protected_environment_approval
+  trigger: workflow_dispatch_only_owner_and_explicit_approval_inputs
   source: maintainer_reviewed_commit_sha
   pull_requests: never
-  transport: reviewed_worker_image_and_test_archive_with_verified_sha256
+  transport: checkout_exact_dispatch_SHA_and_verify_approved_profile_SHA256
   checkout_credentials_on_vm: false
 worker:
-  image: flux-ci-worker:local
+  image: flux-ci-worker:experiment
   user: '1000:1000'
   init: true
   read_only: true
@@ -52,8 +51,7 @@ worker:
     - test/conversion-engine.linux.mjs
     - test/engine-crash.linux.mjs
 cleanup:
-  controller_finally: destroy_vm_disks_interfaces_and_temporary_firewall_rules
-  independent_watchdog: destroy_by_provider_resource_id_at_30_minutes
-  failure_or_cancellation: same_destruction_required
-  retained: sanitized_test_results_and_security_metadata_only
-  success_requires: all_tests_pass_and_provider_confirms_resource_destruction
+  workflow_always: remove_label_scoped_containers_and_only_owned_named_profile
+  platform_boundary: GitHub_disposes_job_VM_including_on_timeout
+  retained: sanitized_native_workflow_logs_no_uploaded_artifacts
+  success_requires: all_probes_and_four_original_tests_pass_zero_skips_and_cleanup_passes

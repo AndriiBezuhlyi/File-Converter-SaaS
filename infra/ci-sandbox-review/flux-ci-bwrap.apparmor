@@ -1,16 +1,38 @@
-# REVIEW ONLY. Never loaded automatically. Not runtime-validated.
-# Docker-default-style base restrictions; scoped additions marked A1-A5.
-# Sources: Docker AppArmor documentation and bubblewrap 0.8.0 source.
+# APPROVAL REQUIRED before loading. Static candidate; not runtime-validated.
+# Only the manual experiment may select this named profile. No exec attachment.
+# Sources: Docker AppArmor documentation and bubblewrap 0.8.0 mount setup.
 #include <tunables/global>
+@{FLUX_RO} = /newroot/{,usr/,usr/**,lib/,lib/**,lib64/,lib64/**,etc/fonts/,etc/fonts/**,etc/ld.so.cache,etc/libreoffice/,etc/libreoffice/**,app/node_modules/,app/node_modules/**,app/engine-process.js,app/conversion-policy.js,app/image-input.js,app/svg-validation.js,app/document-input.js,app/docx-validation.js,input,input.docx,dev/,proc/}
 
 profile flux-ci-bwrap-review flags=(attach_disconnected,mediate_deleted) {
-  # Baseline permissions do not grant Linux capabilities: Docker drops ALL.
-  # Narrower than docker-default: IPC and bwrap loopback setup only.
+  # Local IPC and loopback setup in a private network namespace only.
   network unix,
   network netlink,
-  capability,
-  file,
-  umount,
+  # Kernel checks during nested namespace setup; these grant no outer caps.
+  capability sys_admin,
+  capability sys_chroot,
+  capability setuid,
+  capability setgid,
+  capability setpcap,
+  capability net_admin,
+  # Runtime reads and executable/library mappings; no global file permission.
+  / r,
+  /{app,app/**,usr,usr/**,lib,lib/**,lib64,lib64/**} mr,
+  /{etc,etc/**,proc,proc/**,sys/fs/cgroup,sys/fs/cgroup/**} r,
+  # Mapping a newly created user namespace; kernel ownership checks still apply.
+  /proc/{self,[0-9]*}/{uid_map,gid_map,setgroups} w,
+  /oldroot/** r,
+  /{tmp,tmp/**,work,work/**,newroot,newroot/**} rwkl,
+  /dev/{null,zero,full,random,urandom,tty} rw,
+  /dev/{fd,stdin,stdout,stderr} r,
+  /dev/pts/** rw,
+  /input{,.docx} r,
+  /usr/bin/{prlimit,bwrap,sh,dash,bash,env,unshare,mount,setarch,libreoffice,dirname,basename,readlink,grep,cat,mkdir} ix,
+  /usr/local/bin/node ix,
+  /{sbin,usr/sbin}/docker-init mrix,
+  /usr/lib/libreoffice/program/** ix,
+  # bwrap detaches staging roots, never arbitrary mounts.
+  umount /{,oldroot/,tmp/oldroot/},
   signal (receive) peer=unconfined,
   signal (receive) peer=runc,
   signal (send,receive) peer=flux-ci-bwrap-review,
@@ -31,20 +53,47 @@ profile flux-ci-bwrap-review flags=(attach_disconnected,mediate_deleted) {
   deny /sys/devices/virtual/powercap/** rwklx,
   deny /sys/kernel/security/** rwklx,
 
-  # A1: Permit bwrap's nested user namespace; no host sysctl change.
+  # A1: Nested user namespace; no host sysctl change.
   userns,
   # A2: One-way propagation before the two root pivots.
   mount options=(rw,rslave,silent) -> /,
-  # A3: Anonymous filesystems only at bwrap's staging/isolated paths.
-  mount fstype=tmpfs -> /tmp/,
-  mount fstype=tmpfs -> /newroot/{dev,work}/,
-  mount fstype=proc -> /newroot/proc/,
-  mount fstype=devpts -> /newroot/dev/pts/,
-  # A4: Staging-root recursive bind and sandbox mounts. No bare mount rule.
+  # A3: Exact filesystem types, flags and staging destinations.
+  mount fstype=tmpfs options=(rw,nosuid,nodev) -> /tmp/,
+  mount fstype=tmpfs options=(rw,nosuid,nodev) -> /newroot/{dev,work}/,
+  mount fstype=proc options=(rw,nosuid,nodev,noexec) -> /newroot/proc/,
+  mount fstype=devpts options=(rw,nosuid,noexec) -> /newroot/dev/pts/,
+  # A4: Each source has a specific destination, not a source/destination product.
   mount options=(rw,rbind,silent) /tmp/newroot/ -> /tmp/newroot/,
-  mount options=(rw,rbind) /oldroot/{usr,usr/**,lib,lib/**,lib64,lib64/**,etc/fonts,etc/fonts/**,etc/ld.so.cache,etc/libreoffice,etc/libreoffice/**,app/node_modules,app/node_modules/**,app/apps/backend/dist/worker/modules/conversions/*.js,tmp/**,dev/null,dev/zero,dev/full,dev/random,dev/urandom,dev/tty} -> /newroot/**,
-  mount options=(ro,remount,bind,nosuid,nodev) -> /newroot/**,
-  mount options=(ro,remount,bind,nosuid,nodev,noexec) -> /newroot/**,
+  mount options=(rw,rbind,silent) /oldroot/usr/ -> /newroot/usr/,
+  mount options=(rw,rbind,silent) /oldroot/{lib,usr/lib}/ -> /newroot/lib/,
+  mount options=(rw,rbind,silent) /oldroot/{lib64,usr/lib64}/ -> /newroot/lib64/,
+  mount options=(rw,rbind,silent) /oldroot/etc/fonts/ -> /newroot/etc/fonts/,
+  mount options=(rw,rbind,silent) /oldroot/etc/ld.so.cache -> /newroot/etc/ld.so.cache,
+  mount options=(rw,rbind,silent) /oldroot/etc/libreoffice/ -> /newroot/etc/libreoffice/,
+  mount options=(rw,rbind,silent) /oldroot/app/node_modules/ -> /newroot/app/node_modules/,
+  mount options=(rw,rbind,silent) /oldroot/app/apps/backend/dist/worker/modules/conversions/engine-process.js -> /newroot/app/engine-process.js,
+  mount options=(rw,rbind,silent) /oldroot/app/apps/backend/dist/worker/modules/conversions/conversion-policy.js -> /newroot/app/conversion-policy.js,
+  mount options=(rw,rbind,silent) /oldroot/app/apps/backend/dist/worker/modules/conversions/image-input.js -> /newroot/app/image-input.js,
+  mount options=(rw,rbind,silent) /oldroot/app/apps/backend/dist/worker/modules/conversions/svg-validation.js -> /newroot/app/svg-validation.js,
+  mount options=(rw,rbind,silent) /oldroot/app/apps/backend/dist/worker/modules/conversions/document-input.js -> /newroot/app/document-input.js,
+  mount options=(rw,rbind,silent) /oldroot/app/apps/backend/dist/worker/modules/conversions/docx-validation.js -> /newroot/app/docx-validation.js,
+  # Unchanged tests generate these scratch prefixes; only input is exposed.
+  mount options=(rw,rbind,silent) /oldroot/tmp/{engine-test-*,isolation-test-*,worker-crash-*/attempt-*,flux-probe-*}/input -> /newroot/input{,.docx},
+  mount options=(rw,rbind,silent) /oldroot/dev/null -> /newroot/input,
+  mount options=(rw,rbind,silent) /oldroot/dev/null -> /newroot/dev/null,
+  mount options=(rw,rbind,silent) /oldroot/dev/zero -> /newroot/dev/zero,
+  mount options=(rw,rbind,silent) /oldroot/dev/full -> /newroot/dev/full,
+  mount options=(rw,rbind,silent) /oldroot/dev/random -> /newroot/dev/random,
+  mount options=(rw,rbind,silent) /oldroot/dev/urandom -> /newroot/dev/urandom,
+  mount options=(rw,rbind,silent) /oldroot/dev/tty -> /newroot/dev/tty,
+  # Exact remount flags: read-only is mandatory; inherited relatime is explicit.
+  mount options=(ro,remount,bind,nosuid,nodev,silent) -> @{FLUX_RO},
+  mount options=(ro,remount,bind,nosuid,nodev,silent,relatime) -> @{FLUX_RO},
+  mount options=(ro,remount,bind,nosuid,nodev,noexec,silent) -> @{FLUX_RO},
+  mount options=(ro,remount,bind,nosuid,nodev,noexec,silent,relatime) -> @{FLUX_RO},
+  # Device binds are temporarily writable before /dev is remounted read-only.
+  mount options=(rw,remount,bind,nosuid,noexec,silent) -> /newroot/dev/{null,zero,full,random,urandom,tty},
+  mount options=(rw,remount,bind,nosuid,noexec,silent,relatime) -> /newroot/dev/{null,zero,full,random,urandom,tty},
   # A5: Only bwrap's two staging pivots; retain this profile after pivot.
   pivot_root oldroot=/tmp/oldroot/ /tmp/,
   pivot_root oldroot=/newroot/ /newroot/,

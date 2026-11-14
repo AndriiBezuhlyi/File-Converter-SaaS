@@ -1,0 +1,124 @@
+name: Manual Linux sandbox experiment
+on:
+  workflow_dispatch:
+    inputs:
+      reviewed_sha:
+        description: Full reviewed commit SHA; must equal the dispatched workflow SHA
+        required: true
+        type: string
+      approved_profile_sha256:
+        description: SHA-256 of the exact separately approved AppArmor file
+        required: true
+        type: string
+      approve_kernel_load:
+        description: Explicit approval already obtained for one profile load and runtime experiment
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
+concurrency:
+  group: manual-linux-sandbox
+  cancel-in-progress: false
+jobs:
+  sandbox:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      DOCKER_BUILD_RECORD_UPLOAD: 'false'
+      REVIEWED_SHA: ${{ inputs.reviewed_sha }}
+      PROFILE_SHA256: ${{ inputs.approved_profile_sha256 }}
+      LOAD_APPROVED: ${{ inputs.approve_kernel_load }}
+      DISPATCH_SHA: ${{ github.sha }}
+      REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+      ACTOR: ${{ github.actor }}
+      OWNER: ${{ github.repository_owner }}
+    steps:
+      - name: Reject unapproved, unreviewed or billable execution
+        shell: bash
+        run: |
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$REPOSITORY_PRIVATE" = false
+          test "$ACTOR" = "$OWNER"
+          test "$GITHUB_TRIGGERING_ACTOR" = "$OWNER"
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$LOAD_APPROVED" = true
+          [[ "$REVIEWED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PROFILE_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          test "$REVIEWED_SHA" = "$DISPATCH_SHA"
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.reviewed_sha }}
+          persist-credentials: false
+      - name: Verify checkout, enforcing AppArmor and exact approved profile
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$REVIEWED_SHA"
+          test ! -e .env
+          test "$(cat /sys/module/apparmor/parameters/enabled)" = Y
+          test "$(stat -fc %T /sys/fs/cgroup)" = cgroup2fs
+          docker version --format 'Docker client={{.Client.Version}} server={{.Server.Version}}'
+          docker info --format '{{json .SecurityOptions}}' | grep 'name=apparmor'
+          printf '%s  %s\n' "$PROFILE_SHA256" infra/ci-sandbox-review/flux-ci-bwrap.apparmor | sha256sum --check
+          sudo apparmor_parser --skip-kernel-load --skip-read-cache infra/ci-sandbox-review/flux-ci-bwrap.apparmor
+          sudo test -r /sys/kernel/security/apparmor/profiles
+          if sudo grep -q '^flux-ci-bwrap-review ' /sys/kernel/security/apparmor/profiles; then
+            echo '::error::Refusing to replace a pre-existing profile.'
+            exit 1
+          fi
+      - uses: docker/setup-buildx-action@v4
+      - name: Build only the reviewed worker; no image publication or artifact storage
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: infra/docker/worker.Dockerfile
+          tags: flux-ci-worker:experiment
+          load: true
+          push: false
+      - name: Confirm docker-default still blocks the control probe
+        run: node scripts/ci-sandbox-experiment.mjs control
+      - name: Load only the separately approved named profile
+        shell: bash
+        run: |
+          snapshot="$RUNNER_TEMP/flux-sandbox-approved.apparmor"
+          sudo install -o root -g root -m 0444 infra/ci-sandbox-review/flux-ci-bwrap.apparmor "$snapshot"
+          printf '%s  %s\n' "$PROFILE_SHA256" "$snapshot" | sha256sum --check
+          # Ownership marker precedes load so cancellation cannot hide an owned profile.
+          touch "$RUNNER_TEMP/flux-sandbox-profile-owned"
+          sudo apparmor_parser --add --skip-read-cache "$snapshot"
+          sudo grep -Fx 'flux-ci-bwrap-review (enforce)' /sys/kernel/security/apparmor/profiles
+      - name: Positive and negative isolation probes, then four unchanged original tests
+        run: node scripts/ci-sandbox-experiment.mjs verify
+      - name: Check the unchanged default profile again
+        run: node scripts/ci-sandbox-experiment.mjs control
+      - name: Always clean experiment containers and owned profile
+        if: always()
+        shell: bash
+        run: |
+          label="flux.sandbox-experiment=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          cleanup_failed=0
+          if container_ids=$(docker ps -aq --filter "label=$label"); then
+            if test -n "$container_ids"; then
+              mapfile -t containers <<< "$container_ids"
+              docker rm -f "${containers[@]}" || cleanup_failed=1
+            fi
+          else
+            cleanup_failed=1
+          fi
+          if test -f "$RUNNER_TEMP/flux-sandbox-profile-owned"; then
+            sudo test -r /sys/kernel/security/apparmor/profiles
+            if sudo grep -q '^flux-ci-bwrap-review ' /sys/kernel/security/apparmor/profiles; then
+              sudo apparmor_parser --remove "$RUNNER_TEMP/flux-sandbox-approved.apparmor" || cleanup_failed=1
+            fi
+            if sudo grep -q '^flux-ci-bwrap-review ' /sys/kernel/security/apparmor/profiles; then
+              echo '::error::Experiment profile was not removed.'
+              exit 1
+            fi
+          fi
+          if remaining=$(docker ps -aq --filter "label=$label"); then
+            test -z "$remaining" || cleanup_failed=1
+          else
+            cleanup_failed=1
+          fi
+          test "$cleanup_failed" = 0
+          echo 'Experiment container/profile cleanup confirmed; GitHub disposes the job VM.'
