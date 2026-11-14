@@ -4,6 +4,16 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 - Preflight the approved single hosted sandbox experiment
+
+### Changes
+
+- Keep the final docker-default control check enabled after a probe failure when the initial control succeeded. No profile, production sandbox or original test changes.
+
+### Verification and limitations
+
+- Fresh worker build and actual sandboxArguments tail assertions confirm that replacing its last three arguments preserves sandbox and Node resource flags. Four generated probe programs compile; static JavaScript, formatting and workflow checks passed. Profile SHA-256 remains 928cc9e35fd24192dea3920afc974bdcf98789a9d974a22bbb5babafc01eb79c. One manual hosted run is authorized; runtime results remain pending.
+
 ## 2026-11-14 - Address independent sandbox review and prepare inactive stub PR
 
 ### Changes

@@ -76,6 +76,7 @@ jobs:
           load: true
           push: false
       - name: Confirm docker-default still blocks the control probe
+        id: control
         run: node scripts/ci-sandbox-experiment.mjs control
       - name: Load only the separately approved named profile
         shell: bash
@@ -90,6 +91,7 @@ jobs:
       - name: Positive and negative isolation probes, then four unchanged original tests
         run: node scripts/ci-sandbox-experiment.mjs verify
       - name: Check the unchanged default profile again
+        if: ${{ always() && steps.control.outcome == 'success' }}
         run: node scripts/ci-sandbox-experiment.mjs control
       - name: Always clean experiment containers and owned profile
         if: always()
