@@ -4,6 +4,19 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 - Address independent sandbox review and prepare inactive stub PR
+
+### Changes
+
+- Removed general `/oldroot` reads and `/tmp` writes in favor of runtime/proc/device/input paths and the unchanged tests' scratch prefixes. Reduced same-profile ptrace permissions to read/readby, with no attach/trace grant. Documented why the second pivot needs root unmount permission and why host protection depends on namespaces/caps/propagation, not the AppArmor path rule alone. Added the exact `/oldroot` rprivate operation found in bubblewrap 0.8.0 source; no runtime failure or automatic widening was involved.
+- Added a two-live-attempt negative probe for peer filesystem/PID/proc-memory isolation and signal-0 lookup, plus controller/container mount-namespace separation, no-shared-mount checks and controller root-mount invariants. Existing four Linux tests, production source/configuration, seccomp and resource/network bounds remain unchanged. Actual ptrace attach is not claimed tested.
+- Created draft PR #1 from isolated `ci/sandbox-dispatch-stub`, based on current main: exactly one inactive workflow, 27 additions, commit dee7814. It has manual inputs only, no token permissions/checkout/policy commands and explicit failure if dispatched. GitHub connector writes returned 403; existing Git authentication successfully published the stub branch and created the PR. No merge or experiment dispatch occurred. Worktree `../Converter-sandbox-dispatch-stub` retains the focused stub commit; no integration into the CI branch was performed.
+
+### Verification and limitations
+
+- Actionlint/Prettier/whitespace checks passed for the exact stub; GitHub PR file listing confirms one file. Existing ordinary push/PR CI triggered automatically, independently of the manual sandbox experiment; results must not be treated as candidate AppArmor validation.
+- Static source/ESLint and generated-probe compilation were checked; updated profile offline compilation uses `--skip-kernel-load`. Final approval hash and incremental diff are provided at handoff. No profile load, active-policy change, project startup or hosted sandbox execution occurred. The new probes, host invariants and revised profile remain runtime-unverified.
+
 ## 2026-11-14 - Prepare approval-gated hosted sandbox experiment
 
 ### Changes

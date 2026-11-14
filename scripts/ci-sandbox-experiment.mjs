@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
+import { readFileSync, readlinkSync } from 'node:fs';
 
 assert.equal(process.platform, 'linux', 'Only the approved disposable Linux VM is supported.');
 assert.equal(process.env.GITHUB_ACTIONS, 'true');
@@ -13,6 +14,13 @@ assert.match(process.env.GITHUB_RUN_ATTEMPT ?? '', /^\d+$/);
 const mode = process.argv[2];
 assert.ok(['control', 'verify'].includes(mode));
 const label = `flux.sandbox-experiment=${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
+const hostMountNamespace = readlinkSync('/proc/self/ns/mnt');
+const hostRootMount = () =>
+  readFileSync('/proc/self/mountinfo', 'utf8')
+    .split('\n')
+    .find((line) => line.split(' ')[4] === '/');
+const originalRootMount = hostRootMount();
+assert.ok(originalRootMount);
 const args = [
   'run',
   '--rm',
@@ -38,6 +46,8 @@ const args = [
   '/tmp:rw,nosuid,nodev,size=256m,mode=1777',
   '--label',
   label,
+  '--env',
+  `EXPECTED_HOST_MOUNT_NS=${hostMountNamespace}`,
   '--mount',
   `type=bind,source=${resolve('apps/backend/test')},target=/app/apps/backend/test,readonly`,
   '--mount',
@@ -75,7 +85,7 @@ if (mode === 'control') {
   console.log('PASS: docker-default still denies the control mount.');
 } else {
   assert.equal(
-    run(['node', 'runtime-probes.mjs'], 45_000).status,
+    run(['node', 'runtime-probes.mjs'], 60_000).status,
     0,
     'Isolation probes failed. Stop; do not widen policy.',
   );
@@ -96,3 +106,6 @@ if (mode === 'control') {
   }
   console.log('PASS: all four unchanged original tests passed without skips.');
 }
+assert.equal(readlinkSync('/proc/self/ns/mnt'), hostMountNamespace);
+assert.equal(hostRootMount(), originalRootMount, 'Host root mount changed during the experiment.');
+console.log('PASS: controller mount namespace and host root mount are unchanged.');

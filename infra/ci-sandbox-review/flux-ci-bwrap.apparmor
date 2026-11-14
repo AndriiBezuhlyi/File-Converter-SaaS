@@ -21,8 +21,20 @@ profile flux-ci-bwrap-review flags=(attach_disconnected,mediate_deleted) {
   /{etc,etc/**,proc,proc/**,sys/fs/cgroup,sys/fs/cgroup/**} r,
   # Mapping a newly created user namespace; kernel ownership checks still apply.
   /proc/{self,[0-9]*}/{uid_map,gid_map,setgroups} w,
-  /oldroot/** r,
-  /{tmp,tmp/**,work,work/**,newroot,newroot/**} rwkl,
+  # Reads through bwrap's temporary old root: runtime binds and saved proc fd.
+  /oldroot/ r,
+  /oldroot/{usr/,usr/**,lib/,lib/**,lib64/,lib64/**} r,
+  /oldroot/etc/{fonts/,fonts/**,ld.so.cache,libreoffice/,libreoffice/**} r,
+  /oldroot/app/node_modules/{,**} r,
+  /oldroot/app/apps/backend/dist/worker/modules/conversions/{engine-process,conversion-policy,image-input,svg-validation,document-input,docx-validation}.js r,
+  /oldroot/proc/{self,[0-9]*}/{mountinfo,fd/,fd/**} r,
+  /oldroot/dev/{null,zero,full,random,urandom,tty} r,
+  /oldroot/tmp/{engine-test-*,isolation-test-*,worker-crash-*/attempt-*,flux-probe-*}/input r,
+  # Only unchanged-test scratch prefixes and bwrap's staging roots are writable.
+  /tmp/ r,
+  /tmp/{engine-test-*,isolation-test-*,worker-crash-*,flux-probe-*}{,/**} rwkl,
+  /tmp/{newroot,oldroot}/{,**} rwkl,
+  /{work,work/**,newroot,newroot/**} rwkl,
   /dev/{null,zero,full,random,urandom,tty} rw,
   /dev/{fd,stdin,stdout,stderr} r,
   /dev/pts/** rw,
@@ -31,12 +43,14 @@ profile flux-ci-bwrap-review flags=(attach_disconnected,mediate_deleted) {
   /usr/local/bin/node ix,
   /{sbin,usr/sbin}/docker-init mrix,
   /usr/lib/libreoffice/program/** ix,
-  # bwrap detaches staging roots, never arbitrary mounts.
+  # The '/' case detaches the former staging root after pivot_root('.', '.').
+  # This is namespace-local permission, not a host-namespace access guarantee.
   umount /{,oldroot/,tmp/oldroot/},
   signal (receive) peer=unconfined,
   signal (receive) peer=runc,
   signal (send,receive) peer=flux-ci-bwrap-review,
-  ptrace (trace,tracedby,read,readby) peer=flux-ci-bwrap-review,
+  # Proc metadata access only. Debugger attach/trace is deliberately not allowed.
+  ptrace (read,readby) peer=flux-ci-bwrap-review,
 
   deny /proc/* w,
   deny /proc/{[^1-9/],[^1-9/][^0-9/],[^1-9s/][^0-9y/][^0-9s/],[^1-9/][^0-9/][^0-9/]*}/** w,
@@ -57,6 +71,8 @@ profile flux-ci-bwrap-review flags=(attach_disconnected,mediate_deleted) {
   userns,
   # A2: One-way propagation before the two root pivots.
   mount options=(rw,rslave,silent) -> /,
+  # bwrap 0.8.0 marks the temporary old root private before detaching it.
+  mount options=(rw,rprivate,silent) -> /oldroot/,
   # A3: Exact filesystem types, flags and staging destinations.
   mount fstype=tmpfs options=(rw,nosuid,nodev) -> /tmp/,
   mount fstype=tmpfs options=(rw,nosuid,nodev) -> /newroot/{dev,work}/,

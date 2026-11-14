@@ -1,7 +1,7 @@
 // Additional synthetic probes; the four existing sandbox tests remain unchanged.
 import 'reflect-metadata';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import {
   mkdtempSync,
   writeFileSync,
@@ -9,6 +9,7 @@ import {
   readlinkSync,
   statfsSync,
   rmSync,
+  readdirSync,
 } from 'node:fs';
 import { sandboxArguments } from './dist/worker/modules/conversions/conversion-engine.js';
 
@@ -19,6 +20,12 @@ assert.equal(version.status, 0);
 assert.match(version.stdout, /^bubblewrap 0\.8\.0\s/);
 console.log(`Runtime: Node ${process.version}; ${version.stdout.trim()}`);
 const status = readFileSync('/proc/self/status', 'utf8');
+assert.match(process.env.EXPECTED_HOST_MOUNT_NS ?? '', /^mnt:\[\d+\]$/);
+assert.notEqual(readlinkSync('/proc/self/ns/mnt'), process.env.EXPECTED_HOST_MOUNT_NS);
+for (const line of readFileSync('/proc/self/mountinfo', 'utf8').trim().split('\n')) {
+  const fields = line.split(' ');
+  assert.ok(!fields.slice(6, fields.indexOf('-')).some((field) => field.startsWith('shared:')));
+}
 assert.equal(process.getuid(), 1000);
 assert.equal(readFileSync('/proc/self/attr/current', 'utf8').trim(), profile);
 for (const field of ['CapInh', 'CapPrm', 'CapEff', 'CapBnd', 'CapAmb']) {
@@ -35,6 +42,11 @@ const [quota, period] = readFileSync('/sys/fs/cgroup/cpu.max', 'utf8')
 assert.equal(quota / period, 1);
 const scratch = statfsSync('/tmp');
 assert.ok(scratch.bsize * scratch.blocks <= 268435456);
+assert.throws(
+  () => writeFileSync(`/tmp/flux-unapproved-${process.pid}`, 'owned negative scratch probe'),
+  (error) => ['EACCES', 'EPERM'].includes(error.code),
+  'AppArmor must deny an unrelated scratch prefix even on writable outer tmpfs.',
+);
 const namespaces = Object.fromEntries(
   ['user', 'mnt', 'pid', 'net', 'ipc', 'uts'].map((name) => [
     name,
@@ -44,6 +56,28 @@ const namespaces = Object.fromEntries(
 const directory = mkdtempSync('/tmp/flux-probe-');
 const input = `${directory}/input`;
 writeFileSync(input, 'owned synthetic isolation input');
+const peerDirectory = mkdtempSync('/tmp/flux-probe-');
+const peerInput = `${peerDirectory}/input`;
+writeFileSync(peerInput, 'owned peer-attempt sentinel');
+let peer;
+let peerClosed;
+async function stopPeer() {
+  if (!peer?.pid) return;
+  if (peer.exitCode === null && peer.signalCode === null) {
+    try {
+      process.kill(-peer.pid, 'SIGKILL');
+    } catch (error) {
+      if (error.code !== 'ESRCH') throw error;
+    }
+  }
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Peer attempt cleanup timed out.')), 5000);
+    peerClosed.then(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
 function probe(code) {
   const args = sandboxArguments(input, 'jpg', 'png');
   args.splice(-3, 3, '-e', code);
@@ -59,6 +93,64 @@ function probe(code) {
   assert.equal(result.status, 0, 'Probe failed. Stop; do not widen policy.');
 }
 try {
+  const marker = `fluxpeer${process.pid}`;
+  const peerArgs = sandboxArguments(peerInput, 'jpg', 'png');
+  peerArgs.splice(
+    -3,
+    3,
+    '-e',
+    `process.title=${JSON.stringify(marker)}; process.stdout.write('peer-ready\\n'); setInterval(() => {}, 1000);`,
+  );
+  peer = spawn('/usr/bin/prlimit', peerArgs, {
+    env: {},
+    detached: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  peerClosed = new Promise((resolve) => peer.once('close', resolve));
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Peer attempt did not become ready.')), 10_000);
+    let output = '';
+    peer.once('error', (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    peer.once('exit', () => {
+      clearTimeout(timer);
+      reject(new Error('Peer attempt exited before isolation probe.'));
+    });
+    peer.stdout.on('data', (chunk) => {
+      output += chunk;
+      if (output.includes('peer-ready\n')) {
+        clearTimeout(timer);
+        resolve();
+      }
+    });
+    peer.stderr.on('data', (chunk) => process.stderr.write(chunk));
+  });
+  const matches = readdirSync('/proc').filter((name) => {
+    if (!/^\d+$/.test(name)) return false;
+    try {
+      return readFileSync(`/proc/${name}/comm`, 'utf8').trim() === marker;
+    } catch (error) {
+      if (error.code === 'ENOENT') return false;
+      throw error;
+    }
+  });
+  assert.equal(matches.length, 1, 'Parent must positively identify the live peer attempt.');
+  const peerPid = Number(matches[0]);
+  process.kill(peerPid, 0);
+  probe(`
+    const assert = require('node:assert/strict');
+    const fs = require('node:fs');
+    assert.equal(fs.existsSync(${JSON.stringify(peerDirectory)}), false);
+    assert.throws(() => fs.readFileSync(${JSON.stringify(peerInput)}), {code: 'ENOENT'});
+    assert.equal(fs.existsSync('/proc/' + ${peerPid}), false);
+    assert.throws(() => fs.readFileSync('/proc/' + ${peerPid} + '/mem'), {code: 'ENOENT'});
+    assert.throws(() => process.kill(${peerPid}, 0), {code: 'ESRCH'});
+    console.log('PASS: live peer attempt filesystem, PID and proc-memory view are inaccessible.');
+  `);
+  assert.equal(peer.exitCode, null);
+  process.kill(peerPid, 0);
   probe(`
     const assert = require('node:assert/strict');
     const fs = require('node:fs');
@@ -125,5 +217,7 @@ try {
   `);
   console.log('PASS: outer security settings and isolated runtime probes.');
 } finally {
+  await stopPeer();
+  rmSync(peerDirectory, { recursive: true, force: true });
   rmSync(directory, { recursive: true, force: true });
 }
