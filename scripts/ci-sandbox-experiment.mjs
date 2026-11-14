@@ -25,6 +25,8 @@ const args = [
   'run',
   '--rm',
   '--init',
+  '--entrypoint',
+  '',
   '--read-only',
   '--network',
   'none',

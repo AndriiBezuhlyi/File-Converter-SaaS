@@ -4,6 +4,16 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 - Clear only the experiment image entrypoint
+
+### Changes
+
+- Add an empty Docker entrypoint only to the manual experiment containers, retaining docker-init and every security/resource option. The worker image inherits docker-entrypoint.sh, which the unchanged AppArmor candidate cannot execute; production Dockerfile, profile, seccomp, source and original tests are unchanged.
+
+### Verification and limitations
+
+- Local disposable-container preflight confirmed the inherited ENTRYPOINT/CMD, direct Node under docker-init, all zero capability masks, NoNewPrivs, seccomp, cgroup memory/PID limits, denied root writes, absent external network interface, direct bwrap version and successful minimal namespace execution. Docker Desktop has no AppArmor support: only the local diagnostic invocation omits the unsupported AppArmor selector; the maintained hosted invocation retains its enforcing named/default profiles. Temporary preflight artifacts remain under .cache/tasks/ci-linux-sandbox. One additional hosted dispatch is authorized after static checks; its results are pending.
+
 ## 2026-11-14 - Preflight the approved single hosted sandbox experiment
 
 ### Changes
