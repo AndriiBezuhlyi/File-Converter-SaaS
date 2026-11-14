@@ -28,7 +28,7 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "test:processing": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.processing.config.cjs --runInBand",
-    "test:engine:linux": "node --test test/conversion-engine.linux.mjs",
+    "test:engine:linux": "node --test --test-concurrency=1 test/conversion-engine.linux.mjs test/avif-performance.linux.mjs",
     "test:files": "npm run db:generate && node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.files.config.cjs --runInBand"
   },
   "dependencies": {

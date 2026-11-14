@@ -4,6 +4,18 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 - F01 AVIF performance optimization
+
+### Changes
+
+- Changed only AVIF effort from 4 to 2, retaining quality 50/8-bit output and all existing conversion, API and sandbox boundaries. Added an independent original 6 MP fixture regression and included it in the sequential Linux engine test command. Detailed measurements, quality assessment, provenance and limitations: [F01 report](../reports/performance/f01-avif-2026-11-14.md).
+
+### Verification and limitations
+
+- Reproduced the original exit-137 CPU-budget failure without OOM. Compared efforts 4/0/1/2 across six fixtures, with three repetitions per successful case. Effort 2 passed all 18 runs; original noise fixture median 6.0 s versus failure at 52.7 s, natural photo median 6.6 s versus 39.7 s. Fresh-container controls confirmed successful effort-2 noise/photo at 6.3/15.0 s; both effort-4 controls failed. Fresh peak memory was 288/506 MiB for effort 2; photo memory increased slightly, so no general RAM reduction is claimed.
+- Passed 89 backend unit tests, nine Linux original-fixture/base-sandbox/image tests, five document tests using the existing PDF-tool-equipped image, one security regression, backend typecheck/API-worker compilation, focused lint and formatting checks. The initial production-image document run lacked PDF inspection tools; the unchanged repeat passed. Existing live HTTP matrix passed 60/60; the exact original fixture also completed and decoded through account/API-key/guest flows, with ownership and retention assertions.
+- Quality remains lossy. Effort-2 photo/graphics/alpha outputs grew 8.1%/4.3%/10.7%; visual crop inspection found no material regression on this finite corpus. Local lab results are not universal latency or production-provider/browser/hosted-CI verification. Plans and existing tests remain unchanged. Worktree `../Converter-f01-avif` and its unique `.cache/tasks/f01-avif/` evidence are retained; no push, PR creation, merge or deployment.
+
 ## 2026-11-12 - Item 17 real live matrix and 5 MB performance verification
 
 ### Changes
