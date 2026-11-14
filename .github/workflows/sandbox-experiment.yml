@@ -1,0 +1,27 @@
+name: Manual Linux sandbox experiment
+on:
+  workflow_dispatch:
+    inputs:
+      reviewed_sha:
+        description: Full reviewed commit SHA; must equal the dispatched workflow SHA
+        required: true
+        type: string
+      approved_profile_sha256:
+        description: SHA-256 of the exact separately approved AppArmor file
+        required: true
+        type: string
+      approve_kernel_load:
+        description: Explicit approval already obtained for one profile load and runtime experiment
+        required: true
+        default: false
+        type: boolean
+permissions: {}
+jobs:
+  inactive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Refuse execution from the default-branch stub
+        run: |
+          echo '::error::Registration stub only. No sandbox test ran. Dispatch the separately approved reviewed branch instead.'
+          exit 1
