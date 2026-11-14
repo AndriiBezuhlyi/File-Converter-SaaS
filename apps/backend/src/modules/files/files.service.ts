@@ -70,6 +70,7 @@ export class FilesService {
       const date = new Date(cursor.data.createdAt);
       const comparison = query.sort === 'newest' ? 'lt' : 'gt';
       boundary = {
+        createdAt: { [query.sort === 'newest' ? 'lte' : 'gte']: date },
         OR: [
           { createdAt: { [comparison]: date } },
           { createdAt: date, id: { [comparison]: cursor.data.id } },

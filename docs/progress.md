@@ -4,6 +4,19 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 — F08 bounded saved-file cursor query
+
+### Changes and decision
+
+- Added one inclusive createdAt bound to FilesService.list's existing strict date/ID cursor OR, using lte for newest and gte for oldest. The additional condition is logically implied by the OR and exposes an existing-index seek without including the cursor record. Ordering, ID tie-break, ownership/lifecycle filters, cursor validation and API contracts remain unchanged. No schema, migration, index, admission lock, quota or other production query changed.
+- Added 11 real-PostgreSQL cursor regression cases in a new test file and included that file in the existing files suite configuration. Existing protected tests are unchanged. Added a reproducible actual-service before/after benchmark and the [F08 report](../reports/performance/f08-cursor-bound-2026-11-14.md).
+
+### Verification and limitations
+
+- Passed 197 tests across database/security, saved files, admission/concurrency, auth/guest/account, processing/reliability, integration and backend unit suites; full workspace typecheck/lint, six lint-configuration tests, Prisma validation, focused ESLint, changed-file formatting and API TypeScript build passed. The contract checker failed on the Windows checkout's CRLF-only difference; the exact unchanged checker passed against HEAD's LF blobs in isolated scratch, and contract parity was confirmed without changing files or assertions. The new cases cover tied timestamps across pages, both sort directions, search/format combinations, cursor/future-file deletion, owner isolation and cursor validation without omissions or duplicates in the tested populations.
+- On the same disposable PostgreSQL 18.6 dataset (100k saved outputs plus 100k temporary inputs, tied dates), actual-service deep-page p95 improved from 62.26 to 4.31 ms for newest and 62.73 to 3.86 ms for oldest. Three repetitions of 40 samples per variant across eight cases; all measured page/cursor values matched. Captured Prisma SQL EXPLAIN ANALYZE confirms date range conditions in the existing indexes. Synthetic lab results do not establish production percentiles. The first benchmark teardown timed out; bounded owner-scoped fixture deletion fixed it and the full rerun passed.
+- Work is isolated on perf/f08-cursor-bound from origin/main 63d01f2 in Converter-f08; main Converter's unmerged CI work remains intact. Preserved 292 prior benchmark/security files with SHA-256 verification under Converter-artifacts/f08-implementation-20261114. No complete worktree or branch was removed. Protected OS handle visibility remains limited; the report lists conditional cleanup candidates for separate approval and immediate revalidation. No push, PR, merge or deployment performed.
+
 ## 2026-11-14 — F06/F07 focused final review
 
 ### Changes and decision
