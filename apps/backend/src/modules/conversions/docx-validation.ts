@@ -114,7 +114,11 @@ export function readDocumentArchive(bytes: Buffer): Map<string, Buffer> {
 }
 
 export function validateDocx(bytes: Buffer): void {
-  const entries = readDocumentArchive(bytes);
+  validateDocxEntries(readDocumentArchive(bytes));
+}
+
+// Internal validation stage: entries must come from readDocumentArchive in this operation.
+export function validateDocxEntries(entries: ReadonlyMap<string, Buffer>): void {
   if (
     !entries
       .get('[Content_Types].xml')

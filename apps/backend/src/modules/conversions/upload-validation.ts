@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import { AnimatedImageFailure, ConversionEngine, EngineFailure } from './conversion-engine.js';
 import { AuthError } from '../auth/auth-error.js';
 import { readDocumentArchive } from './docx-validation.js';
-import { isDocumentSource, validateDocument } from './document-input.js';
+import { isDocumentSource, validateDocument, validateDocumentEntries } from './document-input.js';
 import {
   CONVERSION_DIRECTIONS,
   MAX_IMAGE_PIXELS,
@@ -37,6 +37,7 @@ export async function validateUpload(file: StagedUpload | undefined, body: unkno
   if (bytes.length !== file.size || bytes.length > MAX_UPLOAD_BYTES)
     throw new AuthError(413, 'FILE_TOO_LARGE', 'The uploaded file exceeds the allowed size.');
   let format: SourceFormat;
+  let documentEntries: ReadonlyMap<string, Buffer> | undefined;
   if (bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) format = 'png';
   else if (bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255) format = 'jpg';
   else if (bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP')
@@ -52,6 +53,7 @@ export async function validateUpload(file: StagedUpload | undefined, body: unkno
       else if (entries.has('ppt/presentation.xml')) format = 'pptx';
       else if (entries.has('mimetype')) format = 'odt';
       else throw new Error('Unknown archive.');
+      documentEntries = entries;
     } catch {
       throw new AuthError(422, 'INVALID_FILE', 'The document archive is malformed or unsupported.');
     }
@@ -64,7 +66,9 @@ export async function validateUpload(file: StagedUpload | undefined, body: unkno
     format = 'svg';
   else throw new AuthError(415, 'UNSUPPORTED_FORMAT', 'Unsupported input format.');
   try {
-    if (isDocumentSource(format)) validateDocument(bytes, format);
+    if (format === 'docx' || format === 'odt' || format === 'xlsx' || format === 'pptx')
+      validateDocumentEntries(documentEntries!, format);
+    else if (isDocumentSource(format)) validateDocument(bytes, format);
     else if (format !== 'jpg' && format !== 'png') {
       if (validatingImage)
         throw new AuthError(

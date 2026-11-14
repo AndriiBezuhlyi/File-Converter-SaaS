@@ -1,6 +1,6 @@
 import { posix } from 'node:path';
 import { SaxesParser } from 'saxes';
-import { readDocumentArchive, validateDocx } from './docx-validation.js';
+import { readDocumentArchive, validateDocxEntries } from './docx-validation.js';
 import { MAX_UPLOAD_BYTES } from './conversion-policy.js';
 
 export const DOCUMENT_SOURCES = ['docx', 'odt', 'xlsx', 'pptx', 'csv', 'txt'] as const;
@@ -114,11 +114,18 @@ export function validateDocument(bytes: Buffer, source: DocumentSource): void {
     parseCsv(bytes);
     return;
   }
+  validateDocumentEntries(readDocumentArchive(bytes), source);
+}
+
+// Internal validation stage; never accepts unvalidated archive metadata from a caller.
+export function validateDocumentEntries(
+  entries: ReadonlyMap<string, Buffer>,
+  source: Exclude<DocumentSource, 'txt' | 'csv'>,
+): void {
   if (source === 'docx') {
-    validateDocx(bytes);
+    validateDocxEntries(entries);
     return;
   }
-  const entries = readDocumentArchive(bytes);
   let visibleSheets = 0;
   const referencedSlides: string[] = [];
   const slideRelations = new Map<string, string>();
