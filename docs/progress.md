@@ -16,18 +16,18 @@ Historical entries describe the implementation and verification available at the
 
 Compared unchanged production builds from `4cdf3b0` (1500 ms) and `b0b8178` (bounded 1000 ms), before rebuilding the final F06 fix. Thirty completion timings from 0 to 15000 ms, including 980/1000/1020, 1480/1500/1520, 1980/2000/2020, and 2980/3000/3020 ms; eight repeats per timing/strategy, 480 total cases. Fresh browser contexts, Chromium 156, four concurrent isolated cases, randomized balanced strategy order, synthetic anonymous API with 100 ms session delay and 20 ms status delay. Detection uses a DOM MutationObserver timestamp for the visible download action. Startup time is excluded. This population and timestamp method differ from the original 21-case experiment; results are not pooled.
 
-| Metric | Fixed 1500 ms | Bounded 1000 ms |
-| --- | ---: | ---: |
-| Cases per strategy | 240 | 240 |
-| Detection median | 644 ms | 441 ms |
-| Detection p95 | 1405 ms | 1052 ms |
-| Detection IQR across timings/repeats | 922 ms | 574 ms |
-| Total status GETs | 695 | 832 |
-| Mean status GETs per conversion | 2.896 | 3.467 |
-| Short jobs <=3000 ms: median / p95 (200 cases each) | 675 / 1424 ms | 474 / 1032 ms |
-| Long jobs >=4000 ms: median / p95 (32 cases each) | 541 / 1338 ms | 780 / 1531 ms |
-| Completion at 1400 ms: median / within-timing IQR | 207 / 39 ms | 749 / 104 ms |
-| Completion at 6000 ms: median | 224 ms | 1357 ms |
+| Metric                                              | Fixed 1500 ms | Bounded 1000 ms |
+| --------------------------------------------------- | ------------: | --------------: |
+| Cases per strategy                                  |           240 |             240 |
+| Detection median                                    |        644 ms |          441 ms |
+| Detection p95                                       |       1405 ms |         1052 ms |
+| Detection IQR across timings/repeats                |        922 ms |          574 ms |
+| Total status GETs                                   |           695 |             832 |
+| Mean status GETs per conversion                     |         2.896 |           3.467 |
+| Short jobs <=3000 ms: median / p95 (200 cases each) | 675 / 1424 ms |   474 / 1032 ms |
+| Long jobs >=4000 ms: median / p95 (32 cases each)   | 541 / 1338 ms |   780 / 1531 ms |
+| Completion at 1400 ms: median / within-timing IQR   |   207 / 39 ms |    749 / 104 ms |
+| Completion at 6000 ms: median                       |        224 ms |         1357 ms |
 
 Aggregate median improved 31.5%, p95 25.1%, and status request count increased 19.7%. Of 240 paired timing/repeat cases, 127 improved by over 100 ms, 65 regressed by over 100 ms, and 48 differed by at most 100 ms. The 1400 ms regression is a phase effect: the 1000 ms read sees processing and the next read is around 2000 ms; the fixed strategy checks around 1500 ms. Returning to the same sustained interval does not restore the original timer phase, explaining long-job regressions such as 6000 ms. These effects exceed within-timing jitter. The timing grid is a controlled workload, not a production duration distribution; the long cohort has only 32 cases per strategy.
 
@@ -52,19 +52,19 @@ Evidence: `E:/VSCode Folders/Converter-artifacts/f06-f07-review/` (`browser-comp
 
 Production builds, local Chromium 156, fresh browser contexts, synthetic HTTP API with 100 ms session latency, three repeats for each completion duration: 0, 100, 400, 900, 1400, 2200, and 5000 ms. F06 startup measurements precede any job; F07 lag is measured from the fixture's completion deadline to a visible download action, independent of startup/submission time. These are controlled client/protocol measurements, not live worker/database or production-load results. Percentiles use nearest rank over this specific 21-job mixture.
 
-| Metric | Before | After |
-| --- | ---: | ---: |
-| Guest startup session GETs | 2 | 1 |
-| Guest startup API requests | 4 | 3 |
-| Authenticated startup session GETs / API requests | 3 / 3 | 2 / 2 |
-| Session request window, median | 118.6 ms | 117.4 ms |
-| File-picker readiness proxy, median | 455 ms | 454 ms |
-| Guest eligibility HTTP chain, median (3 additional runs) | 134.6 ms | 138.9 ms |
+| Metric                                                     |   Before |    After |
+| ---------------------------------------------------------- | -------: | -------: |
+| Guest startup session GETs                                 |        2 |        1 |
+| Guest startup API requests                                 |        4 |        3 |
+| Authenticated startup session GETs / API requests          |    3 / 3 |    2 / 2 |
+| Session request window, median                             | 118.6 ms | 117.4 ms |
+| File-picker readiness proxy, median                        |   455 ms |   454 ms |
+| Guest eligibility HTTP chain, median (3 additional runs)   | 134.6 ms | 138.9 ms |
 | Account eligibility HTTP chain, median (3 additional runs) | 250.1 ms | 247.4 ms |
-| Completion detection, median | 955 ms | 715 ms |
-| Completion detection, p95 | 1534 ms | 1007 ms |
-| Status GETs across 21 jobs | 51 | 60 |
-| Status GETs after terminal detection (1700 ms observation) | 0 | 0 |
+| Completion detection, median                               |   955 ms |   715 ms |
+| Completion detection, p95                                  |  1534 ms |  1007 ms |
+| Status GETs across 21 jobs                                 |       51 |       60 |
+| Status GETs after terminal detection (1700 ms observation) |        0 |        0 |
 
 Startup latency improvement is not established: the previous session requests ran in parallel. File-picker readiness is a UI proxy; the additional eligibility measurement spans the first session request start through the final eligibility HTTP response, excluding React reconciliation. Those additional three-repeat guest/account runs compare a separately archived, unmodified `origin/main` production build against the final build. Polling gains are workload/phase dependent: median lag at 1400 ms completion regressed from 225 to 722 ms, while 2200 ms completion was effectively unchanged (955 to 963 ms). At 5000 ms, lag improved from 1250 to 692 ms with 5 to 6 status GETs. Aggregate status load increased 17.6% in this mixture; the sustained long-job interval is unchanged. Authenticated startup still performs a sequential eligibility recheck after the identity-specific gateway remount; no settled-session cache was introduced to suppress it.
 
@@ -78,7 +78,7 @@ Evidence and reproducible harness: `E:/VSCode Folders/Converter-artifacts/f06-f0
 - Browser coverage includes guest/account conversion flows, cross-tab sign-in/account switching/session expiry, discarded private downloads, reload recovery, network failures, and ambiguous POST protection. Focused tests cover hidden-tab suspension, immediate focus recovery, 30-second backoff, terminal cleanup, and no overlapping slow status requests.
 - Chrome DevTools MCP could not attach because its profile was already in use; existing Playwright/Chromium provided browser evidence. Context7 successfully supplied current TanStack Query lifecycle/deduplication documentation. The React best-practices review kept the existing query owner and avoided new effects/timers.
 - Live authentication/guest/account/conversion backend suites were not run: explicit `TEST_DATABASE_URL`/`TEST_REDIS_URL` and the opt-in live environment were not configured. Server authorization, CSRF enforcement, guest reservation, ownership, API keys, worker lifecycle, persistence, and infrastructure were not modified; their live behavior is not newly verified here.
-- Existing formatting discrepancies in the touched gateway/hook files are preserved; task-added files are formatted. Plans/specifications, dependencies, public API, schema, and production infrastructure are unchanged. No push, PR, merge, or deployment.
+- Windows working-tree formatting warnings were caused by CRLF; the normalized Git blobs of the touched gateways/hook match Prettier. Formatting of the F06/F07 progress entries was corrected during PR preparation. Plans/specifications, dependencies, public API, schema, and production infrastructure are unchanged. No push, PR, merge, or deployment occurred during implementation.
 
 ## 2026-11-14 - F02 public static network compression
 
