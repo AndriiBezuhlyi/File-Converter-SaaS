@@ -4,6 +4,17 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 - Prepare the isolated sandbox release-gate PR
+
+### Changes
+
+- Transfer only the approved manual release-gate script and necessary release documentation from ci/complete-actions-pipeline onto current main. Keep the existing CI workflows, production sandbox, Dockerfile, seccomp and original tests unchanged. No experimental workflow, profile, VM configuration, runtime probes or logs are included.
+- Document the mandatory fail-closed release procedure, exact commit/image/environment evidence, historical failed experiment links and unresolved proc-mount compatibility. Deployment stays blocked until a qualified environment actually passes all four original tests with zero failures, skips, cancellations or todos and cleanup succeeds.
+
+### Verification and limitations
+
+- Local static and synthetic verification and fresh hosted CI results are reported with the PR. No release gate, hosted sandbox experiment, policy load, deployment or merge is performed. The release gate remains an operator requirement; platform-enforced deployment integration is outside this change.
+
 ## 2026-11-12 - Item 17 real live matrix and 5 MB performance verification
 
 ### Changes

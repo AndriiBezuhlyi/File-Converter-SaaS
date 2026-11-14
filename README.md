@@ -191,6 +191,10 @@ npm run test:e2e
 
 `check` runs formatting, ESLint, all workspace typechecks, `test:all`, Prisma schema validation, generated-contract drift checks, and production builds. Playwright additionally verifies keyboard navigation, direct-route reloads, 404 recovery, mobile navigation, and responsive overflow. These checks alone do not establish real-engine or production-provider functionality.
 
+### Mandatory sandbox release gate
+
+Before any deployment, follow the [sandbox release-gate procedure](docs/sandbox-release-gate.md). It builds the unchanged worker image from a reviewed clean commit and runs the four original Linux sandbox tests in an approved disposable production-representative environment. Require **4 passed, 0 failed, 0 skipped**, no cancelled/todo tests, and successful cleanup. Missing, blocked, failed or skipped verification prohibits release; ordinary green CI cannot replace this gate. The gate has not passed in a qualified environment. No experimental AppArmor policy or automated deployment is enabled.
+
 ### Lint safeguards
 
 `npm run lint` generates Prisma Client before typed analysis, checks the repository with zero warnings and runs the configuration regression tests (`npm run lint:config`). This also prepares the ignored client types for `npm run check` on clean checkouts. It uses the existing ESLint/typescript-eslint packages; no additional plugins are required.
