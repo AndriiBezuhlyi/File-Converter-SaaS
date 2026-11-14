@@ -4,6 +4,82 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 — F06/F07 focused final review
+
+### Changes and decision
+
+- Reviewed `b0b8178` on the existing `perf/f06-f07` branch. F06 had one cancellation correctness defect: after every reader cancelled, the underlying session GET remained available for a new reader to join. Two new regression cases reproduced reuse of an abandoned identity snapshot across expiry/account switching. Added reader ownership so the last cancellation detaches and aborts that GET; cancellation of one reader still preserves the other readers. No settled-session cache or additional startup optimization was added.
+- Added four cancellation-boundary regression cases in a new test file and two polling-load cases in another new file. Existing protected tests were not modified. Coalescing remains local to one SessionClient; identity mutations still invalidate before/after the mutation, and settled/failed responses are discarded.
+- Keep F07 unchanged. Its bounded initial 1000 ms cadence provides a measurable aggregate/short-job benefit for an average additional 0.571 status GET per conversion in this expanded fixture population. Sustained polling remains 1500 ms, with approximately two additional GETs at most per query lifecycle. The tradeoff includes real timing-specific regressions; it is not a universal latency improvement or a demonstrated production-capacity result.
+
+### Expanded F07 measurements
+
+Compared unchanged production builds from `4cdf3b0` (1500 ms) and `b0b8178` (bounded 1000 ms), before rebuilding the final F06 fix. Thirty completion timings from 0 to 15000 ms, including 980/1000/1020, 1480/1500/1520, 1980/2000/2020, and 2980/3000/3020 ms; eight repeats per timing/strategy, 480 total cases. Fresh browser contexts, Chromium 156, four concurrent isolated cases, randomized balanced strategy order, synthetic anonymous API with 100 ms session delay and 20 ms status delay. Detection uses a DOM MutationObserver timestamp for the visible download action. Startup time is excluded. This population and timestamp method differ from the original 21-case experiment; results are not pooled.
+
+| Metric                                              | Fixed 1500 ms | Bounded 1000 ms |
+| --------------------------------------------------- | ------------: | --------------: |
+| Cases per strategy                                  |           240 |             240 |
+| Detection median                                    |        644 ms |          441 ms |
+| Detection p95                                       |       1405 ms |         1052 ms |
+| Detection IQR across timings/repeats                |        922 ms |          574 ms |
+| Total status GETs                                   |           695 |             832 |
+| Mean status GETs per conversion                     |         2.896 |           3.467 |
+| Short jobs <=3000 ms: median / p95 (200 cases each) | 675 / 1424 ms |   474 / 1032 ms |
+| Long jobs >=4000 ms: median / p95 (32 cases each)   | 541 / 1338 ms |   780 / 1531 ms |
+| Completion at 1400 ms: median / within-timing IQR   |   207 / 39 ms |    749 / 104 ms |
+| Completion at 6000 ms: median                       |        224 ms |         1357 ms |
+
+Aggregate median improved 31.5%, p95 25.1%, and status request count increased 19.7%. Of 240 paired timing/repeat cases, 127 improved by over 100 ms, 65 regressed by over 100 ms, and 48 differed by at most 100 ms. The 1400 ms regression is a phase effect: the 1000 ms read sees processing and the next read is around 2000 ms; the fixed strategy checks around 1500 ms. Returning to the same sustained interval does not restore the original timer phase, explaining long-job regressions such as 6000 ms. These effects exceed within-timing jitter. The timing grid is a controlled workload, not a production duration distribution; the long cohort has only 32 cases per strategy.
+
+All 480 cases had exactly one POST, no overlapping status GET per job, no page runtime errors, and no GET after detected terminal state. Terminal observation was 1700 ms for the first repeat of each timing/strategy and 100 ms for other repeats. New virtual-clock tests cover a five-minute active job's bounded request count and two concurrent job IDs with slow status responses; the existing tests cover hidden/focus handling, terminal states, and the unchanged 30000 ms connectivity backoff.
+
+Evidence: `E:/VSCode Folders/Converter-artifacts/f06-f07-review/` (`browser-comparison.mjs`, `browser-comparison.json`, `summary.json`, `backend-check.mjs`, `backend-results.json`). Scripts and raw measurements are retained outside Git; no new worktree was created.
+
+### Verification and remaining limits
+
+- Disposable real-backend validation passed: auth 10, guest 11, account 6, conversions/admission 10, processing 6 — 43 tests total. Used existing local PostgreSQL 18 / Redis 8 images on random loopback ports, a dedicated generated `converter_test_review_*` database, and existing migrations. Both task-owned containers were stopped/removed afterward; production services/configuration were untouched.
+- Those tests exercise the Nest API, SID/CSRF rotation and revocation, idle/absolute expiry, fail-closed Redis behavior, concurrent guest limits, ownership, API key rejection, durable conversion states, and queues. Storage/SMTP protocol fixtures and mocked engine calls are not a complete browser-to-Linux-worker performance test; that full live environment remains unconfigured.
+- Frontend TypeScript, production build, scoped ESLint, formatting of changed code, and all 228 frontend tests (46 files) passed. All 29 affected browser tests passed after the F06 fix, including auth, bootstrap, guest/account conversion, multi-tab identity/expiry, network/reload recovery, private downloads, and ambiguous POST behavior.
+- Chrome DevTools MCP remained unavailable because its profile was occupied; used existing Playwright without restarting that session. Context7 confirmed query cancellation behavior. No plans/specifications, protected tests, public API, database schema, dependencies, infrastructure definitions, or resource limits were changed. No push, PR, merge, or deployment.
+
+## 2026-11-14 — F06/F07 session and polling performance
+
+- Branch: `perf/f06-f07`, based on fetched `origin/main` `4cdf3b0`.
+- F06: AuthProvider and converter eligibility previously issued independent parallel session GETs. Both now use a per-SessionClient in-flight read. Settled responses are discarded; reader cancellation is independent; login/logout/password-reset invalidate in-flight reads before and after the mutation. CSRF tokens remain uncached, and server authorization/ownership checks are unchanged.
+- F07: the first status read was already immediate. Subsequent reads waited 1500 ms. The first five successful query updates now use 1000 ms intervals, then return to 1500 ms. The acceptance snapshot counts toward that bound. Existing terminal/error guards, hidden-tab suspension, focus/reconnect refresh, 30000 ms network backoff, and non-replayed POST behavior remain intact. Long-running jobs add at most approximately two status GETs per query lifecycle; a reload starts a new bounded window.
+
+### Measurements
+
+Production builds, local Chromium 156, fresh browser contexts, synthetic HTTP API with 100 ms session latency, three repeats for each completion duration: 0, 100, 400, 900, 1400, 2200, and 5000 ms. F06 startup measurements precede any job; F07 lag is measured from the fixture's completion deadline to a visible download action, independent of startup/submission time. These are controlled client/protocol measurements, not live worker/database or production-load results. Percentiles use nearest rank over this specific 21-job mixture.
+
+| Metric                                                     |   Before |    After |
+| ---------------------------------------------------------- | -------: | -------: |
+| Guest startup session GETs                                 |        2 |        1 |
+| Guest startup API requests                                 |        4 |        3 |
+| Authenticated startup session GETs / API requests          |    3 / 3 |    2 / 2 |
+| Session request window, median                             | 118.6 ms | 117.4 ms |
+| File-picker readiness proxy, median                        |   455 ms |   454 ms |
+| Guest eligibility HTTP chain, median (3 additional runs)   | 134.6 ms | 138.9 ms |
+| Account eligibility HTTP chain, median (3 additional runs) | 250.1 ms | 247.4 ms |
+| Completion detection, median                               |   955 ms |   715 ms |
+| Completion detection, p95                                  |  1534 ms |  1007 ms |
+| Status GETs across 21 jobs                                 |       51 |       60 |
+| Status GETs after terminal detection (1700 ms observation) |        0 |        0 |
+
+Startup latency improvement is not established: the previous session requests ran in parallel. File-picker readiness is a UI proxy; the additional eligibility measurement spans the first session request start through the final eligibility HTTP response, excluding React reconciliation. Those additional three-repeat guest/account runs compare a separately archived, unmodified `origin/main` production build against the final build. Polling gains are workload/phase dependent: median lag at 1400 ms completion regressed from 225 to 722 ms, while 2200 ms completion was effectively unchanged (955 to 963 ms). At 5000 ms, lag improved from 1250 to 692 ms with 5 to 6 status GETs. Aggregate status load increased 17.6% in this mixture; the sustained long-job interval is unchanged. Authenticated startup still performs a sequential eligibility recheck after the identity-specific gateway remount; no settled-session cache was introduced to suppress it.
+
+Evidence and reproducible harness: `E:/VSCode Folders/Converter-artifacts/f06-f07/` (`benchmark.mjs`, `baseline.json`, `after.json`, `summary.json`, `startup-{before,after}-{guest,account}.json`). A baseline source/build archive and dependency junctions are retained there for reproducibility; they contain no unique implementation work. The shorter exploratory fast window was rejected because its p95 gain was small; its measurements remain separate in `exploratory-short-window.json`.
+
+### Verification and limitations
+
+- Added seven session concurrency/cancellation/invalidation cases and six polling lifecycle cases in new test files; existing tests were not modified.
+- Production frontend build, frontend TypeScript, and scoped ESLint passed. The final isolated frontend run passed with 44 files / 222 cases. A run concurrent with browser E2E hit four existing-test timing failures; the isolated rerun passed without test or configuration changes.
+- Full browser suite: 75 passed, 2 opt-in live tests skipped. After the final fast-window adjustment, all 28 affected auth/conversion/multi-tab/recovery browser tests passed again.
+- Browser coverage includes guest/account conversion flows, cross-tab sign-in/account switching/session expiry, discarded private downloads, reload recovery, network failures, and ambiguous POST protection. Focused tests cover hidden-tab suspension, immediate focus recovery, 30-second backoff, terminal cleanup, and no overlapping slow status requests.
+- Chrome DevTools MCP could not attach because its profile was already in use; existing Playwright/Chromium provided browser evidence. Context7 successfully supplied current TanStack Query lifecycle/deduplication documentation. The React best-practices review kept the existing query owner and avoided new effects/timers.
+- Live authentication/guest/account/conversion backend suites were not run: explicit `TEST_DATABASE_URL`/`TEST_REDIS_URL` and the opt-in live environment were not configured. Server authorization, CSRF enforcement, guest reservation, ownership, API keys, worker lifecycle, persistence, and infrastructure were not modified; their live behavior is not newly verified here.
+- Windows working-tree formatting warnings were caused by CRLF; the normalized Git blobs of the touched gateways/hook match Prettier. Formatting of the F06/F07 progress entries was corrected during PR preparation. Plans/specifications, dependencies, public API, schema, and production infrastructure are unchanged. No push, PR, merge, or deployment occurred during implementation.
+
 ## 2026-11-14 - F02 public static network compression
 
 ### Changes

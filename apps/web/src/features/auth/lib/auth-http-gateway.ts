@@ -47,11 +47,7 @@ export function createAuthGateway(client: SessionClient): AuthGateway {
     },
     readSession: (signal) =>
       run(async () => {
-        const session = await client.http.json({
-          path: 'auth/session',
-          signal,
-          decode: (value) => sessionSchema.parse(value),
-        });
+        const session = await client.readSession(signal);
         sessionExpiresAt =
           session.kind === 'authenticated'
             ? Number.isFinite(Date.parse(session.expiresAt))
