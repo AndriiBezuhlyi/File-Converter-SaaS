@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { components } from '@converter/contracts';
 import { ApiRequestError } from '../../../shared/api/api-error';
-import { sessionSchema, type SessionClient } from '../../../shared/api/session-client';
+import type { SessionClient } from '../../../shared/api/session-client';
 import {
   ConversionRequestError,
   type ConversionGateway,
@@ -109,11 +109,7 @@ export function createConversionGateway(
     scope: `${client.http.scope}:${identity}`,
     async readAccess(signal) {
       try {
-        const session = await client.http.json({
-          path: 'auth/session',
-          signal,
-          decode: (value) => sessionSchema.parse(value),
-        });
+        const session = await client.readSession(signal);
         if (session.kind === 'authenticated') return { kind: 'account', jobId: null };
         bootstrap ??= client.mutate('guest-session', 'POST', {}, (value) =>
           guestSchema.parse(value),

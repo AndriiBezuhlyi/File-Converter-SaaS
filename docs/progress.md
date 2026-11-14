@@ -4,6 +4,44 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 — F06/F07 session and polling performance
+
+- Branch: `perf/f06-f07`, based on fetched `origin/main` `4cdf3b0`.
+- F06: AuthProvider and converter eligibility previously issued independent parallel session GETs. Both now use a per-SessionClient in-flight read. Settled responses are discarded; reader cancellation is independent; login/logout/password-reset invalidate in-flight reads before and after the mutation. CSRF tokens remain uncached, and server authorization/ownership checks are unchanged.
+- F07: the first status read was already immediate. Subsequent reads waited 1500 ms. The first five successful query updates now use 1000 ms intervals, then return to 1500 ms. The acceptance snapshot counts toward that bound. Existing terminal/error guards, hidden-tab suspension, focus/reconnect refresh, 30000 ms network backoff, and non-replayed POST behavior remain intact. Long-running jobs add at most approximately two status GETs per query lifecycle; a reload starts a new bounded window.
+
+### Measurements
+
+Production builds, local Chromium 156, fresh browser contexts, synthetic HTTP API with 100 ms session latency, three repeats for each completion duration: 0, 100, 400, 900, 1400, 2200, and 5000 ms. F06 startup measurements precede any job; F07 lag is measured from the fixture's completion deadline to a visible download action, independent of startup/submission time. These are controlled client/protocol measurements, not live worker/database or production-load results. Percentiles use nearest rank over this specific 21-job mixture.
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Guest startup session GETs | 2 | 1 |
+| Guest startup API requests | 4 | 3 |
+| Authenticated startup session GETs / API requests | 3 / 3 | 2 / 2 |
+| Session request window, median | 118.6 ms | 117.4 ms |
+| File-picker readiness proxy, median | 455 ms | 454 ms |
+| Guest eligibility HTTP chain, median (3 additional runs) | 134.6 ms | 138.9 ms |
+| Account eligibility HTTP chain, median (3 additional runs) | 250.1 ms | 247.4 ms |
+| Completion detection, median | 955 ms | 715 ms |
+| Completion detection, p95 | 1534 ms | 1007 ms |
+| Status GETs across 21 jobs | 51 | 60 |
+| Status GETs after terminal detection (1700 ms observation) | 0 | 0 |
+
+Startup latency improvement is not established: the previous session requests ran in parallel. File-picker readiness is a UI proxy; the additional eligibility measurement spans the first session request start through the final eligibility HTTP response, excluding React reconciliation. Those additional three-repeat guest/account runs compare a separately archived, unmodified `origin/main` production build against the final build. Polling gains are workload/phase dependent: median lag at 1400 ms completion regressed from 225 to 722 ms, while 2200 ms completion was effectively unchanged (955 to 963 ms). At 5000 ms, lag improved from 1250 to 692 ms with 5 to 6 status GETs. Aggregate status load increased 17.6% in this mixture; the sustained long-job interval is unchanged. Authenticated startup still performs a sequential eligibility recheck after the identity-specific gateway remount; no settled-session cache was introduced to suppress it.
+
+Evidence and reproducible harness: `E:/VSCode Folders/Converter-artifacts/f06-f07/` (`benchmark.mjs`, `baseline.json`, `after.json`, `summary.json`, `startup-{before,after}-{guest,account}.json`). A baseline source/build archive and dependency junctions are retained there for reproducibility; they contain no unique implementation work. The shorter exploratory fast window was rejected because its p95 gain was small; its measurements remain separate in `exploratory-short-window.json`.
+
+### Verification and limitations
+
+- Added seven session concurrency/cancellation/invalidation cases and six polling lifecycle cases in new test files; existing tests were not modified.
+- Production frontend build, frontend TypeScript, and scoped ESLint passed. The final isolated frontend run passed with 44 files / 222 cases. A run concurrent with browser E2E hit four existing-test timing failures; the isolated rerun passed without test or configuration changes.
+- Full browser suite: 75 passed, 2 opt-in live tests skipped. After the final fast-window adjustment, all 28 affected auth/conversion/multi-tab/recovery browser tests passed again.
+- Browser coverage includes guest/account conversion flows, cross-tab sign-in/account switching/session expiry, discarded private downloads, reload recovery, network failures, and ambiguous POST protection. Focused tests cover hidden-tab suspension, immediate focus recovery, 30-second backoff, terminal cleanup, and no overlapping slow status requests.
+- Chrome DevTools MCP could not attach because its profile was already in use; existing Playwright/Chromium provided browser evidence. Context7 successfully supplied current TanStack Query lifecycle/deduplication documentation. The React best-practices review kept the existing query owner and avoided new effects/timers.
+- Live authentication/guest/account/conversion backend suites were not run: explicit `TEST_DATABASE_URL`/`TEST_REDIS_URL` and the opt-in live environment were not configured. Server authorization, CSRF enforcement, guest reservation, ownership, API keys, worker lifecycle, persistence, and infrastructure were not modified; their live behavior is not newly verified here.
+- Existing formatting discrepancies in the touched gateway/hook files are preserved; task-added files are formatted. Plans/specifications, dependencies, public API, schema, and production infrastructure are unchanged. No push, PR, merge, or deployment.
+
 ## 2026-11-14 - F02 public static network compression
 
 ### Changes

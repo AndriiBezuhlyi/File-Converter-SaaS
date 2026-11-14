@@ -79,7 +79,10 @@ export function useConversionFlow(
         query.state.error.kind !== 'network'
       )
         return false;
-      return query.state.error ? 30_000 : 1_500;
+      if (query.state.error) return 30_000;
+      // A bounded fast-start window helps short jobs without raising the sustained rate.
+      // The acceptance snapshot also counts as an update; reloads get the same bounded window.
+      return query.state.dataUpdateCount <= 5 ? 1_000 : 1_500;
     },
     refetchOnWindowFocus: (query) => !isTerminal(query.state.data),
     refetchOnReconnect: (query) => !isTerminal(query.state.data),
