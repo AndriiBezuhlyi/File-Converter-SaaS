@@ -4,6 +4,33 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-14 - F04 document admission archive reuse
+
+### Changes
+
+- Started from freshly fetched `origin/main` at `1759c45` in branch `perf/f04-document-validation`, isolated worktree `../Converter-f04`. Confirmed that archive format detection and format validation each called `readDocumentArchive` on the same in-memory upload bytes. Worker-side parsing is a separate trust boundary and remains independent.
+- Extracted internal readonly-entry validation stages for DOCX/ODT/XLSX/PPTX. Admission passes its locally parsed entries directly to these stages; byte-based validators still parse independently. No shared cache, new async boundary, additional decompression, changed validation rule, resource limit, dependency, HTTP contract, schema, migration, or sandbox setting. Existing tests were preserved; added nine focused regression cases and a reproducible admission benchmark using existing synthetic fixtures.
+
+### Verification and limitations
+
+- Reproduced the original audit probe before implementation with the identical 4,853,592-byte / 8,000,460-expanded-byte DOCX: synchronous work 153.3-156.1 ms and event-loop maximum 153.5-156.4 ms (three samples). The audit's 241.6-335.6 ms is a historical baseline, not a current measurement. Local Windows Node `v24.11.1` differs from audit Node `v24.22.3`; installed npm is `11.6.2`, below the repository's declared npm range. No global tooling changed. Context7 successfully supplied Node v24 performance/CPU/resource API documentation.
+- Before/after full admission runs used identical inputs, serial equivalent conditions, one warmup and seven measured samples per fixture, explicit GC before the measurement, `readFile` included, identical inflation instrumentation, and 1 ms event-loop histogram resolution. No HTTP/database/storage work is included in these timings. Wall time median (min-max), milliseconds:
+
+| Fixture          | Before                 | After               | Inflate calls before/after |
+| ---------------- | ---------------------- | ------------------- | -------------------------- |
+| DOCX ordinary    | 2.35 (2.02-4.27)       | 3.25 (2.78-3.87)    | 8 / 4                      |
+| ODT ordinary     | 3.15 (2.77-4.04)       | 4.03 (3.18-7.58)    | 6 / 3                      |
+| XLSX ordinary    | 5.22 (4.33-6.63)       | 5.10 (3.96-5.53)    | 18 / 9                     |
+| PPTX ordinary    | 4.89 (4.69-6.35)       | 4.62 (3.87-5.18)    | 20 / 10                    |
+| Audit large DOCX | 156.07 (152.45-164.62) | 80.60 (76.09-84.80) | 6 / 3                      |
+
+- Large-DOCX CPU median (range) 156 (156-157) -> 78 (62-94) ms; event-loop maximum median (range) 152.04 (147.59-160.43) -> 76.02 (72.42-81.00) ms. Entire benchmark process peak RSS 172.34 -> 148.39 MiB, measured through `resourceUsage().maxRSS`; this is a lifetime high-water mark including fixture generation, not per-validation peak or a guaranteed memory reduction. Small-fixture CPU readings often round to zero on Windows; idle timer granularity also dominates their event-loop histogram. Ordinary-document timing does not demonstrate consistent improvement. Archive parsing falls from two passes to one; XML/security checks still run. Seven valid fixture types (six ordinary sources plus large DOCX) and ten rejection fixtures had identical outcomes before/after. Rejections cover traversal, macro, embedded executable, external relationship, DTD/entity, expansion, invalid main content, truncation, checksum and entry count. Full per-fixture CPU/memory/delay/count measurements remain in the raw results.
+- Passed backend unit tests: 14 suites / 98 tests, including nine new admission regression cases. Passed HTTP upload/concurrent admission integration tests: two suites / ten tests against dedicated disposable PostgreSQL/Redis with existing migrations. No persisted model or query changed, so a separate database regression suite was not required.
+- Passed real Linux `test/document-formats.linux.mjs`: five tests, all six document-to-PDF conversions with parsed Unicode/content/page checks, unsafe inputs rejected at both admission and worker, pagination/resource bounds, and simultaneous-attempt isolation. Used existing `converter-documents:imp06` image with current API/worker builds mounted readonly, network disabled, all capabilities dropped, no-new-privileges, repository seccomp, one CPU, 1 GiB and 128 PID limits. Covered encrypted/corrupt archives, macros, disguised SVG, embedded data, external/encoded resources, hidden-only sheets/slides and external formulas. This is real sandbox/engine verification, not full HTTP-to-worker acceptance. Temporary test services are removed after verification.
+- Passed full TypeScript typecheck, final backend typecheck, production workspace build, ESLint plus six lint configuration tests, security body-parser regression, and changed-file formatting. Sandbox initially blocked subprocess-dependent build/security/lint checks with `spawn EPERM`; their unsandboxed retries passed without changing protection settings. Contract drift check initially failed only because checkout CRLF differs from generator LF; passed after temporary normalization of the generated file, then restored its original bytes. No contract file changed. Browser automation was unnecessary for this backend-only change; HTTP integration and real engine tests cover the affected flows.
+- Retained raw original probe, baseline API build, benchmark before/after JSONL, summary and check logs under `../Converter-f04/.cache/tasks/f04/`; maintained benchmark: `node --expose-gc apps/backend/test/document-validation.bench.mjs [baseline-api-directory]` after `build:api`. Worker execution output was observed directly in the terminal. Worktree contains the unique implementation; no push, PR, merge or other optimization performed.
+- Remaining synchronous blocking (~76 ms on the large fixture) remains material. A separately approved option is bounded off-thread validation of the complete owned buffer, with bounded queue/concurrency and existing limits/error mapping; buffer transfer/copy and lifecycle handling require architectural review. No worker-thread/subprocess redesign was implemented in F04.
+
 ## 2026-11-14 - Focused F03/F05 performance regression review
 
 ### Changes
