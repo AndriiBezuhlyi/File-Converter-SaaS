@@ -24,4 +24,5 @@ export interface FilesGateway {
   ): Promise<FilesPageResult>;
   download(id: string): Promise<{ blob: Blob; name: string }>;
   remove(id: string): Promise<void>;
+  rename?(id: string, name: string): Promise<SavedFile>;
 }

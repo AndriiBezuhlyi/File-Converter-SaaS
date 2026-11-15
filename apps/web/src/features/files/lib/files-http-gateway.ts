@@ -63,5 +63,9 @@ export function createFilesGateway(client: SessionClient, identity: string): Fil
       ),
     remove: (id) =>
       request(() => client.mutate(`files/${id}`, 'DELETE', undefined, () => undefined, [204])),
+    rename: (id, name) =>
+      request(() =>
+        client.mutate(`files/${id}`, 'PATCH', { name }, (value) => fileSchema.parse(value)),
+      ),
   };
 }

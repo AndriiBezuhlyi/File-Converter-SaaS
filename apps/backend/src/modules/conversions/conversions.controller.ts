@@ -31,6 +31,7 @@ import {
 import type { StagedUpload } from './upload-validation.js';
 import { UPLOAD_STAGING_DIRECTORY } from './upload-staging.js';
 import { UploadBudgetInterceptor } from './upload-budget.interceptor.js';
+import { downloadDisposition } from '../../common/download-disposition.js';
 
 @Injectable()
 export class ConversionAdmissionGuard implements CanActivate {
@@ -53,6 +54,8 @@ export class ConversionsController {
   @UseInterceptors(
     UploadBudgetInterceptor,
     FileInterceptor('file', {
+      // Browsers send non-extended multipart filenames as UTF-8.
+      defParamCharset: 'utf8',
       dest: UPLOAD_STAGING_DIRECTORY,
       limits: {
         fileSize: MAX_UPLOAD_BYTES,
@@ -96,7 +99,7 @@ export class ConversionsController {
     return new StreamableFile(file.body, {
       type: file.mime,
       length: file.size,
-      disposition: `attachment; filename="conversion.${file.name.split('.').pop()}"; filename*=UTF-8''${encodeURIComponent(file.name).replace(/['()*]/g, (character) => `%${character.charCodeAt(0).toString(16)}`)}`,
+      disposition: downloadDisposition(file.name),
     });
   }
 }
