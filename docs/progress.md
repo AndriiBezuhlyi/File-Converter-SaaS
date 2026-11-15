@@ -4,6 +4,26 @@ Entries are ordered from newest to oldest. Each entry uses the same structure: c
 
 Historical entries describe the implementation and verification available at the time, including limitations that later work may have resolved. See [the implementation plan](implementation-plan.md) for plan markers. Item 8 is complete following frontend integration and automated/live verification; Item 17 has not started.
 
+## 2026-11-15 — Final QA review: rename placement and E2E races
+
+### Changes and decision
+
+- Continued `fix/final-manual-qa` in `Converter-f08` from `3fdb950ac7e87c6e1a9bce2867ae223abaf60b76`. The owner confirmed all five previous manual QA scenarios PASS; automated evidence below is reported separately.
+- Replaced trailing Rename text with an 18px pencil immediately before each filename: accessible Ukrainian name, title tooltip, visible keyboard focus and 44px target. Long names wrap without overflowing. Download/Delete stay in their existing actions group; the dialog, backend, validation, extension protection, Unicode and ownership behavior are unchanged. Added separate unit/browser regressions.
+- Fixed rapid cross-route Back/Forward: the browser can revisit a pushed entry before React rendered it and recorded its scroll position. Unknown non-fragment POP destinations now start at zero instead of retaining/clamping the preceding page's scroll. Saved positions and native fragments retain their behavior. Added a focused unrendered-history-entry regression.
+- With explicit owner approval, added exactly one `toBeEnabled()` before the protected picker test's existing `focus()`. Its disabled-format assertion, Enter/filechooser interaction and every subsequent assertion remain. No product selection/session logic, other protected test, timeout, skip, dependency, plan or sandbox gate was changed.
+
+### Verification and limitations
+
+- Exact main baseline `18bac334e5dcfb8f5dbe92cd939c78f6e24d421b` was exported/built without another worktree and compared using the same dependencies, Windows Chromium headless-shell 1248 and isolated Vite preview. Instrumented rapid navigation failed Forward 6/12 on the QA implementation and 8/12 on baseline; after the fix it passed 12/12. Logs show changed URL/old route DOM and no restoration for the unrecorded entry. Five ordinary traced repeats per test passed on both revisions, illustrating the old failures' timing sensitivity.
+- Controlled 300ms session responses reproduced the picker race on both revisions: Enter targeted BODY while the button was disabled. Traces/screenshots, console and DOM evidence were inspected. The approved enabled-state expectation made Enter target BUTTON and open Chromium's filechooser on both. This is test synchronization, not a reason to bypass session loading. The approved keyboard test and unchanged Back/Forward test then passed ten repeats each: **20/20**; synthetic files were actually selected.
+- Frontend **241/241** (51 files), backend **123/123** (17 suites), and existing Files/F08 integration suite passed. Full final Chromium suite: **91 passed / 4 skipped / 0 failed**. Four opt-in skips are the two final-QA live tests (run separately, **2/2 PASS**) and the full live matrix/live integration tests (not rerun here).
+- The real API/Linux worker/Mailpit tests reverified email delivery, 12 conversions including four static-GIF outputs, Unicode downloads, 10+2 pagination/search/filter/sort/deleted cursor, rename with unchanged SHA-256, authorization negatives, guest SPA recovery/quota and mobile navigation. Both previously running QA environments and their data remain intact.
+- Rename passed browser verification at **320/390/504/768/1366px**, including long Unicode names, no overflow, keyboard dialog activation and Escape focus restoration. New E2E coverage passed four widths. Chrome DevTools supplied DOM/focus/network evidence; its 504px minimum window and screenshot file-access restriction required existing Playwright for narrow viewports and saved screenshots.
+- Unchanged delayed-Onest tests: **12/12 Windows, 12/12 Linux with DejaVu**, six widths and both preload timings. Font-swap-only CLS maxima: 0.000789 Windows / 0.003091 Linux, below the unchanged 0.005 threshold, with loaded Onest, stable geometry and unclipped text. These single-run values do not replace historical benchmark medians: **504px 0.055406 → 0.000506; 768px 0.056199 → 0.001249**. F01–F08/backend/font implementation is unchanged. Existing limitations for stock Noble without DejaVu, Firefox/Safari, IBM Plex Mono and the inconclusive desktop LCP difference remain; no new performance claim.
+- Lint (including six configuration tests), typecheck, contracts and production workspace builds passed. Full Prettier validation used a normalized LF export of tracked source plus the task diff, preserving the CRLF checkout and protected files. Diff/protected-test scope was reviewed.
+- Original `Converter`/unmerged CI work and the separate owner QA worktree remain clean and unchanged. The temporary Linux browser container returned to its prior stopped state. Exact-baseline export, traces, screenshots and logs remain ignored under `.cache/tasks/final-qa-review/`. No cleanup, push, PR, merge or deployment.
+
 ## 2026-11-15 — Final owner QA corrections (QA-01–QA-05)
 
 ### Changes and decision
