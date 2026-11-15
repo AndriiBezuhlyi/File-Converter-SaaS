@@ -8,6 +8,7 @@
 
 .heading {
   margin: 0;
+  font-family: 'Onest', 'Onest Heading Fallback', system-ui, sans-serif;
   font-size: clamp(3.25rem, 5vw, 4.5rem);
   line-height: 1.02;
   font-weight: 600;
@@ -20,7 +21,8 @@
 }
 
 .intro {
-  max-inline-size: 28ch;
+  // Onest 400: 1ch = 0.665em. Keep the loaded width stable during font swap.
+  max-inline-size: 18.62em;
   margin-block: var(--space-6);
   color: var(--color-text-muted);
   font-size: clamp(1.125rem, 1.7vw, 1.5rem);
@@ -149,11 +151,12 @@
     gap: var(--space-12);
   }
   .heading {
-    max-inline-size: 14ch;
+    // Onest 600: 1ch = 0.662em; fallback zero glyphs have different widths.
+    max-inline-size: 9.268em;
     font-size: clamp(3.25rem, 8vw, 5rem);
   }
   .intro {
-    max-inline-size: 40ch;
+    max-inline-size: 26.6em;
   }
   .steps {
     gap: var(--space-6);
