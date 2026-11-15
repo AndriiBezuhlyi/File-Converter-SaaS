@@ -8,7 +8,8 @@
 
 .heading {
   margin: 0;
-  font-family: 'Onest', 'Onest Heading Fallback', system-ui, sans-serif;
+  font-family:
+    'Onest', 'Onest Heading Fallback', 'Onest DejaVu Heading Fallback', system-ui, sans-serif;
   font-size: clamp(3.25rem, 5vw, 4.5rem);
   line-height: 1.02;
   font-weight: 600;
@@ -21,6 +22,7 @@
 }
 
 .intro {
+  font-family: 'Onest', 'Onest DejaVu Intro Fallback', system-ui, sans-serif;
   // Onest 400: 1ch = 0.665em. Keep the loaded width stable during font swap.
   max-inline-size: 18.62em;
   margin-block: var(--space-6);
