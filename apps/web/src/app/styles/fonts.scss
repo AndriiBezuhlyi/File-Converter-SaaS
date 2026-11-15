@@ -1,3 +1,42 @@
+// Match the hero heading while Onest is pending on Windows. The width ratio is
+// measured from its Ukrainian text: Onest 1966.90 / Segoe UI Semibold 1888.18.
+// Divide Onest's 97% ascent and 31% descent by the same scale.
+@font-face {
+  font-family: 'Onest Heading Fallback';
+  src: local('Segoe UI Semibold');
+  font-style: normal;
+  font-weight: 600;
+  size-adjust: 104.17%;
+  ascent-override: 93.117%;
+  descent-override: 29.759%;
+  line-gap-override: 0%;
+}
+
+// When Linux system-ui selects DejaVu, match the measured hero text advances
+// measured at 100px: heading 1970 / 2345.41, intro 2470 / 2762.79.
+// As above, divide Onest's ascent/descent by each size-adjust scale.
+@font-face {
+  font-family: 'Onest DejaVu Heading Fallback';
+  src: local('DejaVu Sans Bold');
+  font-style: normal;
+  font-weight: 600;
+  size-adjust: 84%;
+  ascent-override: 115.476%;
+  descent-override: 36.905%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Onest DejaVu Intro Fallback';
+  src: local('DejaVu Sans');
+  font-style: normal;
+  font-weight: 400;
+  size-adjust: 89.4%;
+  ascent-override: 108.501%;
+  descent-override: 34.676%;
+  line-gap-override: 0%;
+}
+
 @each $weight in 400, 500, 600, 700 {
   @font-face {
     font-family: 'Onest';
