@@ -105,12 +105,17 @@ export function createConversionGateway(
 ): ConversionGateway {
   // Deduplicate the guest bootstrap across StrictMode and simultaneous eligibility reads.
   let bootstrap: Promise<components['schemas']['GuestSession']> | undefined;
+  // Tab-memory recovery only. Every status/download still requires server authorization.
+  let lastAcceptedId: string | null = null;
   return {
     scope: `${client.http.scope}:${identity}`,
     async readAccess(signal) {
       try {
         const session = await client.readSession(signal);
-        if (session.kind === 'authenticated') return { kind: 'account', jobId: null };
+        if (session.kind === 'authenticated') {
+          lastAcceptedId = null;
+          return { kind: 'account', jobId: null };
+        }
         bootstrap ??= client.mutate('guest-session', 'POST', {}, (value) =>
           guestSchema.parse(value),
         );
@@ -120,8 +125,16 @@ export function createConversionGateway(
         } finally {
           bootstrap = undefined;
         }
-        return { kind: 'guest', trial: guest.trialState, jobId: guest.activeConversionId };
+        if (guest.trialState === 'available') lastAcceptedId = null;
+        return {
+          kind: 'guest',
+          trial: guest.trialState,
+          jobId:
+            guest.activeConversionId ?? (guest.trialState === 'consumed' ? lastAcceptedId : null),
+        };
       } catch (error) {
+        if (error instanceof ApiRequestError && [401, 403].includes(error.status ?? 0))
+          lastAcceptedId = null;
         return requestError(error);
       }
     },
@@ -145,6 +158,7 @@ export function createConversionGateway(
           statuses: [202],
           decode: (value) => accepted.parse(value),
         });
+        lastAcceptedId = job.id;
         return { kind: 'accepted', job: { ...job, sourceName: selection.file.name } };
       } catch (error) {
         if (error instanceof ApiRequestError) {
@@ -175,14 +189,22 @@ export function createConversionGateway(
     },
     async readJob(id, signal) {
       try {
-        return mapJob(
+        const job = mapJob(
           await client.http.json({
             path: `conversions/${id}`,
             signal,
             decode: (value) => statusSchema.parse(value),
           }),
         );
+        if (job.status === 'completed' && job.result.owner === 'guest') lastAcceptedId = id;
+        return job;
       } catch (error) {
+        if (
+          id === lastAcceptedId &&
+          error instanceof ApiRequestError &&
+          [401, 403, 404, 410].includes(error.status ?? 0)
+        )
+          lastAcceptedId = null;
         return requestError(error);
       }
     },

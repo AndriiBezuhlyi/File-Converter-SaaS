@@ -37,6 +37,17 @@
     align-items: center;
   }
 }
+.fileHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+.rename {
+  flex: 0 0 44px;
+  min-block-size: 44px;
+  padding: 8px;
+}
 .fileName {
   margin: 0;
   font-size: 1.125rem;

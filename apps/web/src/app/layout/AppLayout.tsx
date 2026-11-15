@@ -42,9 +42,11 @@ export function AppLayout() {
     previousKey.current = key;
     const restoreHash =
       hash && (initial.current || (pathChanged && navigationType !== NavigationType.Pop));
+    // Back/Forward can reach a pushed entry before React ever rendered it.
+    // Unvisited entries without a fragment start at the top.
     const position =
       !initial.current && !nativeFragment && navigationType === NavigationType.Pop
-        ? positions.current.get(entry)
+        ? (positions.current.get(entry) ?? (!hash ? { top: 0, left: 0 } : undefined))
         : undefined;
     if (!positions.current.has(entry)) positions.current.set(entry, { top: 0, left: 0 });
     if (pathChanged && !hash && navigationType !== NavigationType.Pop) {

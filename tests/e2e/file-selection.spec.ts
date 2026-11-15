@@ -34,6 +34,7 @@ test('keyboard picker selects, replaces, and removes a file without sending it t
   );
   await page.goto('/');
   await expect(page.getByLabel('Конвертувати у')).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Вибрати файл' })).toBeEnabled();
   await page.getByRole('button', { name: 'Вибрати файл' }).focus();
   const chooserPromise = page.waitForEvent('filechooser');
   await page.keyboard.press('Enter');

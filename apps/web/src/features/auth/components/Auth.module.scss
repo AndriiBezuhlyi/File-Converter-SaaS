@@ -107,3 +107,11 @@
     min-block-size: 44px;
   }
 }
+
+@media (max-width: 767px) {
+  .sessionLinks {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react';
+import { Pencil } from 'lucide-react';
 import { useInfiniteQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { Field } from '../../../shared/ui/Field';
 import { Button } from '../../../shared/ui/Button';
@@ -8,6 +9,7 @@ import { DataAccessError, dataErrorMessage } from '../../../shared/lib/data-acce
 import { saveDownload } from '../../../shared/lib/save-download';
 import type { FilesFilter, FilesGateway, FilesPageResult, SavedFile } from '../lib/files-gateway';
 import styles from './Files.module.scss';
+import { RenameFileDialog } from './RenameFileDialog';
 
 function fileDate(value: string) {
   return new Date(value).toLocaleString('uk-UA');
@@ -24,6 +26,7 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
   const [format, setFormat] = useState<FilesFilter['format']>('all');
   const [order, setOrder] = useState<FilesFilter['order']>('newest');
   const [modal, setModal] = useState<{ kind: 'details' | 'delete'; file: SavedFile } | null>(null);
+  const [renaming, setRenaming] = useState<{ file: SavedFile; scope: string } | null>(null);
   const [notice, setNotice] = useState<{
     message: string;
     transient: boolean;
@@ -191,6 +194,7 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
               key={file.id}
               file={file}
               gateway={gateway}
+              onRename={() => setRenaming({ file, scope: gateway.scope })}
               onDetails={() => {
                 action.clearError();
                 setModal({ kind: 'details', file });
@@ -223,6 +227,14 @@ export function FilesWorkspace({ gateway }: { gateway: FilesGateway }) {
         >
           {query.isFetchingNextPage ? 'Завантажуємо…' : 'Показати ще'}
         </Button>
+      ) : null}
+      {renaming?.scope === gateway.scope ? (
+        <RenameFileDialog
+          key={`${gateway.scope}:${renaming.file.id}`}
+          file={renaming.file}
+          gateway={gateway}
+          onClose={() => setRenaming(null)}
+        />
       ) : null}
       {modal ? (
         <Dialog
@@ -298,12 +310,14 @@ function FileRow({
   gateway,
   onDetails,
   onDelete,
+  onRename,
   onDenied,
 }: {
   file: SavedFile;
   gateway: FilesGateway;
   onDetails: () => void;
   onDelete: () => void;
+  onRename: () => void;
   onDenied: () => void;
 }) {
   const action = useRequestAction(dataErrorMessage);
@@ -311,7 +325,20 @@ function FileRow({
   return (
     <li className={styles.row}>
       <article aria-label={file.name}>
-        <h2 className={styles.fileName}>{file.name}</h2>
+        <div className={styles.fileHeading}>
+          {gateway.rename ? (
+            <Button
+              variant="secondary"
+              className={styles.rename}
+              aria-label="Перейменувати"
+              title="Перейменувати файл"
+              onClick={onRename}
+            >
+              <Pencil size={18} strokeWidth={1.75} aria-hidden="true" />
+            </Button>
+          ) : null}
+          <h2 className={styles.fileName}>{file.name}</h2>
+        </div>
         <dl className={styles.metadata}>
           <div>
             <dt>Тип</dt>
